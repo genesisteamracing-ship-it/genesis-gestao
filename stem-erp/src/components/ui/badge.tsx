@@ -3,21 +3,28 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2",
+  "inline-flex items-center justify-center rounded-md px-3 py-1 text-xs font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-slate-900 text-slate-50 shadow-xs hover:bg-slate-800",
+          "border-transparent bg-[#4880FF] text-white shadow-2xs hover:bg-[#3b6ee6]",
         secondary:
-          "border-transparent bg-slate-100 text-slate-900 hover:bg-slate-200",
+          "border-transparent bg-[#6226EF]/15 text-[#6226EF]",
         destructive:
-          "border-transparent bg-red-600 text-white shadow-xs hover:bg-red-700",
-        outline: "border-slate-200 text-slate-700 bg-white",
+          "border-transparent bg-[#EF3826]/15 text-[#EF3826]",
+        outline:
+          "border border-[#D5D5D5] text-[#202224] bg-white",
         success:
-          "border-emerald-200 bg-emerald-50 text-emerald-700",
+          "border-transparent bg-[#00B69B]/15 text-[#00B69B]",
         warning:
-          "border-amber-200 bg-amber-50 text-amber-800",
+          "border-transparent bg-[#FFA756]/18 text-[#FFA756]",
+        purple:
+          "border-transparent bg-[#6226EF]/15 text-[#6226EF]",
+        magenta:
+          "border-transparent bg-[#BA29FF]/15 text-[#BA29FF]",
+        emeraldSolid:
+          "border-transparent bg-[#00B69B] text-white rounded-full px-3.5",
       },
     },
     defaultVariants: {

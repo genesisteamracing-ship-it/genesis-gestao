@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Layers } from "lucide-react";
 import { PROJECT_MONTHS, PROJECT_MONTH_LABELS } from "@/lib/constants";
 import { cn, formatCurrencyFromCents } from "@/lib/utils";
 import type { DeliveryGroupScheduleRow } from "@/types/financial";
@@ -29,41 +28,48 @@ export function PhysicalFinancialSchedule({
   schedule,
 }: PhysicalFinancialScheduleProps) {
   return (
-    <Card className="border-slate-200">
-      <CardHeader className="border-b border-slate-100 pb-4">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
-            <Layers className="h-5 w-5 text-slate-800" />
-            <span>Cronograma Físico-Financeiro (Previsto vs. Realizado)</span>
-          </CardTitle>
-          <CardDescription>
-            Acompanhamento mensal de execução orçamentária por Grupo de Entrega da
-            competição STEM Racing.
-          </CardDescription>
+    <Card
+      id="cronograma"
+      className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]"
+    >
+      <CardHeader className="p-7 pb-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle className="text-xl font-bold text-[#202224]">
+              Cronograma Físico-Financeiro (Previsto vs. Realizado)
+            </CardTitle>
+            <CardDescription className="mt-1 text-xs text-[#606060]">
+              Comparativo mensal por Grupo de Entrega com variação orçamentária e
+              status de auditoria.
+            </CardDescription>
+          </div>
         </div>
       </CardHeader>
 
-      <CardContent className="pt-6">
-        <div className="rounded-lg border border-slate-200 overflow-hidden">
+      <CardContent className="p-7 pt-2">
+        <div className="overflow-hidden rounded-xl border border-[#E8E8E8]/80">
           <Table>
-            <TableHeader className="bg-slate-50">
-              <TableRow>
-                <TableHead className="min-w-[200px] font-bold text-slate-800">
+            <TableHeader className="bg-[#F1F4F9] [&_tr]:border-0">
+              <TableRow className="hover:bg-[#F1F4F9]">
+                <TableHead className="min-w-[200px] py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-[#202224]">
                   Grupo de Entrega
                 </TableHead>
-                <TableHead className="w-[100px] font-bold text-slate-700">
+                <TableHead className="w-[100px] py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-[#202224]">
                   Visão
                 </TableHead>
                 {PROJECT_MONTHS.map((m) => (
-                  <TableHead key={m} className="text-right font-semibold">
+                  <TableHead
+                    key={m}
+                    className="py-3.5 px-3 text-right text-xs font-bold uppercase tracking-wider text-[#202224]"
+                  >
                     {PROJECT_MONTH_LABELS[m]}
                   </TableHead>
                 ))}
-                <TableHead className="bg-slate-100/80 text-right font-bold text-slate-900">
+                <TableHead className="py-3.5 px-4 text-right text-xs font-bold uppercase tracking-wider text-[#202224]">
                   Total
                 </TableHead>
-                <TableHead className="min-w-[220px] font-bold text-slate-800">
-                  Execução & Status de Auditoria
+                <TableHead className="min-w-[230px] py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-[#202224]">
+                  Execução & Status
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -75,21 +81,23 @@ export function PhysicalFinancialSchedule({
                 return (
                   <React.Fragment key={groupRow.deliveryGroup}>
                     {/* Sub-linha 1: PREVISTO (fundo neutro) */}
-                    <TableRow className="bg-white hover:bg-slate-50/40">
+                    <TableRow className="border-b border-[#E8E8E8]/50 bg-white hover:bg-[#FAFBFD]">
                       <TableCell
                         rowSpan={2}
-                        className="border-r border-slate-200 align-middle font-bold text-slate-900"
+                        className="border-r border-[#E8E8E8]/70 py-4 px-5 align-middle font-bold text-[#202224]"
                       >
                         <div className="space-y-1">
-                          <div>{groupRow.label}</div>
-                          <div className="text-xs font-normal text-slate-500">
-                            Desvio:{" "}
+                          <div className="text-sm font-bold text-[#202224]">
+                            {groupRow.label}
+                          </div>
+                          <div className="text-xs font-normal text-[#606060]">
+                            Variação:{" "}
                             <span
                               className={cn(
-                                "font-mono font-semibold",
+                                "font-mono font-bold",
                                 groupRow.varianceCents >= 0
-                                  ? "text-emerald-700"
-                                  : "text-red-600"
+                                  ? "text-[#00B69B]"
+                                  : "text-[#EF3826]"
                               )}
                             >
                               {formatCurrencyFromCents(groupRow.varianceCents)}
@@ -97,30 +105,30 @@ export function PhysicalFinancialSchedule({
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <TableCell className="py-3.5 px-4 text-xs font-semibold uppercase tracking-wide text-[#606060]">
                         Previsto
                       </TableCell>
                       {groupRow.months.map((m) => (
                         <TableCell
                           key={`plan-${groupRow.deliveryGroup}-${m.month}`}
-                          className="text-right font-mono text-xs text-slate-600"
+                          className="py-3.5 px-3 text-right font-mono text-xs text-[#606060]"
                         >
                           {m.plannedCents > 0
                             ? formatCurrencyFromCents(m.plannedCents)
                             : "—"}
                         </TableCell>
                       ))}
-                      <TableCell className="bg-slate-50/60 text-right font-mono text-xs font-semibold text-slate-800">
+                      <TableCell className="bg-[#FAFBFD] py-3.5 px-4 text-right font-mono text-xs font-semibold text-[#202224]">
                         {formatCurrencyFromCents(groupRow.totalPlannedCents)}
                       </TableCell>
                       <TableCell
                         rowSpan={2}
-                        className="border-l border-slate-200 align-middle"
+                        className="border-l border-[#E8E8E8]/70 py-4 px-5 align-middle"
                       >
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-mono text-xs font-bold text-slate-800">
-                              {groupRow.executionPercentage}% executado
+                            <span className="font-mono text-xs font-bold text-[#202224]">
+                              {groupRow.executionPercentage}%
                             </span>
                             <Badge
                               variant={
@@ -138,10 +146,10 @@ export function PhysicalFinancialSchedule({
                             value={Math.min(groupRow.executionPercentage, 100)}
                             indicatorClassName={cn(
                               isOverBudget
-                                ? "bg-red-600"
+                                ? "bg-[#EF3826]"
                                 : isWarning
-                                ? "bg-amber-500"
-                                : "bg-emerald-600"
+                                ? "bg-[#FFA756]"
+                                : "bg-[#00B69B]"
                             )}
                           />
                         </div>
@@ -149,8 +157,8 @@ export function PhysicalFinancialSchedule({
                     </TableRow>
 
                     {/* Sub-linha 2: REALIZADO (fundo levemente destacado) */}
-                    <TableRow className="border-b-2 border-slate-200 bg-slate-50/80 hover:bg-slate-100/70">
-                      <TableCell className="text-xs font-bold uppercase tracking-wide text-slate-800">
+                    <TableRow className="border-b-2 border-[#E8E8E8] bg-[#F9F9FB] hover:bg-[#F1F4F9]/60">
+                      <TableCell className="py-3.5 px-4 text-xs font-bold uppercase tracking-wide text-[#202224]">
                         Realizado
                       </TableCell>
                       {groupRow.months.map((m) => {
@@ -160,12 +168,12 @@ export function PhysicalFinancialSchedule({
                           <TableCell
                             key={`real-${groupRow.deliveryGroup}-${m.month}`}
                             className={cn(
-                              "text-right font-mono text-xs font-semibold",
+                              "py-3.5 px-3 text-right font-mono text-xs font-semibold",
                               cellExceeded
-                                ? "text-red-600"
+                                ? "text-[#EF3826]"
                                 : m.realizedCents > 0
-                                ? "text-slate-900"
-                                : "text-slate-400"
+                                ? "text-[#202224]"
+                                : "text-[#202224]/30"
                             )}
                           >
                             {m.realizedCents > 0
@@ -176,8 +184,8 @@ export function PhysicalFinancialSchedule({
                       })}
                       <TableCell
                         className={cn(
-                          "bg-slate-100/90 text-right font-mono text-xs font-bold",
-                          isOverBudget ? "text-red-600" : "text-slate-900"
+                          "bg-[#F1F4F9]/70 py-3.5 px-4 text-right font-mono text-xs font-bold",
+                          isOverBudget ? "text-[#EF3826]" : "text-[#202224]"
                         )}
                       >
                         {formatCurrencyFromCents(groupRow.totalRealizedCents)}

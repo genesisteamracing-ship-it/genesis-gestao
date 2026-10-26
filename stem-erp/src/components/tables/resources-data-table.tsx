@@ -5,14 +5,24 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   useReactTable,
   type ColumnDef,
   type ColumnFiltersState,
 } from "@tanstack/react-table";
-import { Download, FileText, PackageCheck, RotateCcw, Search } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FileText,
+  Filter,
+  RotateCcw,
+  Search,
+} from "lucide-react";
 import {
   ACQUISITION_STRATEGY_LABELS,
   DELIVERY_GROUP_LABELS,
+  PROJECT_MONTHS,
   PROJECT_MONTH_LABELS,
 } from "@/lib/constants";
 import {
@@ -22,17 +32,9 @@ import {
 import { downloadCsvFile, triggerPortfolioPdfPrint } from "@/lib/export-utils";
 import { cn, formatCurrencyFromCents } from "@/lib/utils";
 import type { BudgetResourceDTO } from "@/types/financial";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -53,6 +55,23 @@ interface ResourcesDataTableProps {
   resources: BudgetResourceDTO[];
 }
 
+function getStrategyBadgeVariant(
+  strategy: BudgetResourceDTO["acquisitionStrategy"]
+): BadgeProps["variant"] {
+  switch (strategy) {
+    case "FINANCIAL_SPONSOR":
+      return "success";
+    case "DIRECT_PURCHASE":
+      return "purple";
+    case "BARTER_PARTNERSHIP":
+      return "warning";
+    case "OWN_FUNDS_RAFFLE":
+      return "magenta";
+    default:
+      return "secondary";
+  }
+}
+
 export function ResourcesDataTable({ resources }: ResourcesDataTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
@@ -61,113 +80,98 @@ export function ResourcesDataTable({ resources }: ResourcesDataTableProps) {
     () => [
       {
         accessorKey: "code",
-        header: "Código",
+        header: "ID",
         cell: ({ row }) => (
-          <span className="rounded bg-slate-100 px-2 py-1 font-mono text-xs font-bold text-slate-900">
+          <span className="font-mono text-sm font-semibold text-[#202224]">
             {row.original.code}
           </span>
         ),
       },
       {
-        accessorKey: "deliveryGroup",
-        header: "Grupo de Entrega",
-        filterFn: "equalsString",
-        cell: ({ row }) => (
-          <div className="space-y-0.5">
-            <div className="font-medium text-slate-900">
-              {DELIVERY_GROUP_LABELS[row.original.deliveryGroup]}
-            </div>
-            <div className="text-xs text-slate-500">{row.original.categoryName}</div>
-          </div>
-        ),
-      },
-      {
         accessorKey: "resourceName",
-        header: "Recurso & Responsável",
+        header: "RECURSO",
         cell: ({ row }) => (
           <div className="space-y-0.5">
-            <div className="font-semibold text-slate-900">
+            <div className="font-semibold text-[#202224]">
               {row.original.resourceName}
             </div>
-            <div className="text-xs text-slate-500">
-              Alocado: <span className="font-medium">{row.original.allocatedTo}</span>
+            <div className="text-xs text-[#606060]">
+              Responsável: {row.original.allocatedTo}
             </div>
           </div>
         ),
       },
       {
-        accessorKey: "acquisitionStrategy",
-        header: "Estratégia de Aquisição",
+        accessorKey: "deliveryGroup",
+        header: "GRUPO & CATEGORIA",
         filterFn: "equalsString",
-        cell: ({ row }) => {
-          const strategy = row.original.acquisitionStrategy;
-          return (
-            <Badge
-              variant={
-                strategy === "BARTER_PARTNERSHIP"
-                  ? "secondary"
-                  : strategy === "FINANCIAL_SPONSOR"
-                  ? "success"
-                  : "outline"
-              }
-            >
-              {ACQUISITION_STRATEGY_LABELS[strategy]}
-            </Badge>
-          );
-        },
-      },
-      {
-        accessorKey: "plannedMonth",
-        header: "Mês",
         cell: ({ row }) => (
-          <Badge variant="outline" className="font-mono">
-            {PROJECT_MONTH_LABELS[row.original.plannedMonth] ??
-              `Mês ${row.original.plannedMonth}`}
-          </Badge>
+          <div className="space-y-0.5">
+            <div className="font-medium text-[#202224]">
+              {DELIVERY_GROUP_LABELS[row.original.deliveryGroup]}
+            </div>
+            <div className="text-xs text-[#606060]">
+              {row.original.categoryName}
+            </div>
+          </div>
         ),
       },
       {
-        accessorKey: "utilizationForecast",
-        header: "% Utilização",
+        id: "plannedMonth",
+        accessorFn: (row) => String(row.plannedMonth),
+        header: "CRONOGRAMA",
+        filterFn: "equalsString",
         cell: ({ row }) => (
-          <div className="w-28 space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-mono font-semibold text-slate-700">
-                {row.original.utilizationForecast}%
-              </span>
-            </div>
-            <Progress
-              value={row.original.utilizationForecast}
-              indicatorClassName="bg-slate-800"
-            />
+          <div className="text-sm text-[#202224]">
+            {PROJECT_MONTH_LABELS[row.original.plannedMonth] ??
+              `Mês ${row.original.plannedMonth}`}{" "}
+            <span className="text-xs text-[#606060]">
+              ({row.original.utilizationForecast}% uso)
+            </span>
           </div>
         ),
       },
       {
         accessorKey: "plannedAmountCents",
-        header: () => <div className="text-right">Orçado vs. Realizado</div>,
+        header: "ORÇADO / REALIZADO",
         cell: ({ row }) => {
           const planned = row.original.plannedAmountCents;
           const realized = row.original.realizedAmountCents;
-          const over = realized > planned;
+          const exceeded = realized > planned;
           return (
-            <div className="text-right font-mono text-xs">
-              <div className="font-bold text-slate-900">
-                Prev: {formatCurrencyFromCents(planned)}
+            <div className="space-y-0.5 font-mono text-xs">
+              <div className="font-bold text-[#202224]">
+                {formatCurrencyFromCents(planned)}
               </div>
               <div
                 className={cn(
                   "text-[11px]",
-                  over
-                    ? "font-bold text-red-600"
+                  exceeded
+                    ? "font-semibold text-[#EF3826]"
                     : realized > 0
-                    ? "text-emerald-700"
-                    : "text-slate-400"
+                    ? "text-[#00B69B]"
+                    : "text-[#202224]/40"
                 )}
               >
                 Real: {formatCurrencyFromCents(realized)}
               </div>
             </div>
+          );
+        },
+      },
+      {
+        accessorKey: "acquisitionStrategy",
+        header: "STATUS / AQUISIÇÃO",
+        filterFn: "equalsString",
+        cell: ({ row }) => {
+          const strategy = row.original.acquisitionStrategy;
+          return (
+            <Badge
+              variant={getStrategyBadgeVariant(strategy)}
+              className="min-w-[140px]"
+            >
+              {ACQUISITION_STRATEGY_LABELS[strategy]}
+            </Badge>
           );
         },
       },
@@ -178,6 +182,12 @@ export function ResourcesDataTable({ resources }: ResourcesDataTableProps) {
   const table = useReactTable({
     data: resources,
     columns,
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: 9,
+      },
+    },
     state: {
       columnFilters,
       globalFilter,
@@ -186,19 +196,30 @@ export function ResourcesDataTable({ resources }: ResourcesDataTableProps) {
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
+  const selectedMonth =
+    (table.getColumn("plannedMonth")?.getFilterValue() as string) ?? "ALL";
   const selectedDeliveryGroup =
     (table.getColumn("deliveryGroup")?.getFilterValue() as string) ?? "ALL";
   const selectedStrategy =
     (table.getColumn("acquisitionStrategy")?.getFilterValue() as string) ?? "ALL";
+
+  const totalFiltered = table.getFilteredRowModel().rows.length;
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageSize = table.getState().pagination.pageSize;
+  const startRow = totalFiltered === 0 ? 0 : pageIndex * pageSize + 1;
+  const endRow = Math.min((pageIndex + 1) * pageSize, totalFiltered);
+  const formattedEndRow =
+    endRow > 0 && endRow < 10 ? `0${endRow}` : String(endRow);
 
   function handleExportCsv() {
     const filteredRows = table.getFilteredRowModel().rows.map((r) => r.original);
     downloadCsvFile(
       "stem-racing-plano-recursos.csv",
       [
-        "Codigo",
+        "ID",
         "Grupo de Entrega",
         "Categoria",
         "Recurso",
@@ -225,72 +246,70 @@ export function ResourcesDataTable({ resources }: ResourcesDataTableProps) {
   }
 
   return (
-    <Card className="border-slate-200">
-      <CardHeader className="border-b border-slate-100 pb-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
-              <PackageCheck className="h-5 w-5 text-slate-800" />
-              <span>Plano de Recursos e Orçamento (Previsto)</span>
-            </CardTitle>
-            <CardDescription>
-              Gerenciamento de aquisição, alocação de responsáveis e taxa de
-              utilização por Grupo de Entrega.
-            </CardDescription>
+    <div id="tabela-recursos" className="space-y-5">
+      {/* Barra de Filtros Segmentada estilo tabela.png + Busca & Exportação */}
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="inline-flex flex-wrap items-stretch overflow-hidden rounded-xl border border-[#D5D5D5] bg-[#F9F9FB] shadow-2xs">
+          {/* Ícone Funil */}
+          <div className="flex items-center justify-center border-r border-[#D5D5D5] bg-white px-5 py-3">
+            <Filter className="h-4 w-4 text-[#202224]" />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportCsv}>
-              <Download className="h-3.5 w-3.5" />
-              <span>Exportar CSV</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={triggerPortfolioPdfPrint}
+          {/* Label Filter By */}
+          <div className="flex items-center border-r border-[#D5D5D5] bg-white px-5 py-3 text-sm font-bold text-[#202224]">
+            Filtrar Por
+          </div>
+
+          {/* Select Mês */}
+          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
+            <Select
+              value={selectedMonth}
+              onValueChange={(val) =>
+                table
+                  .getColumn("plannedMonth")
+                  ?.setFilterValue(val === "ALL" ? undefined : val)
+              }
             >
-              <FileText className="h-3.5 w-3.5" />
-              <span>Relatório PDF</span>
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4 pt-5">
-        {/* Barra de Filtros */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-          <div className="relative sm:col-span-2">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Buscar por código, recurso, categoria ou responsável..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="pl-9"
-            />
+              <SelectTrigger className="h-full min-w-[130px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos os Meses</SelectItem>
+                {PROJECT_MONTHS.map((m) => (
+                  <SelectItem key={m} value={String(m)}>
+                    {PROJECT_MONTH_LABELS[m]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <Select
-            value={selectedDeliveryGroup}
-            onValueChange={(val) =>
-              table
-                .getColumn("deliveryGroup")
-                ?.setFilterValue(val === "ALL" ? undefined : val)
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar Grupo de Entrega" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todos os Grupos de Entrega</SelectItem>
-              {deliveryGroupValues.map((group) => (
-                <SelectItem key={group} value={group}>
-                  {DELIVERY_GROUP_LABELS[group]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Select Grupo de Entrega */}
+          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
+            <Select
+              value={selectedDeliveryGroup}
+              onValueChange={(val) =>
+                table
+                  .getColumn("deliveryGroup")
+                  ?.setFilterValue(val === "ALL" ? undefined : val)
+              }
+            >
+              <SelectTrigger className="h-full min-w-[175px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+                <SelectValue placeholder="Grupo de Entrega" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Grupo de Entrega</SelectItem>
+                {deliveryGroupValues.map((group) => (
+                  <SelectItem key={group} value={group}>
+                    {DELIVERY_GROUP_LABELS[group]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <div className="flex items-center gap-2">
+          {/* Select Estratégia */}
+          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
             <Select
               value={selectedStrategy}
               onValueChange={(val) =>
@@ -299,11 +318,11 @@ export function ResourcesDataTable({ resources }: ResourcesDataTableProps) {
                   ?.setFilterValue(val === "ALL" ? undefined : val)
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrar Estratégia" />
+              <SelectTrigger className="h-full min-w-[180px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+                <SelectValue placeholder="Tipo de Aquisição" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todas as Estratégias</SelectItem>
+                <SelectItem value="ALL">Status / Aquisição</SelectItem>
                 {acquisitionStrategyValues.map((strategy) => (
                   <SelectItem key={strategy} value={strategy}>
                     {ACQUISITION_STRATEGY_LABELS[strategy]}
@@ -311,70 +330,132 @@ export function ResourcesDataTable({ resources }: ResourcesDataTableProps) {
                 ))}
               </SelectContent>
             </Select>
-
-            {(columnFilters.length > 0 || globalFilter) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setColumnFilters([]);
-                  setGlobalFilter("");
-                }}
-                title="Limpar filtros"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            )}
           </div>
+
+          {/* Botão Reset Filter em vermelho coral */}
+          <button
+            type="button"
+            onClick={() => {
+              setColumnFilters([]);
+              setGlobalFilter("");
+            }}
+            className="flex items-center gap-2 bg-white px-5 py-3 text-sm font-semibold text-[#EA0234] transition-colors hover:bg-red-50/60 cursor-pointer"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>Resetar Filtro</span>
+          </button>
         </div>
 
-        {/* Tabela @tanstack/react-table */}
-        <div className="rounded-lg border border-slate-200 overflow-hidden">
-          <Table>
-            <TableHeader className="bg-slate-50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
+        {/* Busca rápida + Exportação */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="relative min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
+            <Input
+              placeholder="Buscar recurso ou código..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="h-10 rounded-xl border-[#D5D5D5] bg-white pl-9"
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleExportCsv}
+            className="h-10 rounded-xl border-[#D5D5D5] bg-white font-semibold text-[#202224]"
+          >
+            <Download className="h-4 w-4" />
+            <span>Exportar CSV</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={triggerPortfolioPdfPrint}
+            className="h-10 rounded-xl border-[#D5D5D5] bg-white font-semibold text-[#202224]"
+          >
+            <FileText className="h-4 w-4" />
+            <span>Relatório PDF</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Card da Tabela estilo tabela.png */}
+      <div className="overflow-hidden rounded-2xl border border-[#D5D5D5]/70 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.03)]">
+        <Table>
+          <TableHeader className="bg-[#FCFDFD] border-b border-[#D5D5D5]/70">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="hover:bg-[#FCFDFD]">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className="h-12 px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-[#202224]"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length > 0 ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className="border-b border-[#D5D5D5]/50 hover:bg-[#F9F9FB]"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="px-6 py-4 text-sm text-[#202224]">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
                   ))}
                 </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length > 0 ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center text-slate-500"
-                  >
-                    Nenhum recurso planejado encontrado para os filtros aplicados.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-28 text-center text-sm text-[#606060]"
+                >
+                  Nenhum recurso planejado encontrado para os filtros aplicados.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Paginação estilo tabela.png (Showing 1-09 of X + Botões < | >) */}
+      <div className="flex items-center justify-between px-1 pt-1">
+        <p className="text-sm font-medium text-[#202224]/60">
+          Mostrando {startRow}-{formattedEndRow} de {totalFiltered}
+        </p>
+
+        <div className="inline-flex items-center overflow-hidden rounded-lg border border-[#D5D5D5] bg-[#FAFBFD] shadow-2xs">
+          <button
+            type="button"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            aria-label="Página anterior"
+            className="flex h-8 w-10 items-center justify-center border-r border-[#D5D5D5] text-[#202224] transition-colors hover:bg-white disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            aria-label="Próxima página"
+            className="flex h-8 w-10 items-center justify-center text-[#202224] transition-colors hover:bg-white disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

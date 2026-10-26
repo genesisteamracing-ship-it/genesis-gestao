@@ -5,40 +5,36 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   useReactTable,
   type ColumnDef,
   type ColumnFiltersState,
 } from "@tanstack/react-table";
 import {
+  ChevronLeft,
+  ChevronRight,
   Download,
-  FileCheck2,
   FileText,
+  Filter,
   RotateCcw,
   Search,
 } from "lucide-react";
 import {
   ACQUISITION_STRATEGY_LABELS,
   DELIVERY_GROUP_LABELS,
+  PROJECT_MONTHS,
   PROJECT_MONTH_LABELS,
   TRACKING_METHOD_LABELS,
 } from "@/lib/constants";
 import {
-  acquisitionStrategyValues,
   deliveryGroupValues,
   trackingMethodValues,
 } from "@/lib/validations/financial";
 import { downloadCsvFile, triggerPortfolioPdfPrint } from "@/lib/export-utils";
 import { cn, formatCurrencyFromCents, formatDateBR } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/financial";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -60,6 +56,23 @@ interface TransactionsDataTableProps {
   transactions: TransactionDTO[];
 }
 
+function getTrackingBadgeVariant(
+  method: TransactionDTO["trackingMethod"]
+): BadgeProps["variant"] {
+  switch (method) {
+    case "NFE":
+      return "success";
+    case "SPONSOR_CONTRACT":
+      return "purple";
+    case "BANK_PIX_STATEMENT":
+      return "warning";
+    case "RECEIPT":
+      return "magenta";
+    default:
+      return "secondary";
+  }
+}
+
 export function TransactionsDataTable({
   transactions,
 }: TransactionsDataTableProps) {
@@ -69,14 +82,60 @@ export function TransactionsDataTable({
   const columns = React.useMemo<ColumnDef<TransactionDTO>[]>(
     () => [
       {
-        accessorKey: "date",
-        header: "Data / Mês",
+        id: "code",
+        accessorFn: (row) => row.documentRef ?? row.budgetResourceCode ?? row.id.slice(0, 6),
+        header: "ID / REF",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm font-semibold text-[#202224]">
+            {row.original.documentRef ??
+              row.original.budgetResourceCode ??
+              row.original.id.slice(0, 7).toUpperCase()}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "description",
+        header: "DESCRIÇÃO",
         cell: ({ row }) => (
           <div className="space-y-0.5">
-            <div className="font-mono text-xs font-semibold text-slate-900">
+            <div className="font-semibold text-[#202224]">
+              {row.original.description}
+            </div>
+            {row.original.budgetResourceCode && (
+              <div className="text-xs text-[#606060]">
+                Vínculo: {row.original.budgetResourceCode} —{" "}
+                {row.original.budgetResourceName}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "deliveryGroup",
+        header: "GRUPO & CATEGORIA",
+        filterFn: "equalsString",
+        cell: ({ row }) => (
+          <div className="space-y-0.5">
+            <div className="font-medium text-[#202224]">
+              {DELIVERY_GROUP_LABELS[row.original.deliveryGroup]}
+            </div>
+            <div className="text-xs text-[#606060]">
+              {row.original.categoryName}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "referenceMonth",
+        accessorFn: (row) => String(row.referenceMonth),
+        header: "DATA",
+        filterFn: "equalsString",
+        cell: ({ row }) => (
+          <div className="space-y-0.5">
+            <div className="text-sm font-medium text-[#202224]">
               {formatDateBR(row.original.date)}
             </div>
-            <div className="text-[11px] font-medium text-slate-500">
+            <div className="text-xs text-[#606060]">
               {PROJECT_MONTH_LABELS[row.original.referenceMonth] ??
                 `Mês ${row.original.referenceMonth}`}
             </div>
@@ -85,101 +144,40 @@ export function TransactionsDataTable({
       },
       {
         accessorKey: "type",
-        header: "Natureza",
+        header: "TIPO / VALOR",
         filterFn: "equalsString",
         cell: ({ row }) => {
           const isOrigin = row.original.type === "ORIGIN";
           return (
-            <Badge variant={isOrigin ? "success" : "destructive"}>
-              {isOrigin ? "🟢 Origem" : "🔴 Aplicação"}
-            </Badge>
-          );
-        },
-      },
-      {
-        accessorKey: "deliveryGroup",
-        header: "Grupo & Categoria",
-        filterFn: "equalsString",
-        cell: ({ row }) => (
-          <div className="space-y-0.5">
-            <div className="font-medium text-slate-900">
-              {DELIVERY_GROUP_LABELS[row.original.deliveryGroup]}
-            </div>
-            <div className="text-xs text-slate-500">
-              {row.original.categoryName}
-            </div>
-          </div>
-        ),
-      },
-      {
-        accessorKey: "description",
-        header: "Descrição & Vínculo Orçamentário",
-        cell: ({ row }) => (
-          <div className="space-y-1">
-            <div className="font-medium text-slate-900">
-              {row.original.description}
-            </div>
-            {row.original.budgetResourceCode && (
-              <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-                <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-700">
-                  {row.original.budgetResourceCode}
-                </span>
-                <span>{row.original.budgetResourceName}</span>
+            <div className="space-y-0.5">
+              <div
+                className={cn(
+                  "font-mono text-sm font-bold",
+                  isOrigin ? "text-[#00B69B]" : "text-[#EF3826]"
+                )}
+              >
+                {isOrigin ? "+" : "-"}{" "}
+                {formatCurrencyFromCents(row.original.amountCents)}
               </div>
-            )}
-          </div>
-        ),
-      },
-      {
-        id: "acquisitionStrategy",
-        accessorFn: (row) => row.acquisitionStrategy ?? "UNLINKED",
-        header: "Aquisição",
-        filterFn: "equalsString",
-        cell: ({ row }) => {
-          const strategy = row.original.acquisitionStrategy;
-          if (!strategy) {
-            return <span className="text-xs text-slate-400">Direto / Caixa</span>;
-          }
-          return (
-            <Badge variant="secondary" className="text-[11px]">
-              {ACQUISITION_STRATEGY_LABELS[strategy]}
-            </Badge>
+              <div className="text-xs text-[#606060]">
+                {isOrigin ? "Origem (Receita)" : "Aplicação (Despesa)"}
+              </div>
+            </div>
           );
         },
       },
       {
         accessorKey: "trackingMethod",
-        header: "Rastreio Comprobatório",
+        header: "STATUS / COMPROVANTE",
         filterFn: "equalsString",
         cell: ({ row }) => (
-          <div className="space-y-1">
-            <Badge variant="outline" className="font-medium">
-              {TRACKING_METHOD_LABELS[row.original.trackingMethod]}
-            </Badge>
-            {row.original.documentRef && (
-              <div className="font-mono text-[11px] text-slate-500">
-                Ref: {row.original.documentRef}
-              </div>
-            )}
-          </div>
+          <Badge
+            variant={getTrackingBadgeVariant(row.original.trackingMethod)}
+            className="min-w-[140px]"
+          >
+            {TRACKING_METHOD_LABELS[row.original.trackingMethod]}
+          </Badge>
         ),
-      },
-      {
-        accessorKey: "amountCents",
-        header: () => <div className="text-right">Valor Realizado</div>,
-        cell: ({ row }) => {
-          const isOrigin = row.original.type === "ORIGIN";
-          return (
-            <div
-              className={cn(
-                "text-right font-mono text-xs font-bold",
-                isOrigin ? "text-emerald-700" : "text-red-600"
-              )}
-            >
-              {isOrigin ? "+" : "-"} {formatCurrencyFromCents(row.original.amountCents)}
-            </div>
-          );
-        },
       },
     ],
     []
@@ -188,6 +186,12 @@ export function TransactionsDataTable({
   const table = useReactTable({
     data: transactions,
     columns,
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: 9,
+      },
+    },
     state: {
       columnFilters,
       globalFilter,
@@ -196,14 +200,23 @@ export function TransactionsDataTable({
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
+  const selectedMonth =
+    (table.getColumn("referenceMonth")?.getFilterValue() as string) ?? "ALL";
   const selectedDeliveryGroup =
     (table.getColumn("deliveryGroup")?.getFilterValue() as string) ?? "ALL";
-  const selectedStrategy =
-    (table.getColumn("acquisitionStrategy")?.getFilterValue() as string) ?? "ALL";
   const selectedTrackingMethod =
     (table.getColumn("trackingMethod")?.getFilterValue() as string) ?? "ALL";
+
+  const totalFiltered = table.getFilteredRowModel().rows.length;
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageSize = table.getState().pagination.pageSize;
+  const startRow = totalFiltered === 0 ? 0 : pageIndex * pageSize + 1;
+  const endRow = Math.min((pageIndex + 1) * pageSize, totalFiltered);
+  const formattedEndRow =
+    endRow > 0 && endRow < 10 ? `0${endRow}` : String(endRow);
 
   function handleExportCsv() {
     const filteredRows = table.getFilteredRowModel().rows.map((r) => r.original);
@@ -241,93 +254,70 @@ export function TransactionsDataTable({
   }
 
   return (
-    <Card className="border-slate-200">
-      <CardHeader className="border-b border-slate-100 pb-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
-              <FileCheck2 className="h-5 w-5 text-slate-800" />
-              <span>Livro Caixa e Auditoria de Lançamentos (Realizado)</span>
-            </CardTitle>
-            <CardDescription>
-              Rastreamento detalhado de receitas e despesas por categoria, grupo de
-              entrega e método comprobatório (NF-e, Recibo, PIX, Contrato).
-            </CardDescription>
+    <div id="tabela-lancamentos" className="space-y-5">
+      {/* Barra de Filtros Segmentada estilo tabela.png + Busca & Exportação */}
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="inline-flex flex-wrap items-stretch overflow-hidden rounded-xl border border-[#D5D5D5] bg-[#F9F9FB] shadow-2xs">
+          {/* Ícone Funil */}
+          <div className="flex items-center justify-center border-r border-[#D5D5D5] bg-white px-5 py-3">
+            <Filter className="h-4 w-4 text-[#202224]" />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportCsv}>
-              <Download className="h-3.5 w-3.5" />
-              <span>Exportar CSV</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={triggerPortfolioPdfPrint}
+          {/* Label Filter By */}
+          <div className="flex items-center border-r border-[#D5D5D5] bg-white px-5 py-3 text-sm font-bold text-[#202224]">
+            Filtrar Por
+          </div>
+
+          {/* Select Data / Mês */}
+          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
+            <Select
+              value={selectedMonth}
+              onValueChange={(val) =>
+                table
+                  .getColumn("referenceMonth")
+                  ?.setFilterValue(val === "ALL" ? undefined : val)
+              }
             >
-              <FileText className="h-3.5 w-3.5" />
-              <span>Relatório PDF</span>
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4 pt-5">
-        {/* Filtros no topo por DeliveryGroup, AcquisitionStrategy e TrackingMethod */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Buscar descrição, NF-e, código..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="pl-9"
-            />
+              <SelectTrigger className="h-full min-w-[130px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+                <SelectValue placeholder="Data / Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Data / Mês</SelectItem>
+                {PROJECT_MONTHS.map((m) => (
+                  <SelectItem key={m} value={String(m)}>
+                    {PROJECT_MONTH_LABELS[m]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <Select
-            value={selectedDeliveryGroup}
-            onValueChange={(val) =>
-              table
-                .getColumn("deliveryGroup")
-                ?.setFilterValue(val === "ALL" ? undefined : val)
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Grupo de Entrega" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todos os Grupos de Entrega</SelectItem>
-              {deliveryGroupValues.map((group) => (
-                <SelectItem key={group} value={group}>
-                  {DELIVERY_GROUP_LABELS[group]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Select Grupo de Entrega */}
+          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
+            <Select
+              value={selectedDeliveryGroup}
+              onValueChange={(val) =>
+                table
+                  .getColumn("deliveryGroup")
+                  ?.setFilterValue(val === "ALL" ? undefined : val)
+              }
+            >
+              <SelectTrigger className="h-full min-w-[175px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+                <SelectValue placeholder="Grupo de Entrega" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Grupo de Entrega</SelectItem>
+                {deliveryGroupValues.map((group) => (
+                  <SelectItem key={group} value={group}>
+                    {DELIVERY_GROUP_LABELS[group]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select
-            value={selectedStrategy}
-            onValueChange={(val) =>
-              table
-                .getColumn("acquisitionStrategy")
-                ?.setFilterValue(val === "ALL" ? undefined : val)
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Estratégia de Aquisição" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todas as Estratégias</SelectItem>
-              {acquisitionStrategyValues.map((strategy) => (
-                <SelectItem key={strategy} value={strategy}>
-                  {ACQUISITION_STRATEGY_LABELS[strategy]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="flex items-center gap-2">
+          {/* Select Método Comprobatório */}
+          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
             <Select
               value={selectedTrackingMethod}
               onValueChange={(val) =>
@@ -336,11 +326,11 @@ export function TransactionsDataTable({
                   ?.setFilterValue(val === "ALL" ? undefined : val)
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Método Comprobatório" />
+              <SelectTrigger className="h-full min-w-[180px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+                <SelectValue placeholder="Comprovante" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todos os Comprovantes</SelectItem>
+                <SelectItem value="ALL">Status / Comprovante</SelectItem>
                 {trackingMethodValues.map((method) => (
                   <SelectItem key={method} value={method}>
                     {TRACKING_METHOD_LABELS[method]}
@@ -348,70 +338,135 @@ export function TransactionsDataTable({
                 ))}
               </SelectContent>
             </Select>
-
-            {(columnFilters.length > 0 || globalFilter) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setColumnFilters([]);
-                  setGlobalFilter("");
-                }}
-                title="Limpar filtros"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            )}
           </div>
+
+          {/* Botão Reset Filter em vermelho coral */}
+          <button
+            type="button"
+            onClick={() => {
+              setColumnFilters([]);
+              setGlobalFilter("");
+            }}
+            className="flex items-center gap-2 bg-white px-5 py-3 text-sm font-semibold text-[#EA0234] transition-colors hover:bg-red-50/60 cursor-pointer"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>Resetar Filtro</span>
+          </button>
         </div>
 
-        {/* Tabela @tanstack/react-table */}
-        <div className="rounded-lg border border-slate-200 overflow-hidden">
-          <Table>
-            <TableHeader className="bg-slate-50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
+        {/* Busca rápida + Exportação */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="relative min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
+            <Input
+              placeholder="Buscar descrição ou NF-e..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="h-10 rounded-xl border-[#D5D5D5] bg-white pl-9"
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleExportCsv}
+            className="h-10 rounded-xl border-[#D5D5D5] bg-white font-semibold text-[#202224]"
+          >
+            <Download className="h-4 w-4" />
+            <span>Exportar CSV</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={triggerPortfolioPdfPrint}
+            className="h-10 rounded-xl border-[#D5D5D5] bg-white font-semibold text-[#202224]"
+          >
+            <FileText className="h-4 w-4" />
+            <span>Relatório PDF</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Card da Tabela estilo tabela.png */}
+      <div className="overflow-hidden rounded-2xl border border-[#D5D5D5]/70 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.03)]">
+        <Table>
+          <TableHeader className="bg-[#FCFDFD] border-b border-[#D5D5D5]/70">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="hover:bg-[#FCFDFD]">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className="h-12 px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-[#202224]"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length > 0 ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className="border-b border-[#D5D5D5]/50 hover:bg-[#F9F9FB]"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className="px-6 py-4 text-sm text-[#202224]"
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
                   ))}
                 </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length > 0 ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center text-slate-500"
-                  >
-                    Nenhum lançamento encontrado para os filtros selecionados.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-28 text-center text-sm text-[#606060]"
+                >
+                  Nenhum lançamento encontrado para os filtros selecionados.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Paginação estilo tabela.png (Showing 1-09 of X + Botões < | >) */}
+      <div className="flex items-center justify-between px-1 pt-1">
+        <p className="text-sm font-medium text-[#202224]/60">
+          Mostrando {startRow}-{formattedEndRow} de {totalFiltered}
+        </p>
+
+        <div className="inline-flex items-center overflow-hidden rounded-lg border border-[#D5D5D5] bg-[#FAFBFD] shadow-2xs">
+          <button
+            type="button"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            aria-label="Página anterior"
+            className="flex h-8 w-10 items-center justify-center border-r border-[#D5D5D5] text-[#202224] transition-colors hover:bg-white disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            aria-label="Próxima página"
+            className="flex h-8 w-10 items-center justify-center text-[#202224] transition-colors hover:bg-white disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
