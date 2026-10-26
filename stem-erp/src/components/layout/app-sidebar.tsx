@@ -3,16 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CalendarRange,
-  FileCheck2,
   Layers,
   LayoutDashboard,
   ListOrdered,
   LogOut,
-  PackageCheck,
   Printer,
   ShieldCheck,
-  TrendingUp,
   Users,
 } from "lucide-react";
 import { logoutAction } from "@/actions/auth-actions";
@@ -55,29 +51,6 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
       : []),
   ];
 
-  const auditPagesItems = [
-    {
-      href: "/dashboard#fluxo-caixa",
-      label: "Fluxo de Caixa",
-      icon: TrendingUp,
-    },
-    {
-      href: "/dashboard#cronograma",
-      label: "Cronograma Físico",
-      icon: CalendarRange,
-    },
-    {
-      href: "/planejamento",
-      label: "Estoque & Recursos",
-      icon: PackageCheck,
-    },
-    {
-      href: "/lancamentos",
-      label: "Auditoria & Notas",
-      icon: FileCheck2,
-    },
-  ];
-
   return (
     <aside
       aria-label="Menu Lateral"
@@ -91,7 +64,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
         </Link>
       </div>
 
-      {/* Navegação Principal */}
+      {/* Navegação dos Módulos */}
       <div className="flex-1 overflow-y-auto py-3">
         <nav className="space-y-1">
           {mainNavItems.map((item) => {
@@ -117,32 +90,6 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
-                  <span>{item.label}</span>
-                </Link>
-              </div>
-            );
-          })}
-        </nav>
-
-        <div className="my-5 border-t border-[#E8E8E8]" />
-
-        {/* Seção PAGES / AUDITORIA */}
-        <div className="px-6 pb-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#202224]/50">
-            AUDITORIA STEM
-          </span>
-        </div>
-
-        <nav className="space-y-1">
-          {auditPagesItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.label} className="px-5">
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-3.5 rounded-lg px-4 py-2.5 text-sm font-medium text-[#202224] transition-colors hover:bg-[#F5F6FA]"
-                >
-                  <Icon className="h-4 w-4 shrink-0 text-[#202224]/70" />
                   <span>{item.label}</span>
                 </Link>
               </div>
