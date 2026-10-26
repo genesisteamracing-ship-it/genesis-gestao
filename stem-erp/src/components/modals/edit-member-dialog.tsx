@@ -13,7 +13,7 @@ import {
 } from "@/lib/validations/auth";
 import { deliveryGroupValues } from "@/lib/validations/financial";
 import { updateTeamMemberAccessAction } from "@/actions/auth-actions";
-import type { TeamMemberDTO } from "@/types/auth";
+import type { TeamDTO, TeamMemberDTO } from "@/types/auth";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,9 +43,10 @@ import {
 
 interface EditMemberDialogProps {
   member: TeamMemberDTO;
+  teams: TeamDTO[];
 }
 
-export function EditMemberDialog({ member }: EditMemberDialogProps) {
+export function EditMemberDialog({ member, teams }: EditMemberDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
 
@@ -53,6 +54,7 @@ export function EditMemberDialog({ member }: EditMemberDialogProps) {
     resolver: zodResolver(updateMemberAccessSchema),
     defaultValues: {
       userId: member.id,
+      teamId: member.teamId ?? teams[0]?.id ?? "",
       role: member.role,
       deliveryGroup: member.deliveryGroup ?? "PROJECT_MANAGEMENT",
       jobTitle: member.jobTitle ?? "Integrante",
@@ -79,7 +81,7 @@ export function EditMemberDialog({ member }: EditMemberDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
           <Settings2 className="h-3.5 w-3.5 text-[#4880FF]" />
-          <span>Editar Equipe/Função</span>
+          <span>Editar Equipe/Setor</span>
         </Button>
       </DialogTrigger>
 
@@ -87,8 +89,9 @@ export function EditMemberDialog({ member }: EditMemberDialogProps) {
         <DialogHeader>
           <DialogTitle>Editar Acesso: {member.name}</DialogTitle>
           <DialogDescription>
-            Altere a equipe atribuída, permissão ou status da conta ({member.email}).
-            Sessões ativas serão revalidadas automaticamente.
+            Altere a <strong>Equipe</strong>, o <strong>Setor Interno</strong> ou a
+            permissão de {member.email}. Sessões ativas serão revalidadas
+            automaticamente.
           </DialogDescription>
         </DialogHeader>
 
@@ -96,14 +99,39 @@ export function EditMemberDialog({ member }: EditMemberDialogProps) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="deliveryGroup"
+              name="teamId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Equipe Atribuída (Escopo de Dados)</FormLabel>
+                  <FormLabel>Equipe (Isolamento Multi-Equipe)</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a equipe" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {teams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="deliveryGroup"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Setor Interno na Equipe</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o setor" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -149,7 +177,7 @@ export function EditMemberDialog({ member }: EditMemberDialogProps) {
               name="jobTitle"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cargo na Equipe</FormLabel>
+                  <FormLabel>Cargo no Setor</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>

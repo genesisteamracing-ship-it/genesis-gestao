@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 import {
-  Globe2,
+  Flag,
   Layers,
   LayoutDashboard,
   ListOrdered,
@@ -13,29 +13,49 @@ import {
   Search,
   Users,
 } from "lucide-react";
-import { logoutAction } from "@/actions/auth-actions";
-import { DELIVERY_GROUP_LABELS, USER_ROLE_LABELS } from "@/lib/constants";
+import { toast } from "sonner";
+import {
+  logoutAction,
+  switchSuperAdminTeamAction,
+} from "@/actions/auth-actions";
+import { DELIVERY_GROUP_SHORT_LABELS, USER_ROLE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { AuthenticatedUserDTO } from "@/types/auth";
-import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
+import type {
+  ActiveTeamSummaryDTO,
+  BudgetResourceDTO,
+  CategoryDTO,
+} from "@/types/financial";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CreateBudgetResourceDialog } from "@/components/modals/create-budget-resource-dialog";
 import { CreateTransactionDialog } from "@/components/modals/create-transaction-dialog";
 
 interface AppHeaderProps {
   currentUser: AuthenticatedUserDTO;
+  activeTeam?: ActiveTeamSummaryDTO;
+  availableTeams?: ActiveTeamSummaryDTO[];
   categories: CategoryDTO[];
   budgetResources: BudgetResourceDTO[];
 }
 
 export function AppHeader({
   currentUser,
+  activeTeam,
+  availableTeams = [],
   categories,
   budgetResources,
 }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [isSwitchingTeam, startTransition] = React.useTransition();
 
   const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
   const initials = currentUser.name
@@ -53,10 +73,22 @@ export function AppHeader({
     }
   }
 
+  function handleTeamChange(newTeamId: string) {
+    startTransition(async () => {
+      const res = await switchSuperAdminTeamAction(newTeamId);
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      toast.success(res.message);
+      router.refresh();
+    });
+  }
+
   return (
     <header className="sticky top-0 z-30 border-b border-[#E8E8E8] bg-white">
       <div className="flex min-h-[70px] flex-wrap items-center justify-between gap-4 px-6 py-2.5 lg:px-8">
-        {/* Busca estilo DashStack + Indicador de Escopo de Equipe */}
+        {/* Busca estilo DashStack + Indicador/Seletor de Equipe */}
         <div className="flex flex-1 items-center gap-4">
           <Link
             href="/dashboard"
@@ -68,7 +100,7 @@ export function AppHeader({
 
           <form
             onSubmit={handleSearchSubmit}
-            className="relative hidden w-full max-w-[340px] sm:block"
+            className="relative hidden w-full max-w-[300px] sm:block"
           >
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
             <input
@@ -80,21 +112,39 @@ export function AppHeader({
             />
           </form>
 
-          {/* Badge de Isolamento de Dados por Equipe */}
-          <div className="hidden xl:flex items-center">
-            {isSuperAdmin ? (
-              <Badge variant="default" className="gap-1.5 px-3 py-1">
-                <Globe2 className="h-3.5 w-3.5" />
-                <span>Visão Global (Todas as Equipes)</span>
-              </Badge>
+          {/* Seletor de Equipe (SuperAdmin) ou Badge de Isolamento Multi-Equipe */}
+          <div className="hidden xl:flex items-center gap-2">
+            {isSuperAdmin && availableTeams.length > 0 ? (
+              <div className="flex items-center gap-2 rounded-lg border border-[#D5D5D5] bg-[#F5F6FA] px-3 py-1">
+                <Flag className="h-3.5 w-3.5 text-[#4880FF]" />
+                <span className="text-xs font-bold text-[#606060]">
+                  Equipe Ativa:
+                </span>
+                <Select
+                  value={activeTeam?.id ?? currentUser.teamId ?? ""}
+                  onValueChange={handleTeamChange}
+                  disabled={isSwitchingTeam}
+                >
+                  <SelectTrigger className="h-7 w-[170px] border-0 bg-white px-2.5 text-xs font-bold text-[#202224] shadow-none">
+                    <SelectValue placeholder="Selecione a equipe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTeams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             ) : (
               <Badge variant="purple" className="gap-1.5 px-3 py-1">
                 <Lock className="h-3.5 w-3.5" />
                 <span>
-                  Equipe:{" "}
+                  {activeTeam?.name ?? currentUser.teamName ?? "Equipe"}
                   {currentUser.deliveryGroup
-                    ? DELIVERY_GROUP_LABELS[currentUser.deliveryGroup]
-                    : "Geral"}
+                    ? ` • Setor: ${DELIVERY_GROUP_SHORT_LABELS[currentUser.deliveryGroup]}`
+                    : ""}
                 </span>
               </Badge>
             )}
@@ -125,6 +175,7 @@ export function AppHeader({
                 {currentUser.name}
               </div>
               <div className="text-xs font-medium text-[#565656]">
+                {currentUser.teamName ?? "Global"} •{" "}
                 {currentUser.jobTitle || USER_ROLE_LABELS[currentUser.role]}
               </div>
             </div>
@@ -182,7 +233,7 @@ export function AppHeader({
               )}
             >
               <Users className="h-3.5 w-3.5" />
-              <span>Equipe</span>
+              <span>Equipes</span>
             </Link>
           )}
         </div>

@@ -1,18 +1,27 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  ACTIVE_TEAM_COOKIE_NAME,
+  getHttpOnlyCookieOptions,
+} from "@/lib/auth-token";
+import { prisma } from "@/lib/prisma";
+import {
   createMemberSchema,
+  createTeamSchema,
   loginSchema,
   updateMemberAccessSchema,
   type CreateMemberInput,
+  type CreateTeamInput,
   type LoginInput,
   type UpdateMemberAccessInput,
 } from "@/lib/validations/auth";
 import {
   authenticateUserService,
   createTeamMemberService,
+  createTeamService,
   getTeamManagementMetricsService,
   logoutUserService,
   requireSuperAdmin,
@@ -62,6 +71,81 @@ export async function logoutAction(): Promise<void> {
   redirect("/login");
 }
 
+export async function createTeamAction(
+  rawData: CreateTeamInput
+): Promise<ActionResponse<{ id: string; name: string }>> {
+  const superAdmin = await requireSuperAdmin();
+
+  const parsed = createTeamSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Verifique o nome e a instituição da equipe.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const createdTeam = await createTeamService(superAdmin, parsed.data);
+
+    revalidatePath("/equipe");
+    revalidatePath("/dashboard");
+    revalidatePath("/planejamento");
+    revalidatePath("/lancamentos");
+
+    return {
+      success: true,
+      message: `Equipe "${createdTeam.name}" criada com sucesso com seus 5 setores internos!`,
+      data: { id: createdTeam.id, name: createdTeam.name },
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Não foi possível criar a equipe.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}
+
+export async function switchSuperAdminTeamAction(
+  teamId: string
+): Promise<ActionResponse> {
+  await requireSuperAdmin();
+
+  const team = await prisma.team.findUnique({
+    where: { id: teamId },
+    select: { id: true, name: true },
+  });
+
+  if (!team) {
+    return {
+      success: false,
+      message: "Equipe não encontrada.",
+    };
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set(
+    ACTIVE_TEAM_COOKIE_NAME,
+    team.id,
+    getHttpOnlyCookieOptions()
+  );
+
+  revalidatePath("/", "layout");
+  revalidatePath("/dashboard");
+  revalidatePath("/planejamento");
+  revalidatePath("/lancamentos");
+  revalidatePath("/equipe");
+
+  return {
+    success: true,
+    message: `Visualizando dados da ${team.name}!`,
+  };
+}
+
 export async function createTeamMemberAction(
   rawData: CreateMemberInput
 ): Promise<ActionResponse> {
@@ -107,7 +191,7 @@ export async function updateTeamMemberAccessAction(
   if (!parsed.success) {
     return {
       success: false,
-      message: "Verifique os campos de permissão e equipe.",
+      message: "Verifique os campos de equipe, setor e permissão.",
       fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }
@@ -120,7 +204,7 @@ export async function updateTeamMemberAccessAction(
 
     return {
       success: true,
-      message: `Permissões de ${updated.name} atualizadas com sucesso!`,
+      message: `Acesso de ${updated.name} atualizado com sucesso!`,
     };
   } catch (error) {
     const message =

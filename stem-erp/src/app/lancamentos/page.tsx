@@ -1,4 +1,3 @@
-import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
@@ -9,21 +8,14 @@ export const dynamic = "force-dynamic";
 
 export default async function LancamentosPage() {
   const metrics = await getDashboardMetricsAction();
-  const isSuperAdmin = metrics.currentUser.role === "SUPER_ADMIN";
 
   return (
     <DashboardShell
-      title="Livro Caixa & Auditoria"
-      subtitle={
-        isSuperAdmin
-          ? "Rastreamento global de receitas e despesas de todas as equipes"
-          : `Livro caixa exclusivo da equipe ${
-              metrics.currentUser.deliveryGroup
-                ? DELIVERY_GROUP_LABELS[metrics.currentUser.deliveryGroup]
-                : ""
-            }`
-      }
+      title={`Livro Caixa — ${metrics.activeTeam.name}`}
+      subtitle={`Rastreamento auditável de receitas e despesas da ${metrics.activeTeam.name} em todos os seus setores`}
       currentUser={metrics.currentUser}
+      activeTeam={metrics.activeTeam}
+      availableTeams={metrics.availableTeams}
       categories={metrics.categories}
       budgetResources={metrics.budgetResources}
       headerAction={

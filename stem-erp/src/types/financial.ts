@@ -6,6 +6,13 @@ import type {
 } from "@prisma/client";
 import type { AuthenticatedUserDTO } from "./auth";
 
+export interface ActiveTeamSummaryDTO {
+  id: string;
+  name: string;
+  slug: string;
+  schoolOrOrg: string | null;
+}
+
 export interface CategoryDTO {
   id: string;
   name: string;
@@ -96,6 +103,8 @@ export interface DashboardKPIsDTO {
 
 export interface DashboardMetricsDTO {
   currentUser: AuthenticatedUserDTO;
+  activeTeam: ActiveTeamSummaryDTO;
+  availableTeams: ActiveTeamSummaryDTO[];
   kpis: DashboardKPIsDTO;
   cashFlow: CashFlowSummaryDTO;
   schedule: DeliveryGroupScheduleRow[];

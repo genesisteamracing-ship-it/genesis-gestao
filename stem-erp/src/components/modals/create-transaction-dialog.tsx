@@ -8,7 +8,6 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   Loader2,
-  Lock,
   PlusCircle,
   Repeat,
 } from "lucide-react";
@@ -92,15 +91,7 @@ export function CreateTransactionDialog({
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
 
-  const isSuperAdmin = !currentUser || currentUser.role === "SUPER_ADMIN";
-  const lockedGroup = !isSuperAdmin ? currentUser?.deliveryGroup ?? null : null;
-
-  const allowedGroups = React.useMemo(() => {
-    if (lockedGroup) return [lockedGroup];
-    return [...deliveryGroupValues];
-  }, [lockedGroup]);
-
-  const defaultGroup = lockedGroup ?? "MANUFACTURING_CNC";
+  const defaultGroup = currentUser?.deliveryGroup ?? "MANUFACTURING_CNC";
 
   const todayISO = React.useMemo(
     () => new Date().toISOString().split("T")[0],
@@ -153,7 +144,7 @@ export function CreateTransactionDialog({
     if (resourceId !== "NONE") {
       const found = budgetResources.find((b) => b.id === resourceId);
       if (found) {
-        form.setValue("deliveryGroup", lockedGroup ?? found.deliveryGroup);
+        form.setValue("deliveryGroup", found.deliveryGroup);
         form.setValue("categoryId", found.categoryId);
         form.setValue("referenceMonth", found.plannedMonth);
         if (found.acquisitionStrategy === "BARTER_PARTNERSHIP") {
@@ -172,7 +163,7 @@ export function CreateTransactionDialog({
         date: new Date(`${values.date}T12:00:00Z`),
         referenceMonth: values.referenceMonth,
         type: values.type,
-        deliveryGroup: lockedGroup ?? values.deliveryGroup,
+        deliveryGroup: values.deliveryGroup,
         categoryId: values.categoryId,
         budgetResourceId:
           values.budgetResourceId === "NONE" ? null : values.budgetResourceId,
@@ -219,10 +210,12 @@ export function CreateTransactionDialog({
 
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Lançar Transação Financeira (Realizado)</DialogTitle>
+          <DialogTitle>
+            Lançar Transação Financeira — {currentUser?.teamName ?? "Equipe"}
+          </DialogTitle>
           <DialogDescription>
             Registre uma despesa (Aplicação) ou receita (Origem) auditável no livro
-            caixa da equipe.
+            caixa da sua equipe.
           </DialogDescription>
         </DialogHeader>
 
@@ -291,7 +284,7 @@ export function CreateTransactionDialog({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Ao selecionar um recurso planejado, a categoria e mês são
+                    Ao selecionar um recurso planejado, o setor, categoria e mês são
                     preenchidos automaticamente.
                   </FormDescription>
                   <FormMessage />
@@ -305,24 +298,15 @@ export function CreateTransactionDialog({
                 name="deliveryGroup"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-1.5">
-                      <span>Equipe / Grupo de Entrega</span>
-                      {lockedGroup && (
-                        <Lock className="h-3 w-3 text-[#4880FF]" />
-                      )}
-                    </FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={Boolean(lockedGroup)}
-                    >
+                    <FormLabel>Setor / Grupo de Entrega</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o grupo" />
+                          <SelectValue placeholder="Selecione o setor" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {allowedGroups.map((group) => (
+                        {deliveryGroupValues.map((group) => (
                           <SelectItem key={group} value={group}>
                             {DELIVERY_GROUP_LABELS[group]}
                           </SelectItem>

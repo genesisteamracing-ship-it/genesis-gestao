@@ -13,6 +13,7 @@ import {
 } from "@/lib/validations/auth";
 import { deliveryGroupValues } from "@/lib/validations/financial";
 import { createTeamMemberAction } from "@/actions/auth-actions";
+import type { TeamDTO } from "@/types/auth";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,9 +42,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function CreateMemberDialog() {
+interface CreateMemberDialogProps {
+  teams: TeamDTO[];
+}
+
+export function CreateMemberDialog({ teams }: CreateMemberDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
+
+  const defaultTeamId = teams[0]?.id ?? "";
 
   const form = useForm<CreateMemberInput>({
     resolver: zodResolver(createMemberSchema),
@@ -51,11 +58,18 @@ export function CreateMemberDialog() {
       name: "",
       email: "",
       password: "",
+      teamId: defaultTeamId,
       role: "TEAM_LEAD",
       deliveryGroup: "MANUFACTURING_CNC",
       jobTitle: "",
     },
   });
+
+  React.useEffect(() => {
+    if (!form.getValues("teamId") && teams[0]?.id) {
+      form.setValue("teamId", teams[0].id);
+    }
+  }, [teams, form]);
 
   function onSubmit(values: CreateMemberInput) {
     startTransition(async () => {
@@ -67,7 +81,15 @@ export function CreateMemberDialog() {
       }
 
       toast.success(result.message);
-      form.reset();
+      form.reset({
+        name: "",
+        email: "",
+        password: "",
+        teamId: defaultTeamId,
+        role: "TEAM_LEAD",
+        deliveryGroup: "MANUFACTURING_CNC",
+        jobTitle: "",
+      });
       setOpen(false);
     });
   }
@@ -85,8 +107,9 @@ export function CreateMemberDialog() {
         <DialogHeader>
           <DialogTitle>Cadastrar Novo Integrante na Plataforma</DialogTitle>
           <DialogDescription>
-            Atribua a equipe (Grupo de Entrega) e a função do integrante. Cada equipe
-            visualizará estritamente os dados do seu próprio grupo.
+            Selecione a <strong>Equipe</strong> (ex: Equipe Gênesis, Equipe Alpha),
+            o <strong>Setor Interno</strong> em que atua e sua permissão. Cada equipe
+            visualizará exclusivamente seus próprios dados.
           </DialogDescription>
         </DialogHeader>
 
@@ -129,14 +152,42 @@ export function CreateMemberDialog() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="deliveryGroup"
+                name="teamId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Equipe (Escopo de Dados)</FormLabel>
+                    <FormLabel>Equipe (Isolamento Multi-Equipe)</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione a equipe" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.id}>
+                            {team.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      O integrante verá todos os setores desta equipe e nada de outras equipes.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="deliveryGroup"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Setor Interno na Equipe</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o setor" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -148,23 +199,25 @@ export function CreateMemberDialog() {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      O integrante verá apenas informações desta equipe.
+                      Setor principal em que o integrante atua dentro da equipe.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <FormField
                 control={form.control}
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Permissão na Plataforma</FormLabel>
+                    <FormLabel>Permissão (RBAC)</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione a permissão" />
+                          <SelectValue placeholder="Permissão" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -179,20 +232,15 @@ export function CreateMemberDialog() {
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="jobTitle"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cargo / Função na Equipe</FormLabel>
+                    <FormLabel>Cargo no Setor</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Ex: Engenheiro de Manufatura CNC"
-                        {...field}
-                      />
+                      <Input placeholder="Ex: Engenheiro CNC" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -208,13 +256,10 @@ export function CreateMemberDialog() {
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="Mín. 8 caracteres (Ex: Genesis@2026)"
+                        placeholder="Ex: Genesis@2026"
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
-                      Deve conter maiúscula, minúscula e número.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

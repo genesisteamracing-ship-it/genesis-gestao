@@ -4,7 +4,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CalendarPlus, Loader2, Lock } from "lucide-react";
+import { CalendarPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   ACQUISITION_STRATEGY_LABELS,
@@ -50,7 +50,7 @@ import {
 
 const budgetFormSchema = z.object({
   deliveryGroup: z.enum(deliveryGroupValues, {
-    required_error: "Selecione um grupo de entrega",
+    required_error: "Selecione um setor / grupo de entrega",
   }),
   categoryId: z.string().min(1, "Selecione uma categoria"),
   resourceName: z.string().min(3, "Informe ao menos 3 caracteres"),
@@ -82,15 +82,7 @@ export function CreateBudgetResourceDialog({
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
 
-  const isSuperAdmin = !currentUser || currentUser.role === "SUPER_ADMIN";
-  const lockedGroup = !isSuperAdmin ? currentUser?.deliveryGroup ?? null : null;
-
-  const allowedGroups = React.useMemo(() => {
-    if (lockedGroup) return [lockedGroup];
-    return [...deliveryGroupValues];
-  }, [lockedGroup]);
-
-  const defaultGroup = lockedGroup ?? "MANUFACTURING_CNC";
+  const defaultGroup = currentUser?.deliveryGroup ?? "MANUFACTURING_CNC";
 
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
@@ -133,7 +125,7 @@ export function CreateBudgetResourceDialog({
 
     startTransition(async () => {
       const result = await createBudgetResourceAction({
-        deliveryGroup: lockedGroup ?? values.deliveryGroup,
+        deliveryGroup: values.deliveryGroup,
         categoryId: values.categoryId,
         resourceName: values.resourceName,
         acquisitionStrategy: values.acquisitionStrategy,
@@ -176,9 +168,11 @@ export function CreateBudgetResourceDialog({
 
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Planejar Recurso no Orçamento</DialogTitle>
+          <DialogTitle>
+            Planejar Recurso — {currentUser?.teamName ?? "Equipe"}
+          </DialogTitle>
           <DialogDescription>
-            Cadastre um recurso previsto por Grupo de Entrega. O código sequencial{" "}
+            Cadastre um recurso previsto nos setores da sua equipe. O código sequencial{" "}
             <span className="font-mono font-semibold text-slate-700">ORC-XXX</span> será
             gerado automaticamente.
           </DialogDescription>
@@ -192,24 +186,15 @@ export function CreateBudgetResourceDialog({
                 name="deliveryGroup"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-1.5">
-                      <span>Equipe / Grupo de Entrega</span>
-                      {lockedGroup && (
-                        <Lock className="h-3 w-3 text-[#4880FF]" />
-                      )}
-                    </FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={Boolean(lockedGroup)}
-                    >
+                    <FormLabel>Setor / Grupo de Entrega</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o grupo" />
+                          <SelectValue placeholder="Selecione o setor" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {allowedGroups.map((group) => (
+                        {deliveryGroupValues.map((group) => (
                           <SelectItem key={group} value={group}>
                             {DELIVERY_GROUP_LABELS[group]}
                           </SelectItem>

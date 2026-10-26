@@ -1,4 +1,3 @@
-import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
@@ -10,21 +9,14 @@ export const dynamic = "force-dynamic";
 
 export default async function PlanejamentoPage() {
   const metrics = await getDashboardMetricsAction();
-  const isSuperAdmin = metrics.currentUser.role === "SUPER_ADMIN";
 
   return (
     <DashboardShell
-      title="Planejamento de Recursos"
-      subtitle={
-        isSuperAdmin
-          ? "Gerenciamento global de aquisição, alocação de responsáveis e orçamento de todas as equipes"
-          : `Planejamento exclusivo da equipe ${
-              metrics.currentUser.deliveryGroup
-                ? DELIVERY_GROUP_LABELS[metrics.currentUser.deliveryGroup]
-                : ""
-            }`
-      }
+      title={`Planejamento — ${metrics.activeTeam.name}`}
+      subtitle={`Orçamento e recursos planejados nos 5 setores internos da ${metrics.activeTeam.name}`}
       currentUser={metrics.currentUser}
+      activeTeam={metrics.activeTeam}
+      availableTeams={metrics.availableTeams}
       categories={metrics.categories}
       budgetResources={metrics.budgetResources}
       headerAction={

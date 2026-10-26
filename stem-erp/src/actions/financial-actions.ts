@@ -13,7 +13,7 @@ import {
   createBudgetResourceService,
   createTransactionService,
   getDashboardMetricsService,
-  resolveTeamScope,
+  resolveActiveTeam,
 } from "@/services/financial-service";
 import type { DashboardMetricsDTO } from "@/types/financial";
 
@@ -46,20 +46,9 @@ export async function createBudgetResourceAction(
     };
   }
 
-  // Isolamento de Equipe: força o deliveryGroup da equipe do usuário caso não seja SUPER_ADMIN
-  const scopedGroup = resolveTeamScope(user);
-  if (scopedGroup && parsed.data.deliveryGroup !== scopedGroup) {
-    return {
-      success: false,
-      message: "Acesso negado: você só pode planejar recursos na sua própria equipe.",
-    };
-  }
-
   try {
-    const created = await createBudgetResourceService({
-      ...parsed.data,
-      deliveryGroup: scopedGroup ?? parsed.data.deliveryGroup,
-    });
+    const { activeTeam } = await resolveActiveTeam(user);
+    const created = await createBudgetResourceService(activeTeam.id, parsed.data);
 
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
@@ -67,14 +56,18 @@ export async function createBudgetResourceAction(
 
     return {
       success: true,
-      message: `Recurso ${created.code} planejado com sucesso!`,
+      message: `Recurso ${created.code} planejado na ${activeTeam.name} com sucesso!`,
       data: { code: created.code },
     };
   } catch (error) {
     console.error("[createBudgetResourceAction] Erro:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Não foi possível salvar o recurso orçamentário. Tente novamente.";
     return {
       success: false,
-      message: "Não foi possível salvar o recurso orçamentário. Tente novamente.",
+      message,
     };
   }
 }
@@ -101,21 +94,9 @@ export async function createTransactionAction(
     };
   }
 
-  // Isolamento de Equipe: força o deliveryGroup da equipe do usuário caso não seja SUPER_ADMIN
-  const scopedGroup = resolveTeamScope(user);
-  if (scopedGroup && parsed.data.deliveryGroup !== scopedGroup) {
-    return {
-      success: false,
-      message:
-        "Acesso negado: você só pode registrar lançamentos na sua própria equipe.",
-    };
-  }
-
   try {
-    await createTransactionService({
-      ...parsed.data,
-      deliveryGroup: scopedGroup ?? parsed.data.deliveryGroup,
-    });
+    const { activeTeam } = await resolveActiveTeam(user);
+    await createTransactionService(activeTeam.id, parsed.data);
 
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
@@ -124,14 +105,18 @@ export async function createTransactionAction(
     return {
       success: true,
       message: parsed.data.isBarterCounterpart
-        ? "Permuta contabilizada (Origem + Aplicação) com sucesso!"
-        : "Lançamento financeiro registrado com sucesso!",
+        ? `Permuta contabilizada (Origem + Aplicação) na ${activeTeam.name}!`
+        : `Lançamento financeiro registrado na ${activeTeam.name}!`,
     };
   } catch (error) {
     console.error("[createTransactionAction] Erro:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Não foi possível registrar o lançamento financeiro. Tente novamente.";
     return {
       success: false,
-      message: "Não foi possível registrar o lançamento financeiro. Tente novamente.",
+      message,
     };
   }
 }

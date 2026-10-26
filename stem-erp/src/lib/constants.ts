@@ -45,7 +45,7 @@ export const TRACKING_METHOD_LABELS: Record<TrackingMethod, string> = {
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   SUPER_ADMIN: "SuperAdmin (Global)",
   FINANCE_MANAGER: "Gestor Financeiro",
-  TEAM_LEAD: "Integrante / Líder de Equipe",
+  TEAM_LEAD: "Líder / Integrante de Setor",
   AUDITOR: "Auditor (Somente Leitura)",
 };
 
@@ -57,6 +57,7 @@ export const AUTH_EVENT_LABELS: Record<AuthEventType, string> = {
   SESSION_REVOKED: "Sessão Revogada",
   USER_CREATED: "Integrante Cadastrado",
   USER_ROLE_UPDATED: "Permissão / Equipe Atualizada",
+  TEAM_CREATED: "Nova Equipe Criada",
 };
 
 export const PROJECT_MONTHS = [1, 2, 3, 4, 5, 6] as const;

@@ -1,9 +1,10 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
-import { AuthEventType, UserRole } from "@prisma/client";
+import { AuthEventType, DeliveryGroup, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
+  ACTIVE_TEAM_COOKIE_NAME,
   SESSION_COOKIE_NAME,
   SESSION_DURATION_SECONDS,
   getHttpOnlyCookieOptions,
@@ -12,11 +13,13 @@ import {
 } from "@/lib/auth-token";
 import type {
   CreateMemberInput,
+  CreateTeamInput,
   LoginInput,
   UpdateMemberAccessInput,
 } from "@/lib/validations/auth";
 import type {
   AuthenticatedUserDTO,
+  TeamDTO,
   TeamManagementMetricsDTO,
   TeamMemberDTO,
 } from "@/types/auth";
@@ -26,6 +29,37 @@ const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutos
 // Hash bcrypt válido para comparação em tempo constante quando o e-mail não existe
 const DUMMY_BCRYPT_HASH =
   "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4oL2.7y0W.";
+
+const DEFAULT_SECTOR_CATEGORIES: Array<{
+  name: string;
+  deliveryGroup: DeliveryGroup;
+}> = [
+  { name: "Licenças CAD / CFD", deliveryGroup: DeliveryGroup.ENGINEERING_CAD },
+  { name: "Telemetria & Sensores", deliveryGroup: DeliveryGroup.ENGINEERING_CAD },
+  { name: "Ensaios de Túnel de Vento", deliveryGroup: DeliveryGroup.ENGINEERING_CAD },
+  { name: "Blocos de Poliuretano / Balsa", deliveryGroup: DeliveryGroup.MANUFACTURING_CNC },
+  { name: "Usinagem CNC & Fresas", deliveryGroup: DeliveryGroup.MANUFACTURING_CNC },
+  { name: "Impressão 3D & Filamentos SLA/FDM", deliveryGroup: DeliveryGroup.MANUFACTURING_CNC },
+  { name: "Rolamentos Cerâmicos & Eixos", deliveryGroup: DeliveryGroup.MANUFACTURING_CNC },
+  { name: "Pintura Automotiva & Acabamento", deliveryGroup: DeliveryGroup.MANUFACTURING_CNC },
+  { name: "Estrutura & Marcenaria do Pit", deliveryGroup: DeliveryGroup.PIT_DISPLAY },
+  { name: "Iluminação LED & Telas Interativas", deliveryGroup: DeliveryGroup.PIT_DISPLAY },
+  { name: "Gráfica, Banners & Adesivagem", deliveryGroup: DeliveryGroup.PIT_DISPLAY },
+  { name: "Uniformes & Vestuário Oficial", deliveryGroup: DeliveryGroup.MARKETING_SPONSOR },
+  { name: "Mídia Digital & Captação de Patrocínio", deliveryGroup: DeliveryGroup.MARKETING_SPONSOR },
+  { name: "Brindes & Press Kit", deliveryGroup: DeliveryGroup.MARKETING_SPONSOR },
+  { name: "Taxas de Inscrição & Logística", deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT },
+  { name: "Impressão de Portfólios Técnicos", deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT },
+];
+
+function slugifyTeamName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
 
 async function getRequestMetadata() {
   try {
@@ -50,6 +84,7 @@ export async function authenticateUserService(input: LoginInput): Promise<{
 
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
+    include: { team: true },
   });
 
   if (!user) {
@@ -86,7 +121,7 @@ export async function authenticateUserService(input: LoginInput): Promise<{
 
     return {
       success: false,
-      message: "Sua conta está desativada. Contate o SuperAdmin da equipe.",
+      message: "Sua conta está desativada. Contate o SuperAdmin da plataforma.",
     };
   }
 
@@ -190,7 +225,7 @@ export async function authenticateUserService(input: LoginInput): Promise<{
         event: AuthEventType.LOGIN_SUCCESS,
         ipAddress,
         userAgent,
-        details: "Sessão autenticada com cookie httpOnly.",
+        details: `Sessão autenticada com cookie httpOnly (${user.team?.name ?? "Global"}).`,
       },
     });
 
@@ -203,6 +238,8 @@ export async function authenticateUserService(input: LoginInput): Promise<{
     name: user.name,
     email: user.email,
     role: user.role,
+    teamId: user.teamId,
+    teamName: user.team?.name ?? null,
     deliveryGroup: user.deliveryGroup,
     jobTitle: user.jobTitle,
   });
@@ -213,6 +250,14 @@ export async function authenticateUserService(input: LoginInput): Promise<{
     jwtToken,
     getHttpOnlyCookieOptions(expiresAt)
   );
+
+  if (user.teamId) {
+    cookieStore.set(
+      ACTIVE_TEAM_COOKIE_NAME,
+      user.teamId,
+      getHttpOnlyCookieOptions(expiresAt)
+    );
+  }
 
   return {
     success: true,
@@ -251,6 +296,7 @@ export async function logoutUserService(): Promise<void> {
   }
 
   cookieStore.delete(SESSION_COOKIE_NAME);
+  cookieStore.delete(ACTIVE_TEAM_COOKIE_NAME);
 }
 
 export async function getCurrentUserFromSession(): Promise<AuthenticatedUserDTO | null> {
@@ -264,7 +310,11 @@ export async function getCurrentUserFromSession(): Promise<AuthenticatedUserDTO 
 
     const session = await prisma.session.findUnique({
       where: { id: payload.jti },
-      include: { user: true },
+      include: {
+        user: {
+          include: { team: true },
+        },
+      },
     });
 
     if (
@@ -276,12 +326,32 @@ export async function getCurrentUserFromSession(): Promise<AuthenticatedUserDTO 
       return null;
     }
 
+    let effectiveTeamId = session.user.teamId;
+    let effectiveTeamName = session.user.team?.name ?? null;
+
+    // Apenas o SUPER_ADMIN pode alternar a visualização entre equipes diferentes
+    if (session.user.role === UserRole.SUPER_ADMIN) {
+      const switchedTeamId = cookieStore.get(ACTIVE_TEAM_COOKIE_NAME)?.value;
+      if (switchedTeamId && switchedTeamId !== session.user.teamId) {
+        const switchedTeam = await prisma.team.findUnique({
+          where: { id: switchedTeamId },
+          select: { id: true, name: true },
+        });
+        if (switchedTeam) {
+          effectiveTeamId = switchedTeam.id;
+          effectiveTeamName = switchedTeam.name;
+        }
+      }
+    }
+
     return {
       id: session.user.id,
       sessionId: session.id,
       name: session.user.name,
       email: session.user.email,
       role: session.user.role,
+      teamId: effectiveTeamId,
+      teamName: effectiveTeamName,
       deliveryGroup: session.user.deliveryGroup,
       jobTitle: session.user.jobTitle,
     };
@@ -306,16 +376,80 @@ export async function requireSuperAdmin(): Promise<AuthenticatedUserDTO> {
   return user;
 }
 
+export async function createTeamService(
+  superAdmin: AuthenticatedUserDTO,
+  input: CreateTeamInput
+) {
+  const trimmedName = input.name.trim();
+  const baseSlug = slugifyTeamName(trimmedName) || `equipe-${Date.now()}`;
+
+  const existing = await prisma.team.findFirst({
+    where: {
+      OR: [{ name: trimmedName }, { slug: baseSlug }],
+    },
+  });
+
+  if (existing) {
+    throw new Error("Já existe uma equipe cadastrada com este nome.");
+  }
+
+  const { ipAddress, userAgent } = await getRequestMetadata();
+
+  return prisma.$transaction(async (tx) => {
+    const createdTeam = await tx.team.create({
+      data: {
+        name: trimmedName,
+        slug: baseSlug,
+        schoolOrOrg: input.schoolOrOrg.trim(),
+        isActive: true,
+      },
+    });
+
+    // Cria automaticamente as 15 categorias dos 5 setores internos para a nova equipe
+    for (const cat of DEFAULT_SECTOR_CATEGORIES) {
+      await tx.category.create({
+        data: {
+          teamId: createdTeam.id,
+          name: cat.name,
+          deliveryGroup: cat.deliveryGroup,
+        },
+      });
+    }
+
+    await tx.authAuditLog.create({
+      data: {
+        userId: superAdmin.id,
+        emailAttempt: superAdmin.email,
+        event: AuthEventType.TEAM_CREATED,
+        ipAddress,
+        userAgent,
+        details: `Equipe "${createdTeam.name}" (${createdTeam.schoolOrOrg}) criada com seus 5 setores internos.`,
+      },
+    });
+
+    return createdTeam;
+  });
+}
+
 export async function createTeamMemberService(
   superAdmin: AuthenticatedUserDTO,
   input: CreateMemberInput
 ) {
-  const existing = await prisma.user.findUnique({
-    where: { email: input.email },
-  });
+  const [existing, targetTeam] = await Promise.all([
+    prisma.user.findUnique({
+      where: { email: input.email },
+    }),
+    prisma.team.findUnique({
+      where: { id: input.teamId },
+    }),
+  ]);
 
   if (existing) {
     throw new Error("Já existe um integrante cadastrado com este e-mail.");
+  }
+
+  if (!targetTeam) {
+    throw new Error("A equipe selecionada não foi encontrada.");
   }
 
   const passwordHash = await bcrypt.hash(input.password, 12);
@@ -327,6 +461,7 @@ export async function createTeamMemberService(
         name: input.name,
         email: input.email,
         passwordHash,
+        teamId: targetTeam.id,
         role: input.role,
         deliveryGroup: input.deliveryGroup,
         jobTitle: input.jobTitle,
@@ -342,7 +477,7 @@ export async function createTeamMemberService(
         event: AuthEventType.USER_CREATED,
         ipAddress,
         userAgent,
-        details: `Cadastrado por ${superAdmin.name} com função ${input.role} na equipe ${input.deliveryGroup}.`,
+        details: `Cadastrado na ${targetTeam.name} | Setor: ${input.deliveryGroup} | Permissão: ${input.role}.`,
       },
     });
 
@@ -354,12 +489,21 @@ export async function updateTeamMemberAccessService(
   superAdmin: AuthenticatedUserDTO,
   input: UpdateMemberAccessInput
 ) {
-  const targetUser = await prisma.user.findUnique({
-    where: { id: input.userId },
-  });
+  const [targetUser, targetTeam] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: input.userId },
+    }),
+    prisma.team.findUnique({
+      where: { id: input.teamId },
+    }),
+  ]);
 
   if (!targetUser) {
     throw new Error("Integrante não encontrado.");
+  }
+
+  if (!targetTeam) {
+    throw new Error("Equipe selecionada não encontrada.");
   }
 
   // Impede que o último SuperAdmin se desative ou remova seu próprio perfil de SuperAdmin
@@ -387,6 +531,7 @@ export async function updateTeamMemberAccessService(
     const updated = await tx.user.update({
       where: { id: input.userId },
       data: {
+        teamId: targetTeam.id,
         role: input.role,
         deliveryGroup: input.deliveryGroup,
         jobTitle: input.jobTitle,
@@ -412,7 +557,7 @@ export async function updateTeamMemberAccessService(
         event: AuthEventType.USER_ROLE_UPDATED,
         ipAddress,
         userAgent,
-        details: `Acesso atualizado para ${input.role} | Equipe: ${input.deliveryGroup} | Ativo: ${input.isActive}.`,
+        details: `Equipe: ${targetTeam.name} | Setor: ${input.deliveryGroup} | Permissão: ${input.role} | Ativo: ${input.isActive}.`,
       },
     });
 
@@ -462,49 +607,83 @@ export async function unlockUserAccountService(
 export async function getTeamManagementMetricsService(): Promise<TeamManagementMetricsDTO> {
   const now = new Date();
 
-  const [rawUsers, rawAuditLogs, activeSessionsCount, blockedAttemptsCount] =
-    await Promise.all([
-      prisma.user.findMany({
-        include: {
-          sessions: {
-            where: {
-              revokedAt: null,
-              expiresAt: { gt: now },
-            },
-            select: { id: true },
+  const [
+    rawTeams,
+    rawUsers,
+    rawAuditLogs,
+    activeSessionsCount,
+    blockedAttemptsCount,
+  ] = await Promise.all([
+    prisma.team.findMany({
+      include: {
+        _count: {
+          select: {
+            users: true,
+            budgetResources: true,
+            transactions: true,
           },
         },
-        orderBy: [{ role: "asc" }, { name: "asc" }],
-      }),
-      prisma.authAuditLog.findMany({
-        include: {
-          user: {
-            select: { name: true },
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.user.findMany({
+      include: {
+        team: {
+          select: { id: true, name: true },
+        },
+        sessions: {
+          where: {
+            revokedAt: null,
+            expiresAt: { gt: now },
           },
+          select: { id: true },
         },
-        orderBy: { createdAt: "desc" },
-        take: 40,
-      }),
-      prisma.session.count({
-        where: {
-          revokedAt: null,
-          expiresAt: { gt: now },
+      },
+      orderBy: [{ role: "asc" }, { name: "asc" }],
+    }),
+    prisma.authAuditLog.findMany({
+      include: {
+        user: {
+          select: { name: true },
         },
-      }),
-      prisma.authAuditLog.count({
-        where: {
-          event: {
-            in: [AuthEventType.LOGIN_FAILED, AuthEventType.ACCOUNT_LOCKED],
-          },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 40,
+    }),
+    prisma.session.count({
+      where: {
+        revokedAt: null,
+        expiresAt: { gt: now },
+      },
+    }),
+    prisma.authAuditLog.count({
+      where: {
+        event: {
+          in: [AuthEventType.LOGIN_FAILED, AuthEventType.ACCOUNT_LOCKED],
         },
-      }),
-    ]);
+      },
+    }),
+  ]);
+
+  const teams: TeamDTO[] = rawTeams.map((t) => ({
+    id: t.id,
+    name: t.name,
+    slug: t.slug,
+    schoolOrOrg: t.schoolOrOrg,
+    isActive: t.isActive,
+    membersCount: t._count.users,
+    resourcesCount: t._count.budgetResources,
+    transactionsCount: t._count.transactions,
+    createdAt: t.createdAt.toISOString(),
+  }));
 
   const members: TeamMemberDTO[] = rawUsers.map((u) => ({
     id: u.id,
     name: u.name,
     email: u.email,
     role: u.role,
+    teamId: u.teamId,
+    teamName: u.team?.name ?? null,
     deliveryGroup: u.deliveryGroup,
     jobTitle: u.jobTitle,
     isActive: u.isActive,
@@ -528,9 +707,11 @@ export async function getTeamManagementMetricsService(): Promise<TeamManagementM
   }));
 
   return {
+    teams,
     members,
     auditLogs,
     stats: {
+      totalTeams: teams.length,
       totalMembers: members.length,
       activeMembers: members.filter((m) => m.isActive && !m.isLocked).length,
       activeSessions: activeSessionsCount,

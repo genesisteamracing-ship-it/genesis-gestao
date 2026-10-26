@@ -37,33 +37,33 @@ import { Input } from "@/components/ui/input";
 
 const DEMO_ACCOUNTS = [
   {
-    label: "SuperAdmin (Visão Global + /equipe)",
+    label: "SuperAdmin (Gerencia Equipes em /equipe)",
     email: "superadmin@genesisracing.com",
-    team: "Todas as Equipes",
+    team: "Acesso Global",
     badge: "default" as const,
   },
   {
-    label: "Equipe Manufatura & CNC",
-    email: "manufatura@genesisracing.com",
-    team: "Só vê Manufatura",
+    label: "Lucas — Setor Manufatura & CNC",
+    email: "lucas@genesisracing.com",
+    team: "Equipe Gênesis",
     badge: "purple" as const,
   },
   {
-    label: "Equipe Engenharia & CAD",
-    email: "engenharia@genesisracing.com",
-    team: "Só vê Engenharia",
-    badge: "success" as const,
+    label: "Beatriz — Setor Marketing & Patrocínio",
+    email: "beatriz@genesisracing.com",
+    team: "Equipe Gênesis",
+    badge: "purple" as const,
   },
   {
-    label: "Equipe Marketing & Patrocínio",
-    email: "marketing@genesisracing.com",
-    team: "Só vê Marketing",
-    badge: "warning" as const,
+    label: "Carlos — Setor Manufatura & CNC",
+    email: "carlos@alpharacing.com",
+    team: "Equipe Alpha",
+    badge: "magenta" as const,
   },
   {
-    label: "Equipe Pit Display & Estande",
-    email: "pitdisplay@genesisracing.com",
-    team: "Só vê Pit Display",
+    label: "Marina — Setor Engenharia & CAD",
+    email: "marina@alpharacing.com",
+    team: "Equipe Alpha",
     badge: "magenta" as const,
   },
 ] as const;
@@ -117,8 +117,8 @@ export function LoginForm() {
               Acesso Seguro à Plataforma
             </CardTitle>
             <CardDescription className="text-sm text-[#606060]">
-              Informe seu e-mail corporativo e senha para acessar os dados da sua
-              equipe.
+              Informe seu e-mail corporativo e senha para acessar os dados e setores
+              da sua equipe.
             </CardDescription>
           </div>
 
@@ -148,7 +148,7 @@ export function LoginForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>E-mail da Equipe</FormLabel>
+                    <FormLabel>E-mail do Integrante</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
@@ -204,12 +204,12 @@ export function LoginForm() {
             </form>
           </Form>
 
-          {/* Painel de Contas Seed para testar SuperAdmin e Isolamento de Equipes */}
+          {/* Painel de Contas Seed para testar Equipe Gênesis vs Equipe Alpha */}
           <div className="space-y-2.5 border-t border-[#E8E8E8] pt-4">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#606060]">
               <span className="inline-flex items-center gap-1.5">
                 <Users className="h-3.5 w-3.5 text-[#4880FF]" />
-                Testar Perfis & Isolamento de Equipe
+                Testar Equipe Gênesis vs Equipe Alpha
               </span>
               <span className="font-mono text-[11px] text-[#202224]/60">
                 Senha: Genesis@2026

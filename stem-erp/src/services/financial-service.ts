@@ -7,6 +7,7 @@ import type {
 } from "@/lib/validations/financial";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type {
+  ActiveTeamSummaryDTO,
   BudgetResourceDTO,
   CashFlowMonthPoint,
   CashFlowSummaryDTO,
@@ -27,17 +28,42 @@ const ALL_DELIVERY_GROUPS: DeliveryGroup[] = [
 ];
 
 /**
- * Resolve o escopo de equipe do usuário logado:
- * - SUPER_ADMIN: vê todas as equipes (undefined)
- * - Outros perfis: vê estritamente sua própria equipe (user.deliveryGroup)
+ * Resolve o ID da equipe ativa para o usuário autenticado.
+ * - Integrante de Equipe (Equipe Gênesis, Equipe Alpha): vê estritamente sua própria equipe (user.teamId).
+ *   Dentro da sua equipe, todos os 5 setores (Engenharia, Manufatura, Pit Display, Marketing, Gestão) se veem!
+ * - SUPER_ADMIN: vê a equipe ativa selecionada ou a primeira equipe ativa do banco.
  */
-export function resolveTeamScope(
+export async function resolveActiveTeam(
   user?: AuthenticatedUserDTO | null
-): DeliveryGroup | undefined {
-  if (!user || user.role === UserRole.SUPER_ADMIN) {
-    return undefined;
+): Promise<{
+  activeTeam: ActiveTeamSummaryDTO;
+  availableTeams: ActiveTeamSummaryDTO[];
+}> {
+  const allTeams = await prisma.team.findMany({
+    where: { isActive: true },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      schoolOrOrg: true,
+    },
+  });
+
+  if (allTeams.length === 0) {
+    throw new Error("Nenhuma equipe ativa encontrada no banco de dados.");
   }
-  return user.deliveryGroup ?? undefined;
+
+  const matchedTeam =
+    allTeams.find((t) => t.id === user?.teamId) ?? allTeams[0];
+
+  const availableTeams =
+    !user || user.role === UserRole.SUPER_ADMIN ? allTeams : [matchedTeam];
+
+  return {
+    activeTeam: matchedTeam,
+    availableTeams,
+  };
 }
 
 /**
@@ -85,7 +111,7 @@ export function calculateCashFlowTimeline(
 }
 
 /**
- * Função utilitária pura: Cálculo do Cronograma Físico-Financeiro por DeliveryGroup e Mês
+ * Função utilitária pura: Cálculo do Cronograma Físico-Financeiro pelos 5 Setores Internos da Equipe
  */
 export function calculatePhysicalFinancialSchedule(
   budgetResources: Pick<
@@ -95,14 +121,9 @@ export function calculatePhysicalFinancialSchedule(
   transactions: Pick<
     TransactionDTO,
     "deliveryGroup" | "referenceMonth" | "type" | "amountCents"
-  >[],
-  scopedDeliveryGroup?: DeliveryGroup
+  >[]
 ): DeliveryGroupScheduleRow[] {
-  const targetGroups = scopedDeliveryGroup
-    ? [scopedDeliveryGroup]
-    : ALL_DELIVERY_GROUPS;
-
-  return targetGroups.map((deliveryGroup) => {
+  return ALL_DELIVERY_GROUPS.map((deliveryGroup) => {
     const months = PROJECT_MONTHS.map((month) => {
       const plannedCents = budgetResources
         .filter(
@@ -163,10 +184,11 @@ export function calculatePhysicalFinancialSchedule(
 }
 
 /**
- * Gera código sequencial ORC-XXX com base nos registros existentes
+ * Gera código sequencial ORC-XXX isolado por Equipe (teamId)
  */
-async function generateNextBudgetCode(): Promise<string> {
+async function generateNextBudgetCode(teamId: string): Promise<string> {
   const existingCodes = await prisma.budgetResource.findMany({
+    where: { teamId },
     select: { code: true },
   });
 
@@ -185,11 +207,26 @@ async function generateNextBudgetCode(): Promise<string> {
   return `ORC-${String(nextNum).padStart(3, "0")}`;
 }
 
-export async function createBudgetResourceService(input: CreateBudgetResourceInput) {
-  const code = await generateNextBudgetCode();
+export async function createBudgetResourceService(
+  teamId: string,
+  input: CreateBudgetResourceInput
+) {
+  const category = await prisma.category.findFirst({
+    where: {
+      id: input.categoryId,
+      teamId,
+    },
+  });
+
+  if (!category) {
+    throw new Error("A categoria selecionada não pertence à sua equipe.");
+  }
+
+  const code = await generateNextBudgetCode(teamId);
 
   return prisma.budgetResource.create({
     data: {
+      teamId,
       code,
       deliveryGroup: input.deliveryGroup,
       categoryId: input.categoryId,
@@ -203,11 +240,37 @@ export async function createBudgetResourceService(input: CreateBudgetResourceInp
   });
 }
 
-export async function createTransactionService(input: CreateTransactionInput) {
+export async function createTransactionService(
+  teamId: string,
+  input: CreateTransactionInput
+) {
+  const category = await prisma.category.findFirst({
+    where: {
+      id: input.categoryId,
+      teamId,
+    },
+  });
+
+  if (!category) {
+    throw new Error("A categoria selecionada não pertence à sua equipe.");
+  }
+
   const cleanBudgetResourceId =
     input.budgetResourceId && input.budgetResourceId !== "NONE"
       ? input.budgetResourceId
       : null;
+
+  if (cleanBudgetResourceId) {
+    const resource = await prisma.budgetResource.findFirst({
+      where: {
+        id: cleanBudgetResourceId,
+        teamId,
+      },
+    });
+    if (!resource) {
+      throw new Error("O recurso orçamentário selecionado não pertence à sua equipe.");
+    }
+  }
 
   const cleanDocRef =
     input.documentRef && input.documentRef.trim().length > 0
@@ -218,6 +281,7 @@ export async function createTransactionService(input: CreateTransactionInput) {
     return prisma.$transaction(async (tx) => {
       const originEntry = await tx.transaction.create({
         data: {
+          teamId,
           date: input.date,
           referenceMonth: input.referenceMonth,
           type: TransactionType.ORIGIN,
@@ -233,6 +297,7 @@ export async function createTransactionService(input: CreateTransactionInput) {
 
       const applicationEntry = await tx.transaction.create({
         data: {
+          teamId,
           date: input.date,
           referenceMonth: input.referenceMonth,
           type: TransactionType.APPLICATION,
@@ -252,6 +317,7 @@ export async function createTransactionService(input: CreateTransactionInput) {
 
   const transaction = await prisma.transaction.create({
     data: {
+      teamId,
       date: input.date,
       referenceMonth: input.referenceMonth,
       type: input.type,
@@ -274,6 +340,8 @@ const FALLBACK_SYSTEM_USER: AuthenticatedUserDTO = {
   name: "SuperAdmin Genesis",
   email: "superadmin@genesisracing.com",
   role: UserRole.SUPER_ADMIN,
+  teamId: null,
+  teamName: "Equipe Gênesis",
   deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT,
   jobTitle: "Team Principal & SuperAdmin",
 };
@@ -282,19 +350,19 @@ export async function getDashboardMetricsService(
   currentUser?: AuthenticatedUserDTO | null
 ): Promise<DashboardMetricsDTO> {
   const effectiveUser = currentUser ?? FALLBACK_SYSTEM_USER;
-  const scopedDeliveryGroup = resolveTeamScope(effectiveUser);
+  const { activeTeam, availableTeams } = await resolveActiveTeam(effectiveUser);
 
-  const whereScope = scopedDeliveryGroup
-    ? { deliveryGroup: scopedDeliveryGroup }
-    : undefined;
+  // Isolamento Multi-Equipe: filtra estritamente pelo teamId da Equipe ativa!
+  // Dentro da equipe, todos os 5 setores (Engenharia, Manufatura, Pit Display, Marketing, Gestão) se veem.
+  const whereTeam = { teamId: activeTeam.id };
 
   const [rawCategories, rawBudgetResources, rawTransactions] = await Promise.all([
     prisma.category.findMany({
-      where: whereScope,
+      where: whereTeam,
       orderBy: [{ deliveryGroup: "asc" }, { name: "asc" }],
     }),
     prisma.budgetResource.findMany({
-      where: whereScope,
+      where: whereTeam,
       include: {
         category: true,
         transactions: {
@@ -305,7 +373,7 @@ export async function getDashboardMetricsService(
       orderBy: [{ plannedMonth: "asc" }, { code: "asc" }],
     }),
     prisma.transaction.findMany({
-      where: whereScope,
+      where: whereTeam,
       include: {
         category: true,
         budgetResource: {
@@ -368,8 +436,7 @@ export async function getDashboardMetricsService(
   const cashFlow = calculateCashFlowTimeline(transactions);
   const schedule = calculatePhysicalFinancialSchedule(
     budgetResources,
-    transactions,
-    scopedDeliveryGroup
+    transactions
   );
 
   const totalPlannedBudgetCents = budgetResources.reduce(
@@ -387,7 +454,13 @@ export async function getDashboardMetricsService(
   };
 
   return {
-    currentUser: effectiveUser,
+    currentUser: {
+      ...effectiveUser,
+      teamId: activeTeam.id,
+      teamName: activeTeam.name,
+    },
+    activeTeam,
+    availableTeams,
     kpis,
     cashFlow,
     schedule,

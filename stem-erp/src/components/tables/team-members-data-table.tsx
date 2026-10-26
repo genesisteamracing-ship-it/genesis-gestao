@@ -24,7 +24,7 @@ import { DELIVERY_GROUP_LABELS, USER_ROLE_LABELS } from "@/lib/constants";
 import { userRoleValues } from "@/lib/validations/auth";
 import { deliveryGroupValues } from "@/lib/validations/financial";
 import { formatDateBR } from "@/lib/utils";
-import type { TeamMemberDTO } from "@/types/auth";
+import type { TeamDTO, TeamMemberDTO } from "@/types/auth";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,7 @@ import {
 import { EditMemberDialog } from "@/components/modals/edit-member-dialog";
 
 interface TeamMembersDataTableProps {
+  teams: TeamDTO[];
   members: TeamMemberDTO[];
 }
 
@@ -64,7 +65,10 @@ function getRoleBadgeVariant(role: TeamMemberDTO["role"]): BadgeProps["variant"]
   }
 }
 
-export function TeamMembersDataTable({ members }: TeamMembersDataTableProps) {
+export function TeamMembersDataTable({
+  teams,
+  members,
+}: TeamMembersDataTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [isPendingUnlock, startTransition] = React.useTransition();
@@ -104,16 +108,33 @@ export function TeamMembersDataTable({ members }: TeamMembersDataTableProps) {
         ),
       },
       {
+        id: "teamId",
+        accessorFn: (row) => row.teamId ?? "NONE",
+        header: "EQUIPE (ISOLADA)",
+        filterFn: "equalsString",
+        cell: ({ row }) => (
+          <Badge
+            variant={
+              row.original.teamName?.toLowerCase().includes("alpha")
+                ? "magenta"
+                : "purple"
+            }
+          >
+            {row.original.teamName ?? "Sem Equipe"}
+          </Badge>
+        ),
+      },
+      {
         id: "deliveryGroup",
         accessorFn: (row) => row.deliveryGroup ?? "NONE",
-        header: "EQUIPE & CARGO",
+        header: "SETOR INTERNO & CARGO",
         filterFn: "equalsString",
         cell: ({ row }) => (
           <div className="space-y-0.5">
             <div className="font-semibold text-[#202224]">
               {row.original.deliveryGroup
                 ? DELIVERY_GROUP_LABELS[row.original.deliveryGroup]
-                : "Visão Global"}
+                : "Todos os Setores"}
             </div>
             <div className="text-xs text-[#606060]">
               {row.original.jobTitle || "Integrante"}
@@ -174,7 +195,7 @@ export function TeamMembersDataTable({ members }: TeamMembersDataTableProps) {
         header: "AÇÕES DO SUPERADMIN",
         cell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-2">
-            <EditMemberDialog member={row.original} />
+            <EditMemberDialog member={row.original} teams={teams} />
             {(row.original.isLocked || row.original.failedLoginAttempts > 0) && (
               <Button
                 variant="outline"
@@ -191,7 +212,7 @@ export function TeamMembersDataTable({ members }: TeamMembersDataTableProps) {
         ),
       },
     ],
-    [handleUnlock, isPendingUnlock]
+    [handleUnlock, isPendingUnlock, teams]
   );
 
   const table = useReactTable({
@@ -214,6 +235,8 @@ export function TeamMembersDataTable({ members }: TeamMembersDataTableProps) {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  const selectedTeamId =
+    (table.getColumn("teamId")?.getFilterValue() as string) ?? "ALL";
   const selectedDeliveryGroup =
     (table.getColumn("deliveryGroup")?.getFilterValue() as string) ?? "ALL";
   const selectedRole =
@@ -244,6 +267,29 @@ export function TeamMembersDataTable({ members }: TeamMembersDataTableProps) {
 
           <div className="flex items-center border-r border-[#D5D5D5] bg-white">
             <Select
+              value={selectedTeamId}
+              onValueChange={(val) =>
+                table
+                  .getColumn("teamId")
+                  ?.setFilterValue(val === "ALL" ? undefined : val)
+              }
+            >
+              <SelectTrigger className="h-full min-w-[160px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+                <SelectValue placeholder="Equipe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todas as Equipes</SelectItem>
+                {teams.map((team) => (
+                  <SelectItem key={team.id} value={team.id}>
+                    {team.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
+            <Select
               value={selectedDeliveryGroup}
               onValueChange={(val) =>
                 table
@@ -251,11 +297,11 @@ export function TeamMembersDataTable({ members }: TeamMembersDataTableProps) {
                   ?.setFilterValue(val === "ALL" ? undefined : val)
               }
             >
-              <SelectTrigger className="h-full min-w-[170px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
-                <SelectValue placeholder="Equipe" />
+              <SelectTrigger className="h-full min-w-[165px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+                <SelectValue placeholder="Setor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todas as Equipes</SelectItem>
+                <SelectItem value="ALL">Todos os Setores</SelectItem>
                 {deliveryGroupValues.map((group) => (
                   <SelectItem key={group} value={group}>
                     {DELIVERY_GROUP_LABELS[group]}
@@ -274,7 +320,7 @@ export function TeamMembersDataTable({ members }: TeamMembersDataTableProps) {
                   ?.setFilterValue(val === "ALL" ? undefined : val)
               }
             >
-              <SelectTrigger className="h-full min-w-[165px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+              <SelectTrigger className="h-full min-w-[155px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
                 <SelectValue placeholder="Permissão" />
               </SelectTrigger>
               <SelectContent>
@@ -297,7 +343,7 @@ export function TeamMembersDataTable({ members }: TeamMembersDataTableProps) {
                   ?.setFilterValue(val === "ALL" ? undefined : val)
               }
             >
-              <SelectTrigger className="h-full min-w-[140px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+              <SelectTrigger className="h-full min-w-[135px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -322,7 +368,7 @@ export function TeamMembersDataTable({ members }: TeamMembersDataTableProps) {
           </button>
         </div>
 
-        <div className="relative min-w-[260px]">
+        <div className="relative min-w-[250px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
           <Input
             placeholder="Buscar por nome, e-mail ou cargo..."

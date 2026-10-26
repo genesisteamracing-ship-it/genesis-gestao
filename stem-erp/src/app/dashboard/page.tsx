@@ -1,4 +1,3 @@
-import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
@@ -12,20 +11,17 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const metrics = await getDashboardMetricsAction();
-  const isSuperAdmin = metrics.currentUser.role === "SUPER_ADMIN";
-  const subtitle = isSuperAdmin
-    ? "Visão Global consolidada de todas as equipes da competição STEM Racing"
-    : `Visão exclusiva da equipe ${
-        metrics.currentUser.deliveryGroup
-          ? DELIVERY_GROUP_LABELS[metrics.currentUser.deliveryGroup]
-          : "Geral"
-      }`;
+  const teamLabel = metrics.activeTeam.schoolOrOrg
+    ? `${metrics.activeTeam.name} (${metrics.activeTeam.schoolOrOrg})`
+    : metrics.activeTeam.name;
 
   return (
     <DashboardShell
-      title="Dashboard"
-      subtitle={subtitle}
+      title={`Dashboard — ${metrics.activeTeam.name}`}
+      subtitle={`Dados exclusivos da ${teamLabel} • Todos os 5 setores internos da equipe`}
       currentUser={metrics.currentUser}
+      activeTeam={metrics.activeTeam}
+      availableTeams={metrics.availableTeams}
       categories={metrics.categories}
       budgetResources={metrics.budgetResources}
     >
@@ -35,7 +31,7 @@ export default async function DashboardPage() {
       {/* Visão 1: Fluxo de Caixa na Linha do Tempo */}
       <CashFlowTimeline cashFlow={metrics.cashFlow} />
 
-      {/* Visão 2: Cronograma Físico-Financeiro */}
+      {/* Visão 2: Cronograma Físico-Financeiro dos 5 Setores da Equipe */}
       <PhysicalFinancialSchedule schedule={metrics.schedule} />
 
       {/* Visão 3: Plano de Recursos e Auditoria com filtro segmentado e paginação */}
@@ -43,7 +39,7 @@ export default async function DashboardPage() {
         <Tabs defaultValue="auditoria" className="w-full">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-xl font-bold text-[#202224]">
-              Detalhamento Auditável
+              Detalhamento Auditável ({metrics.activeTeam.name})
             </h2>
             <TabsList className="bg-white border border-[#D5D5D5]">
               <TabsTrigger

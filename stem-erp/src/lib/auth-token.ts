@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import type { DeliveryGroup, UserRole } from "@prisma/client";
 
 export const SESSION_COOKIE_NAME = "stem_erp_session";
+export const ACTIVE_TEAM_COOKIE_NAME = "stem_erp_active_team";
 export const SESSION_DURATION_SECONDS = 60 * 60 * 8; // 8 horas
 
 export interface SessionTokenPayload {
@@ -10,6 +11,8 @@ export interface SessionTokenPayload {
   name: string;
   email: string;
   role: UserRole;
+  teamId: string | null;
+  teamName: string | null;
   deliveryGroup: DeliveryGroup | null;
   jobTitle: string | null;
 }
@@ -28,6 +31,8 @@ export async function signSessionToken(
     name: payload.name,
     email: payload.email,
     role: payload.role,
+    teamId: payload.teamId,
+    teamName: payload.teamName,
     deliveryGroup: payload.deliveryGroup,
     jobTitle: payload.jobTitle,
   })
@@ -57,6 +62,8 @@ export async function verifySessionToken(
       name: String(payload.name ?? ""),
       email: String(payload.email),
       role: payload.role as UserRole,
+      teamId: payload.teamId ? String(payload.teamId) : null,
+      teamName: payload.teamName ? String(payload.teamName) : null,
       deliveryGroup: (payload.deliveryGroup as DeliveryGroup | null) ?? null,
       jobTitle: payload.jobTitle ? String(payload.jobTitle) : null,
     };

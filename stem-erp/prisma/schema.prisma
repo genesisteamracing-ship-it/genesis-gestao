@@ -9,11 +9,11 @@ generator client {
 }
 
 enum DeliveryGroup {
-  ENGINEERING_CAD     // Engenharia & CAD
-  MANUFACTURING_CNC   // Manufatura & CNC
-  PIT_DISPLAY         // Pit Display & Estande
-  MARKETING_SPONSOR   // Marketing & Patrocínio
-  PROJECT_MANAGEMENT  // Gestão do Projeto
+  ENGINEERING_CAD     // Setor: Engenharia & CAD
+  MANUFACTURING_CNC   // Setor: Manufatura & CNC
+  PIT_DISPLAY         // Setor: Pit Display & Estande
+  MARKETING_SPONSOR   // Setor: Marketing & Patrocínio
+  PROJECT_MANAGEMENT  // Setor: Gestão do Projeto
 }
 
 enum AcquisitionStrategy {
@@ -36,10 +36,10 @@ enum TrackingMethod {
 }
 
 enum UserRole {
-  SUPER_ADMIN         // Controle Total + Gestão de Membros e Equipes
+  SUPER_ADMIN         // Administrador Global da Plataforma (Cria Equipes e Usuários)
   FINANCE_MANAGER     // Diretor Financeiro da Equipe
-  TEAM_LEAD           // Líder / Integrante da Equipe
-  AUDITOR             // Juiz / Auditor (Somente Leitura)
+  TEAM_LEAD           // Líder de Setor / Integrante da Equipe
+  AUDITOR             // Juiz / Auditor da Equipe (Somente Leitura)
 }
 
 enum AuthEventType {
@@ -50,45 +50,70 @@ enum AuthEventType {
   SESSION_REVOKED
   USER_CREATED
   USER_ROLE_UPDATED
+  TEAM_CREATED
 }
 
-// 1. Categorias de Custo/Receita
+// 0. Equipes da Competição (Ex: Equipe Gênesis, Equipe Alpha)
+model Team {
+  id              String           @id @default(cuid())
+  name            String           @unique // Ex: Equipe Gênesis, Equipe Alpha
+  slug            String           @unique // Ex: equipe-genesis, equipe-alpha
+  schoolOrOrg     String?          // Ex: SENAI / Escuderia Gênesis
+  isActive        Boolean          @default(true)
+  users           User[]
+  categories      Category[]
+  budgetResources BudgetResource[]
+  transactions    Transaction[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+// 1. Categorias de Custo/Receita (Isoladas por Equipe, organizadas por Setor)
 model Category {
   id            String           @id @default(cuid())
-  name          String           @unique // Ex: Matéria-Prima, Usinagem, Uniformes, Aporte Ouro
-  deliveryGroup DeliveryGroup
+  teamId        String
+  team          Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  name          String           // Ex: Matéria-Prima, Usinagem, Uniformes, Aporte Ouro
+  deliveryGroup DeliveryGroup    // Setor interno da equipe
   budgetItems   BudgetResource[]
   transactions  Transaction[]
   createdAt     DateTime         @default(now())
+
+  @@unique([teamId, name])
 }
 
-// 2. Planejamento de Recursos e Orçamento (PREVISTO)
+// 2. Planejamento de Recursos e Orçamento (PREVISTO — Isolado por Equipe)
 model BudgetResource {
   id                  String              @id @default(cuid())
-  code                String              @unique // Ex: ORC-001
-  deliveryGroup       DeliveryGroup
+  teamId              String
+  team                Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  code                String              // Ex: ORC-001 (sequencial por Equipe)
+  deliveryGroup       DeliveryGroup       // Setor interno da equipe
   categoryId          String
   category            Category            @relation(fields: [categoryId], references: [id])
   resourceName        String              // Ex: Blocos de Poliuretano Oficial
   acquisitionStrategy AcquisitionStrategy
   allocatedTo         String              // Responsável (Ex: Líder de Manufatura)
-  plannedMonth        Int                 // 1 a 6 (ou 1 a 12 referente ao ciclo do projeto)
+  plannedMonth        Int                 // 1 a 6
   utilizationForecast Int                 // 0 a 100 (%)
   plannedAmountCents  Int                 // Valor previsto em centavos
   transactions        Transaction[]       // Transações reais atreladas a este item planejado
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
-  @@index([deliveryGroup, plannedMonth])
+  @@unique([teamId, code])
+  @@index([teamId, deliveryGroup, plannedMonth])
 }
 
-// 3. Lançamentos Financeiros e Fluxo de Caixa (REALIZADO)
+// 3. Lançamentos Financeiros e Fluxo de Caixa (REALIZADO — Isolado por Equipe)
 model Transaction {
   id               String          @id @default(cuid())
+  teamId           String
+  team             Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
   date             DateTime        // Data real do fato gerador
   referenceMonth   Int             // Mês na linha do tempo do projeto (1 a 6)
   type             TransactionType // ORIGIN (Ganho) ou APPLICATION (Despesa)
-  deliveryGroup    DeliveryGroup
+  deliveryGroup    DeliveryGroup   // Setor interno da equipe
   categoryId       String
   category         Category        @relation(fields: [categoryId], references: [id])
   budgetResourceId String?         // Opcional: vincula o gasto diretamente a um item do orçamento
@@ -99,8 +124,8 @@ model Transaction {
   amountCents      Int             // Valor realizado em centavos
   createdAt        DateTime        @default(now())
 
-  @@index([referenceMonth, type])
-  @@index([deliveryGroup, referenceMonth])
+  @@index([teamId, referenceMonth, type])
+  @@index([teamId, deliveryGroup, referenceMonth])
 }
 
 // 4. Usuários / Integrantes da Plataforma
@@ -110,8 +135,10 @@ model User {
   email               String          @unique
   passwordHash        String
   role                UserRole        @default(TEAM_LEAD)
-  jobTitle            String?         // Ex: Engenheiro de Manufatura CNC
-  deliveryGroup       DeliveryGroup?  // Equipe à qual pertence (Isolamento de Dados)
+  teamId              String?         // Equipe à qual pertence (Ex: Equipe Gênesis ou Equipe Alpha)
+  team                Team?           @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  deliveryGroup       DeliveryGroup?  // Setor/Área de atuação dentro da equipe
+  jobTitle            String?         // Ex: Líder de Manufatura CNC
   isActive            Boolean         @default(true)
   failedLoginAttempts Int             @default(0)
   lockedUntil         DateTime?       // Bloqueio automático anti-força bruta
@@ -122,7 +149,7 @@ model User {
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
-  @@index([role, deliveryGroup])
+  @@index([teamId, role])
 }
 
 // 5. Sessões Ativas (Controle Stateful + Revogação Remota via Cookie httpOnly)
