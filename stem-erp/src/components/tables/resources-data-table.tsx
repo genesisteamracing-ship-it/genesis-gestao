@@ -246,121 +246,23 @@ export function ResourcesDataTable({ resources }: ResourcesDataTableProps) {
   }
 
   return (
-    <div id="tabela-recursos" className="space-y-5">
-      {/* Barra de Filtros Segmentada estilo tabela.png + Busca & Exportação */}
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="inline-flex flex-wrap items-stretch overflow-hidden rounded-xl border border-[#D5D5D5] bg-[#F9F9FB] shadow-2xs">
-          {/* Ícone Funil */}
-          <div className="flex items-center justify-center border-r border-[#D5D5D5] bg-white px-5 py-3">
-            <Filter className="h-4 w-4 text-[#202224]" />
-          </div>
-
-          {/* Label Filter By */}
-          <div className="flex items-center border-r border-[#D5D5D5] bg-white px-5 py-3 text-sm font-bold text-[#202224]">
-            Filtrar Por
-          </div>
-
-          {/* Select Mês */}
-          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
-            <Select
-              value={selectedMonth}
-              onValueChange={(val) =>
-                table
-                  .getColumn("plannedMonth")
-                  ?.setFilterValue(val === "ALL" ? undefined : val)
-              }
-            >
-              <SelectTrigger className="h-full min-w-[130px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
-                <SelectValue placeholder="Mês" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todos os Meses</SelectItem>
-                {PROJECT_MONTHS.map((m) => (
-                  <SelectItem key={m} value={String(m)}>
-                    {PROJECT_MONTH_LABELS[m]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Select Grupo de Entrega */}
-          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
-            <Select
-              value={selectedDeliveryGroup}
-              onValueChange={(val) =>
-                table
-                  .getColumn("deliveryGroup")
-                  ?.setFilterValue(val === "ALL" ? undefined : val)
-              }
-            >
-              <SelectTrigger className="h-full min-w-[175px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
-                <SelectValue placeholder="Grupo de Entrega" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Grupo de Entrega</SelectItem>
-                {deliveryGroupValues.map((group) => (
-                  <SelectItem key={group} value={group}>
-                    {DELIVERY_GROUP_LABELS[group]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Select Estratégia */}
-          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
-            <Select
-              value={selectedStrategy}
-              onValueChange={(val) =>
-                table
-                  .getColumn("acquisitionStrategy")
-                  ?.setFilterValue(val === "ALL" ? undefined : val)
-              }
-            >
-              <SelectTrigger className="h-full min-w-[180px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
-                <SelectValue placeholder="Tipo de Aquisição" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Status / Aquisição</SelectItem>
-                {acquisitionStrategyValues.map((strategy) => (
-                  <SelectItem key={strategy} value={strategy}>
-                    {ACQUISITION_STRATEGY_LABELS[strategy]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Botão Reset Filter em vermelho coral */}
-          <button
-            type="button"
-            onClick={() => {
-              setColumnFilters([]);
-              setGlobalFilter("");
-            }}
-            className="flex items-center gap-2 bg-white px-5 py-3 text-sm font-semibold text-[#EA0234] transition-colors hover:bg-red-50/60 cursor-pointer"
-          >
-            <RotateCcw className="h-4 w-4" />
-            <span>Resetar Filtro</span>
-          </button>
+    <div id="tabela-recursos" className="space-y-4">
+      {/* 1. Busca rápida + Exportação ocupando 100% da largura no topo */}
+      <div className="flex w-full flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
+          <Input
+            placeholder="Buscar recurso ou código..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="h-11 w-full rounded-xl border-[#D5D5D5] bg-white pl-10 text-sm"
+          />
         </div>
-
-        {/* Busca rápida + Exportação */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="relative min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
-            <Input
-              placeholder="Buscar recurso ou código..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="h-10 rounded-xl border-[#D5D5D5] bg-white pl-9"
-            />
-          </div>
+        <div className="flex items-center gap-2.5 shrink-0">
           <Button
             variant="outline"
             onClick={handleExportCsv}
-            className="h-10 rounded-xl border-[#D5D5D5] bg-white font-semibold text-[#202224]"
+            className="h-11 rounded-xl border-[#D5D5D5] bg-white font-semibold text-[#202224] px-4"
           >
             <Download className="h-4 w-4" />
             <span>Exportar CSV</span>
@@ -368,12 +270,110 @@ export function ResourcesDataTable({ resources }: ResourcesDataTableProps) {
           <Button
             variant="outline"
             onClick={triggerPortfolioPdfPrint}
-            className="h-10 rounded-xl border-[#D5D5D5] bg-white font-semibold text-[#202224]"
+            className="h-11 rounded-xl border-[#D5D5D5] bg-white font-semibold text-[#202224] px-4"
           >
             <FileText className="h-4 w-4" />
             <span>Relatório PDF</span>
           </Button>
         </div>
+      </div>
+
+      {/* 2. Barra de Filtros Segmentada ocupando 100% da largura */}
+      <div className="flex w-full flex-wrap items-stretch overflow-hidden rounded-xl border border-[#D5D5D5] bg-[#F9F9FB] shadow-2xs">
+        {/* Ícone Funil */}
+        <div className="flex items-center justify-center border-r border-[#D5D5D5] bg-white px-5 py-3 shrink-0">
+          <Filter className="h-4 w-4 text-[#202224]" />
+        </div>
+
+        {/* Label Filter By */}
+        <div className="flex items-center border-r border-[#D5D5D5] bg-white px-5 py-3 text-sm font-bold text-[#202224] shrink-0">
+          Filtrar Por
+        </div>
+
+        {/* Select Mês */}
+        <div className="flex flex-1 min-w-[140px] items-center border-r border-[#D5D5D5] bg-white">
+          <Select
+            value={selectedMonth}
+            onValueChange={(val) =>
+              table
+                .getColumn("plannedMonth")
+                ?.setFilterValue(val === "ALL" ? undefined : val)
+            }
+          >
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos os Meses</SelectItem>
+              {PROJECT_MONTHS.map((m) => (
+                <SelectItem key={m} value={String(m)}>
+                  {PROJECT_MONTH_LABELS[m]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Select Grupo de Entrega */}
+        <div className="flex flex-1 min-w-[170px] items-center border-r border-[#D5D5D5] bg-white">
+          <Select
+            value={selectedDeliveryGroup}
+            onValueChange={(val) =>
+              table
+                .getColumn("deliveryGroup")
+                ?.setFilterValue(val === "ALL" ? undefined : val)
+            }
+          >
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+              <SelectValue placeholder="Grupo de Entrega" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Grupo de Entrega</SelectItem>
+              {deliveryGroupValues.map((group) => (
+                <SelectItem key={group} value={group}>
+                  {DELIVERY_GROUP_LABELS[group]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Select Estratégia */}
+        <div className="flex flex-1 min-w-[170px] items-center border-r border-[#D5D5D5] bg-white">
+          <Select
+            value={selectedStrategy}
+            onValueChange={(val) =>
+              table
+                .getColumn("acquisitionStrategy")
+                ?.setFilterValue(val === "ALL" ? undefined : val)
+            }
+          >
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+              <SelectValue placeholder="Tipo de Aquisição" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Status / Aquisição</SelectItem>
+              {acquisitionStrategyValues.map((strategy) => (
+                <SelectItem key={strategy} value={strategy}>
+                  {ACQUISITION_STRATEGY_LABELS[strategy]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Botão Reset Filter em vermelho coral */}
+        <button
+          type="button"
+          onClick={() => {
+            setColumnFilters([]);
+            setGlobalFilter("");
+          }}
+          className="flex items-center gap-2 bg-white px-5 py-3 text-sm font-semibold text-[#EA0234] transition-colors hover:bg-red-50/60 cursor-pointer shrink-0"
+        >
+          <RotateCcw className="h-4 w-4" />
+          <span>Resetar Filtro</span>
+        </button>
       </div>
 
       {/* Card da Tabela estilo tabela.png */}

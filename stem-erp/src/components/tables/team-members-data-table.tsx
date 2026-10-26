@@ -253,130 +253,129 @@ export function TeamMembersDataTable({
     endRow > 0 && endRow < 10 ? `0${endRow}` : String(endRow);
 
   return (
-    <div className="space-y-5">
-      {/* Barra de Filtros Segmentada estilo tabela.png */}
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="inline-flex flex-wrap items-stretch overflow-hidden rounded-xl border border-[#D5D5D5] bg-[#F9F9FB] shadow-2xs">
-          <div className="flex items-center justify-center border-r border-[#D5D5D5] bg-white px-5 py-3">
-            <Filter className="h-4 w-4 text-[#202224]" />
-          </div>
+    <div className="space-y-4">
+      {/* 1. Busca rápida ocupando 100% da largura no topo */}
+      <div className="relative w-full">
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
+        <Input
+          placeholder="Buscar integrante por nome, e-mail ou cargo..."
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="h-11 w-full rounded-xl border-[#D5D5D5] bg-white pl-10 text-sm"
+        />
+      </div>
 
-          <div className="flex items-center border-r border-[#D5D5D5] bg-white px-5 py-3 text-sm font-bold text-[#202224]">
-            Filtrar Por
-          </div>
+      {/* 2. Barra de Filtros Segmentada ocupando 100% da largura */}
+      <div className="flex w-full flex-wrap items-stretch overflow-hidden rounded-xl border border-[#D5D5D5] bg-[#F9F9FB] shadow-2xs">
+        <div className="flex items-center justify-center border-r border-[#D5D5D5] bg-white px-5 py-3 shrink-0">
+          <Filter className="h-4 w-4 text-[#202224]" />
+        </div>
 
-          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
-            <Select
-              value={selectedTeamId}
-              onValueChange={(val) =>
-                table
-                  .getColumn("teamId")
-                  ?.setFilterValue(val === "ALL" ? undefined : val)
-              }
-            >
-              <SelectTrigger className="h-full min-w-[160px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
-                <SelectValue placeholder="Equipe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todas as Equipes</SelectItem>
-                {teams.map((team) => (
-                  <SelectItem key={team.id} value={team.id}>
-                    {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="flex items-center border-r border-[#D5D5D5] bg-white px-5 py-3 text-sm font-bold text-[#202224] shrink-0">
+          Filtrar Por
+        </div>
 
-          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
-            <Select
-              value={selectedDeliveryGroup}
-              onValueChange={(val) =>
-                table
-                  .getColumn("deliveryGroup")
-                  ?.setFilterValue(val === "ALL" ? undefined : val)
-              }
-            >
-              <SelectTrigger className="h-full min-w-[165px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
-                <SelectValue placeholder="Setor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todos os Setores</SelectItem>
-                {deliveryGroupValues.map((group) => (
-                  <SelectItem key={group} value={group}>
-                    {DELIVERY_GROUP_LABELS[group]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
-            <Select
-              value={selectedRole}
-              onValueChange={(val) =>
-                table
-                  .getColumn("role")
-                  ?.setFilterValue(val === "ALL" ? undefined : val)
-              }
-            >
-              <SelectTrigger className="h-full min-w-[155px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
-                <SelectValue placeholder="Permissão" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todas as Permissões</SelectItem>
-                {userRoleValues.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {USER_ROLE_LABELS[role]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center border-r border-[#D5D5D5] bg-white">
-            <Select
-              value={selectedStatus}
-              onValueChange={(val) =>
-                table
-                  .getColumn("accountStatus")
-                  ?.setFilterValue(val === "ALL" ? undefined : val)
-              }
-            >
-              <SelectTrigger className="h-full min-w-[135px] rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Status da Conta</SelectItem>
-                <SelectItem value="ACTIVE">Ativo</SelectItem>
-                <SelectItem value="LOCKED">Bloqueado (Anti-Invasão)</SelectItem>
-                <SelectItem value="INACTIVE">Inativo</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setColumnFilters([]);
-              setGlobalFilter("");
-            }}
-            className="flex items-center gap-2 bg-white px-5 py-3 text-sm font-semibold text-[#EA0234] transition-colors hover:bg-red-50/60 cursor-pointer"
+        <div className="flex flex-1 min-w-[150px] items-center border-r border-[#D5D5D5] bg-white">
+          <Select
+            value={selectedTeamId}
+            onValueChange={(val) =>
+              table
+                .getColumn("teamId")
+                ?.setFilterValue(val === "ALL" ? undefined : val)
+            }
           >
-            <RotateCcw className="h-4 w-4" />
-            <span>Resetar Filtro</span>
-          </button>
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+              <SelectValue placeholder="Equipe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas as Equipes</SelectItem>
+              {teams.map((team) => (
+                <SelectItem key={team.id} value={team.id}>
+                  {team.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="relative min-w-[250px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
-          <Input
-            placeholder="Buscar por nome, e-mail ou cargo..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-10 rounded-xl border-[#D5D5D5] bg-white pl-9"
-          />
+        <div className="flex flex-1 min-w-[160px] items-center border-r border-[#D5D5D5] bg-white">
+          <Select
+            value={selectedDeliveryGroup}
+            onValueChange={(val) =>
+              table
+                .getColumn("deliveryGroup")
+                ?.setFilterValue(val === "ALL" ? undefined : val)
+            }
+          >
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+              <SelectValue placeholder="Setor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos os Setores</SelectItem>
+              {deliveryGroupValues.map((group) => (
+                <SelectItem key={group} value={group}>
+                  {DELIVERY_GROUP_LABELS[group]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        <div className="flex flex-1 min-w-[150px] items-center border-r border-[#D5D5D5] bg-white">
+          <Select
+            value={selectedRole}
+            onValueChange={(val) =>
+              table
+                .getColumn("role")
+                ?.setFilterValue(val === "ALL" ? undefined : val)
+            }
+          >
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+              <SelectValue placeholder="Permissão" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas as Permissões</SelectItem>
+              {userRoleValues.map((role) => (
+                <SelectItem key={role} value={role}>
+                  {USER_ROLE_LABELS[role]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-1 min-w-[140px] items-center border-r border-[#D5D5D5] bg-white">
+          <Select
+            value={selectedStatus}
+            onValueChange={(val) =>
+              table
+                .getColumn("accountStatus")
+                ?.setFilterValue(val === "ALL" ? undefined : val)
+            }
+          >
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Status da Conta</SelectItem>
+              <SelectItem value="ACTIVE">Ativo</SelectItem>
+              <SelectItem value="LOCKED">Bloqueado (Anti-Invasão)</SelectItem>
+              <SelectItem value="INACTIVE">Inativo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setColumnFilters([]);
+            setGlobalFilter("");
+          }}
+          className="flex items-center gap-2 bg-white px-5 py-3 text-sm font-semibold text-[#EA0234] transition-colors hover:bg-red-50/60 cursor-pointer shrink-0"
+        >
+          <RotateCcw className="h-4 w-4" />
+          <span>Resetar Filtro</span>
+        </button>
       </div>
 
       {/* Card da Tabela */}
