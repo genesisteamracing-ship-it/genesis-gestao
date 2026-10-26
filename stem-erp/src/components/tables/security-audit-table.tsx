@@ -106,7 +106,7 @@ export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
                       {log.ipAddress ?? "127.0.0.1"}
                     </TableCell>
                     <TableCell className="py-3.5 px-5 text-xs text-[#606060]">
-                      {log.details ?? "—"}
+                      {log.details ?? "-"}
                     </TableCell>
                   </TableRow>
                 ))

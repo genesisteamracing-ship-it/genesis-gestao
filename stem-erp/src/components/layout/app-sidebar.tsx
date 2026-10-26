@@ -49,10 +49,10 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
   return (
     <aside
       aria-label="Menu Lateral"
-      className="hidden w-60 shrink-0 flex-col border-r border-[#E8E8E8] bg-white lg:flex select-none"
+      className="hidden w-60 shrink-0 flex-col border-r border-[#E8E8E8] bg-white lg:flex select-none h-screen sticky top-0"
     >
-      {/* Logo Topo estilo DashStack */}
-      <div className="flex h-[70px] items-center justify-center px-6">
+      {/* Logo Topo */}
+      <div className="flex h-[70px] shrink-0 items-center justify-center px-6 border-b border-[#E8E8E8]">
         <Link href="/dashboard" className="text-xl font-extrabold tracking-tight">
           <span className="text-[#4880FF]">Genesis</span>
           <span className="text-[#202224]">Gestão</span>

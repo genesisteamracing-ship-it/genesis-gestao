@@ -103,7 +103,7 @@ export function TransactionsDataTable({
             </div>
             {row.original.budgetResourceCode && (
               <div className="text-xs text-[#606060]">
-                Vínculo: {row.original.budgetResourceCode} —{" "}
+                Vínculo: {row.original.budgetResourceCode} |{" "}
                 {row.original.budgetResourceName}
               </div>
             )}

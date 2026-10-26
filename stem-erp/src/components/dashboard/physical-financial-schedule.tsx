@@ -115,7 +115,7 @@ export function PhysicalFinancialSchedule({
                         >
                           {m.plannedCents > 0
                             ? formatCurrencyFromCents(m.plannedCents)
-                            : "—"}
+                            : "-"}
                         </TableCell>
                       ))}
                       <TableCell className="bg-[#FAFBFD] py-3.5 px-4 text-right font-mono text-xs font-semibold text-[#202224]">
@@ -178,7 +178,7 @@ export function PhysicalFinancialSchedule({
                           >
                             {m.realizedCents > 0
                               ? formatCurrencyFromCents(m.realizedCents)
-                              : "—"}
+                              : "-"}
                           </TableCell>
                         );
                       })}

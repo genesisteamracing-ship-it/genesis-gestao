@@ -24,8 +24,7 @@ export default async function EquipePage() {
 
   return (
     <DashboardShell
-      title="Equipes, Integrantes & Segurança (SuperAdmin)"
-      subtitle="Cadastre novas equipes (ex: Equipe Gênesis, Equipe Alpha), atribua integrantes a cada equipe e setor interno, e monitore sessões httpOnly"
+      title="Equipes & Integrantes"
       currentUser={financialMetrics.currentUser}
       activeTeam={financialMetrics.activeTeam}
       availableTeams={financialMetrics.availableTeams}
@@ -128,14 +127,9 @@ export default async function EquipePage() {
       {/* Painel das Equipes Competidoras (Isolamento Multi-Tenant) */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-[#202224]">
-              Equipes na Plataforma (Isolamento de Dados)
-            </h2>
-            <p className="text-xs text-[#606060]">
-              Cada equipe vê somente seus próprios recursos, lançamentos e cronograma. Dentro da mesma equipe, todos os 5 setores se veem.
-            </p>
-          </div>
+          <h2 className="text-lg font-bold text-[#202224]">
+            Equipes Cadastradas
+          </h2>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

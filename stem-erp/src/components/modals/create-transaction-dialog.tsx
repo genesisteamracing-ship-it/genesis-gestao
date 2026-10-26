@@ -210,9 +210,7 @@ export function CreateTransactionDialog({
 
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>
-            Lançar Transação Financeira — {currentUser?.teamName ?? "Equipe"}
-          </DialogTitle>
+          <DialogTitle>Lançar Transação</DialogTitle>
           <DialogDescription>
             Registre uma despesa (Aplicação) ou receita (Origem) auditável no livro
             caixa da sua equipe.
@@ -277,7 +275,7 @@ export function CreateTransactionDialog({
                       </SelectItem>
                       {budgetResources.map((b) => (
                         <SelectItem key={b.id} value={b.id}>
-                          {b.code} — {b.resourceName} (
+                          {b.code}: {b.resourceName} (
                           {formatCurrencyFromCents(b.plannedAmountCents)})
                         </SelectItem>
                       ))}

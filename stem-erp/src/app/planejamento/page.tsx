@@ -1,7 +1,5 @@
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { KpiCards } from "@/components/dashboard/kpi-cards";
-import { PhysicalFinancialSchedule } from "@/components/dashboard/physical-financial-schedule";
 import { ResourcesDataTable } from "@/components/tables/resources-data-table";
 import { CreateBudgetResourceDialog } from "@/components/modals/create-budget-resource-dialog";
 
@@ -12,8 +10,7 @@ export default async function PlanejamentoPage() {
 
   return (
     <DashboardShell
-      title={`Planejamento — ${metrics.activeTeam.name}`}
-      subtitle={`Orçamento e recursos planejados nos 5 setores internos da ${metrics.activeTeam.name}`}
+      title="Planejamento"
       currentUser={metrics.currentUser}
       activeTeam={metrics.activeTeam}
       availableTeams={metrics.availableTeams}
@@ -23,15 +20,11 @@ export default async function PlanejamentoPage() {
         <CreateBudgetResourceDialog
           categories={metrics.categories}
           currentUser={metrics.currentUser}
-          triggerLabel="+ Novo Recurso Planejado"
+          triggerLabel="+ Planejar Recurso"
         />
       }
     >
       <ResourcesDataTable resources={metrics.budgetResources} />
-
-      <KpiCards kpis={metrics.kpis} />
-
-      <PhysicalFinancialSchedule schedule={metrics.schedule} />
     </DashboardShell>
   );
 }

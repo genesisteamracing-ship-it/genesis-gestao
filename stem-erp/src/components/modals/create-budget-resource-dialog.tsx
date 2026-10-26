@@ -168,9 +168,7 @@ export function CreateBudgetResourceDialog({
 
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>
-            Planejar Recurso — {currentUser?.teamName ?? "Equipe"}
-          </DialogTitle>
+          <DialogTitle>Planejar Recurso</DialogTitle>
           <DialogDescription>
             Cadastre um recurso previsto nos setores da sua equipe. O código sequencial{" "}
             <span className="font-mono font-semibold text-slate-700">ORC-XXX</span> será

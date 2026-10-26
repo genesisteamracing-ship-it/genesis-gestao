@@ -10,14 +10,10 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const metrics = await getDashboardMetricsAction();
-  const teamLabel = metrics.activeTeam.schoolOrOrg
-    ? `${metrics.activeTeam.name} (${metrics.activeTeam.schoolOrOrg})`
-    : metrics.activeTeam.name;
 
   return (
     <DashboardShell
-      title={`Dashboard — ${metrics.activeTeam.name}`}
-      subtitle={`Dados exclusivos da ${teamLabel} • Todos os 5 setores internos da equipe`}
+      title="Dashboard"
       currentUser={metrics.currentUser}
       activeTeam={metrics.activeTeam}
       availableTeams={metrics.availableTeams}
@@ -39,13 +35,13 @@ export default async function DashboardPage() {
         </div>
       }
     >
-      {/* Topo: 4 KPI Cards no estilo DashStack (financial.png) */}
+      {/* Topo: 4 KPI Cards no estilo DashStack */}
       <KpiCards kpis={metrics.kpis} />
 
       {/* Visão 1: Fluxo de Caixa na Linha do Tempo */}
       <CashFlowTimeline cashFlow={metrics.cashFlow} />
 
-      {/* Visão 2: Cronograma Físico-Financeiro dos 5 Setores da Equipe */}
+      {/* Visão 2: Cronograma Físico-Financeiro */}
       <PhysicalFinancialSchedule schedule={metrics.schedule} />
     </DashboardShell>
   );

@@ -105,7 +105,7 @@ export function CreateTeamDialog() {
                   <FormLabel>Escola / Instituição / Escuderia</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ex: SESI / SENAI — Escuderia Beta"
+                      placeholder="Ex: SESI / SENAI, Escuderia Beta"
                       {...field}
                     />
                   </FormControl>
