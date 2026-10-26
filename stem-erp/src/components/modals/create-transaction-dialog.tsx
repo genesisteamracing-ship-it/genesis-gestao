@@ -211,10 +211,6 @@ export function CreateTransactionDialog({
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Lançar Transação</DialogTitle>
-          <DialogDescription>
-            Registre uma despesa (Aplicação) ou receita (Origem) auditável no livro
-            caixa da sua equipe.
-          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

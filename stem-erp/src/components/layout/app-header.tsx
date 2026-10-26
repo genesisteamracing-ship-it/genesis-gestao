@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface AppHeaderProps {
   currentUser: AuthenticatedUserDTO;
@@ -82,7 +83,7 @@ export function AppHeader({
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#E8E8E8] bg-white">
+    <header className="sticky top-0 z-30 border-b border-[#E8E8E8] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21] transition-colors">
       <div className="flex min-h-[70px] flex-wrap items-center justify-between gap-4 px-6 py-2.5 lg:px-8">
         {/* Logo Mobile + Indicador/Seletor de Equipe */}
         <div className="flex flex-1 items-center gap-4">
@@ -91,15 +92,15 @@ export function AppHeader({
             className="text-lg font-extrabold tracking-tight lg:hidden"
           >
             <span className="text-[#4880FF]">Genesis</span>
-            <span className="text-[#202224]">Gestão</span>
+            <span className="text-[#202224] dark:text-[#F5F6FA]">Gestão</span>
           </Link>
 
           {/* Seletor de Equipe (SuperAdmin) ou Badge de Isolamento Multi-Equipe */}
           <div className="flex items-center gap-2">
             {isSuperAdmin && availableTeams.length > 0 ? (
-              <div className="flex items-center gap-2 rounded-lg border border-[#D5D5D5] bg-[#F5F6FA] px-3 py-1">
+              <div className="flex items-center gap-2 rounded-lg border border-[#D5D5D5] dark:border-[#2E3138] bg-[#F5F6FA] dark:bg-[#202226] px-3 py-1">
                 <Flag className="h-3.5 w-3.5 text-[#4880FF]" />
-                <span className="text-xs font-bold text-[#606060]">
+                <span className="text-xs font-bold text-[#606060] dark:text-[#A0A0A0]">
                   Equipe Ativa:
                 </span>
                 <Select
@@ -107,7 +108,7 @@ export function AppHeader({
                   onValueChange={handleTeamChange}
                   disabled={isSwitchingTeam}
                 >
-                  <SelectTrigger className="h-7 w-[170px] border-0 bg-white px-2.5 text-xs font-bold text-[#202224] shadow-none">
+                  <SelectTrigger className="h-7 w-[170px] border-0 bg-white dark:bg-[#1B1D21] px-2.5 text-xs font-bold text-[#202224] dark:text-[#F5F6FA] shadow-none">
                     <SelectValue placeholder="Selecione a equipe" />
                   </SelectTrigger>
                   <SelectContent>
@@ -133,45 +134,47 @@ export function AppHeader({
           </div>
         </div>
 
-        {/* Perfil Autenticado com Dropdown Menu (Nome + Dropdown com Sair) */}
+        {/* Theme Toggle + Perfil Autenticado com Dropdown Menu */}
         <div className="flex items-center gap-3">
+          <ThemeToggle />
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-3 rounded-xl border border-transparent p-1.5 text-left transition-colors hover:border-[#E8E8E8] hover:bg-[#F5F6FA] focus:outline-none focus:ring-2 focus:ring-[#4880FF]/20 cursor-pointer"
+                className="flex items-center gap-3 rounded-xl border border-transparent p-1.5 text-left transition-colors hover:border-[#E8E8E8] dark:hover:border-[#2E3138] hover:bg-[#F5F6FA] dark:hover:bg-[#202226] focus:outline-none focus:ring-2 focus:ring-[#4880FF]/20 cursor-pointer"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#4880FF]/15 text-sm font-bold text-[#4880FF]">
                   {initials}
                 </div>
                 <div className="hidden text-left leading-tight md:block">
-                  <div className="text-sm font-bold text-[#202224]">
+                  <div className="text-sm font-bold text-[#202224] dark:text-[#F5F6FA]">
                     {currentUser.name}
                   </div>
-                  <div className="text-xs font-medium text-[#565656]">
+                  <div className="text-xs font-medium text-[#565656] dark:text-[#A0A0A0]">
                     {currentUser.teamName ?? "Global"} •{" "}
                     {currentUser.jobTitle || USER_ROLE_LABELS[currentUser.role]}
                   </div>
                 </div>
-                <ChevronDown className="h-4 w-4 text-[#202224]/50 transition-transform duration-200" />
+                <ChevronDown className="h-4 w-4 text-[#202224]/50 dark:text-[#F5F6FA]/50 transition-transform duration-200" />
               </button>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-bold leading-none text-[#202224]">
+                  <p className="text-sm font-bold leading-none text-[#202224] dark:text-[#F5F6FA]">
                     {currentUser.name}
                   </p>
-                  <p className="text-xs leading-none text-[#606060]">
+                  <p className="text-xs leading-none text-[#606060] dark:text-[#9CA3AF]">
                     {currentUser.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
 
-              <div className="px-3 py-2 text-xs text-[#606060] space-y-0.5">
-                <div className="flex items-center gap-1.5 font-medium text-[#202224]">
+              <div className="px-3 py-2 text-xs text-[#606060] dark:text-[#9CA3AF] space-y-0.5">
+                <div className="flex items-center gap-1.5 font-medium text-[#202224] dark:text-[#F5F6FA]">
                   <User className="h-3.5 w-3.5 text-[#4880FF]" />
                   <span>{USER_ROLE_LABELS[currentUser.role]}</span>
                 </div>
@@ -184,7 +187,7 @@ export function AppHeader({
                 <DropdownMenuItem asChild>
                   <button
                     type="submit"
-                    className="w-full text-[#EF3826] focus:bg-red-50 focus:text-[#EF3826] cursor-pointer"
+                    className="w-full text-[#EF3826] focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-[#EF3826] cursor-pointer"
                   >
                     <LogOut className="h-4 w-4 text-[#EF3826]" />
                     <span>Sair</span>
@@ -197,7 +200,7 @@ export function AppHeader({
       </div>
 
       {/* Barra de navegação rápida no Mobile */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E8E8E8] px-4 py-2 lg:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E8E8E8] dark:border-[#2E3138] px-4 py-2 lg:hidden">
         <div className="flex items-center gap-1.5">
           <Link
             href="/dashboard"
@@ -205,7 +208,7 @@ export function AppHeader({
               "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
               pathname === "/dashboard"
                 ? "bg-[#4880FF] text-white"
-                : "text-[#202224] hover:bg-[#F5F6FA]"
+                : "text-[#202224] dark:text-[#F5F6FA] hover:bg-[#F5F6FA] dark:hover:bg-[#202226]"
             )}
           >
             <LayoutDashboard className="h-3.5 w-3.5" />
@@ -217,7 +220,7 @@ export function AppHeader({
               "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
               pathname === "/planejamento"
                 ? "bg-[#4880FF] text-white"
-                : "text-[#202224] hover:bg-[#F5F6FA]"
+                : "text-[#202224] dark:text-[#F5F6FA] hover:bg-[#F5F6FA] dark:hover:bg-[#202226]"
             )}
           >
             <Layers className="h-3.5 w-3.5" />
@@ -229,7 +232,7 @@ export function AppHeader({
               "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
               pathname === "/lancamentos"
                 ? "bg-[#4880FF] text-white"
-                : "text-[#202224] hover:bg-[#F5F6FA]"
+                : "text-[#202224] dark:text-[#F5F6FA] hover:bg-[#F5F6FA] dark:hover:bg-[#202226]"
             )}
           >
             <ListOrdered className="h-3.5 w-3.5" />
@@ -242,7 +245,7 @@ export function AppHeader({
                 "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
                 pathname === "/equipe"
                   ? "bg-[#4880FF] text-white"
-                  : "text-[#202224] hover:bg-[#F5F6FA]"
+                  : "text-[#202224] dark:text-[#F5F6FA] hover:bg-[#F5F6FA] dark:hover:bg-[#202226]"
               )}
             >
               <Users className="h-3.5 w-3.5" />
@@ -254,7 +257,7 @@ export function AppHeader({
         <form action={logoutAction}>
           <button
             type="submit"
-            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#EF3826] hover:bg-red-50 cursor-pointer"
+            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#EF3826] hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Sair</span>

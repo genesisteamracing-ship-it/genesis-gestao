@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f5f6fa;
+  --foreground: #202224;
+}
+
+.dark {
+  --background: #121316;
+  --foreground: #f5f6fa;
 }
 
 @theme inline {
@@ -16,6 +23,110 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Animações fluidas para menus flutuantes e modais */
+@keyframes fluidDropdownIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fluidDropdownOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+}
+
+@keyframes fluidModalIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes fluidModalOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+}
+
+@keyframes fluidOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fluidOverlayOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pageFluidEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Suporte aos estados Radix UI */
+[data-radix-popper-content-wrapper] {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-state="open"].animate-in,
+[data-state="open"][data-side] {
+  animation: fluidDropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-state="closed"].animate-out {
+  animation: fluidDropdownOut 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Animação suave para os diálogos */
+div[role="dialog"][data-state="open"] {
+  animation: fluidModalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+div[role="dialog"][data-state="closed"] {
+  animation: fluidModalOut 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+/* Animação suave na transição de telas */
+.page-fluid-enter {
+  animation: pageFluidEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @media print {

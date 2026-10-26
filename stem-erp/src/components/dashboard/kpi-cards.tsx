@@ -38,14 +38,14 @@ export function KpiCards({ kpis }: KpiCardsProps) {
       className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4"
     >
       {/* Card 1: Orçamento Total Previsto (Estilo Total User - Lilás) */}
-      <Card className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
+      <Card className="rounded-2xl border-0 bg-white dark:bg-[#1B1D21] shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none">
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-[#202224]/70">
+              <p className="text-sm font-medium text-[#202224]/70 dark:text-[#F5F6FA]/70">
                 Orçamento Previsto
               </p>
-              <p className="mt-2.5 text-[26px] font-bold tracking-tight text-[#202224]">
+              <p className="mt-2.5 text-[26px] font-bold tracking-tight text-[#202224] dark:text-[#F5F6FA]">
                 {formatCurrencyFromCents(kpis.totalPlannedBudgetCents)}
               </p>
             </div>
@@ -59,20 +59,20 @@ export function KpiCards({ kpis }: KpiCardsProps) {
             <span className="font-semibold text-[#00B69B]">
               {kpis.totalResourcesCount} itens
             </span>
-            <span className="text-[#606060]">planejados em 6 meses</span>
+            <span className="text-[#606060] dark:text-[#9CA3AF]">planejados em 6 meses</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Card 2: Total Arrecadado / Origens (Estilo Total Sales - Verde Menta) */}
-      <Card className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
+      <Card className="rounded-2xl border-0 bg-white dark:bg-[#1B1D21] shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none">
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-[#202224]/70">
+              <p className="text-sm font-medium text-[#202224]/70 dark:text-[#F5F6FA]/70">
                 Total Arrecadado (Origens)
               </p>
-              <p className="mt-2.5 text-[26px] font-bold tracking-tight text-[#202224]">
+              <p className="mt-2.5 text-[26px] font-bold tracking-tight text-[#202224] dark:text-[#F5F6FA]">
                 {formatCurrencyFromCents(kpis.totalOriginsCents)}
               </p>
             </div>
@@ -86,20 +86,20 @@ export function KpiCards({ kpis }: KpiCardsProps) {
             <span className="font-semibold text-[#00B69B]">
               {fundingCoveragePercentage}%
             </span>
-            <span className="text-[#606060]">de cobertura do orçamento</span>
+            <span className="text-[#606060] dark:text-[#9CA3AF]">de cobertura do orçamento</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Card 3: Total Gasto / Aplicações (Estilo Total Order - Amarelo/Âmbar) */}
-      <Card className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
+      <Card className="rounded-2xl border-0 bg-white dark:bg-[#1B1D21] shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none">
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-[#202224]/70">
+              <p className="text-sm font-medium text-[#202224]/70 dark:text-[#F5F6FA]/70">
                 Total Gasto (Aplicações)
               </p>
-              <p className="mt-2.5 text-[26px] font-bold tracking-tight text-[#202224]">
+              <p className="mt-2.5 text-[26px] font-bold tracking-tight text-[#202224] dark:text-[#F5F6FA]">
                 {formatCurrencyFromCents(kpis.totalApplicationsCents)}
               </p>
             </div>
@@ -113,17 +113,17 @@ export function KpiCards({ kpis }: KpiCardsProps) {
             <span className="font-semibold text-[#F93C65]">
               {executionPercentage}%
             </span>
-            <span className="text-[#606060]">executado do orçamento</span>
+            <span className="text-[#606060] dark:text-[#9CA3AF]">executado do orçamento</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Card 4: Saldo em Caixa Atual (Estilo Total Pending - Pêssego/Coral) */}
-      <Card className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
+      <Card className="rounded-2xl border-0 bg-white dark:bg-[#1B1D21] shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none">
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-[#202224]/70">
+              <p className="text-sm font-medium text-[#202224]/70 dark:text-[#F5F6FA]/70">
                 Saldo em Caixa Atual
               </p>
               <p
@@ -154,7 +154,7 @@ export function KpiCards({ kpis }: KpiCardsProps) {
             >
               {marginPercentage}%
             </span>
-            <span className="text-[#606060]">
+            <span className="text-[#606060] dark:text-[#9CA3AF]">
               {isPositiveBalance ? "Margem positiva em caixa" : "Déficit acumulado"}
             </span>
           </div>

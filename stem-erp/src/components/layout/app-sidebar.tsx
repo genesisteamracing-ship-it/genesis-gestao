@@ -49,13 +49,13 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
   return (
     <aside
       aria-label="Menu Lateral"
-      className="hidden w-60 shrink-0 flex-col border-r border-[#E8E8E8] bg-white lg:flex select-none h-screen sticky top-0"
+      className="hidden w-60 shrink-0 flex-col border-r border-[#E8E8E8] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21] lg:flex select-none h-screen sticky top-0 transition-colors"
     >
       {/* Logo Topo */}
-      <div className="flex h-[70px] shrink-0 items-center justify-center px-6 border-b border-[#E8E8E8]">
+      <div className="flex h-[70px] shrink-0 items-center justify-center px-6 border-b border-[#E8E8E8] dark:border-[#2E3138]">
         <Link href="/dashboard" className="text-xl font-extrabold tracking-tight">
           <span className="text-[#4880FF]">Genesis</span>
-          <span className="text-[#202224]">Gestão</span>
+          <span className="text-[#202224] dark:text-[#F5F6FA]">Gestão</span>
         </Link>
       </div>
 
@@ -81,7 +81,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
                     "flex items-center gap-3.5 rounded-lg px-4 py-3 text-sm font-semibold transition-all",
                     isActive
                       ? "bg-[#4880FF] text-white shadow-xs"
-                      : "text-[#202224] hover:bg-[#F5F6FA]"
+                      : "text-[#202224] dark:text-[#D1D5DB] hover:bg-[#F5F6FA] dark:hover:bg-[#23262B] dark:hover:text-[#FFFFFF]"
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />

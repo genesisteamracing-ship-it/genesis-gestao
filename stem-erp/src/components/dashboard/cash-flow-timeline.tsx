@@ -49,21 +49,21 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
   return (
     <Card
       id="fluxo-caixa"
-      className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]"
+      className="rounded-2xl border-0 bg-white dark:bg-[#1B1D21] shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none"
     >
       <CardHeader className="p-7 pb-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle className="text-xl font-bold text-[#202224]">
+            <CardTitle className="text-xl font-bold text-[#202224] dark:text-[#F5F6FA]">
               Fluxo de Caixa na Linha do Tempo
             </CardTitle>
-            <CardDescription className="mt-1 text-xs text-[#606060]">
+            <CardDescription className="mt-1 text-xs text-[#606060] dark:text-[#9CA3AF]">
               Origens (Verde) vs. Aplicações (Vermelho) e evolução do Saldo Acumulado
               (Linha Azul DashStack)
             </CardDescription>
           </div>
 
-          <div className="inline-flex items-center gap-4 rounded-lg border border-[#D5D5D5]/80 bg-[#FCFDFD] px-4 py-2 text-xs font-semibold text-[#202224]/80">
+          <div className="inline-flex items-center gap-4 rounded-lg border border-[#D5D5D5]/80 dark:border-[#2E3138] bg-[#FCFDFD] dark:bg-[#202226] px-4 py-2 text-xs font-semibold text-[#202224]/80 dark:text-[#F5F6FA]/80">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-[#00B69B]" />
               (+) Origens
@@ -150,29 +150,29 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
         </div>
 
         {/* Tabela Matricial estilo Deals Details */}
-        <div className="overflow-hidden rounded-xl border border-[#E8E8E8]/80">
+        <div className="overflow-hidden rounded-xl border border-[#E8E8E8]/80 dark:border-[#2E3138]">
           <Table>
-            <TableHeader className="bg-[#F1F4F9] [&_tr]:border-0">
-              <TableRow className="hover:bg-[#F1F4F9]">
-                <TableHead className="min-w-[180px] py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-[#202224]">
+            <TableHeader className="bg-[#F1F4F9] dark:bg-[#202226] [&_tr]:border-0">
+              <TableRow className="hover:bg-[#F1F4F9] dark:hover:bg-[#202226]">
+                <TableHead className="min-w-[180px] py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-[#202224] dark:text-[#F5F6FA]">
                   Estrutura do Fluxo
                 </TableHead>
                 {cashFlow.months.map((m) => (
                   <TableHead
                     key={m.month}
-                    className="py-3.5 px-4 text-right text-xs font-bold uppercase tracking-wider text-[#202224]"
+                    className="py-3.5 px-4 text-right text-xs font-bold uppercase tracking-wider text-[#202224] dark:text-[#F5F6FA]"
                   >
                     {m.monthLabel}
                   </TableHead>
                 ))}
-                <TableHead className="py-3.5 px-5 text-right text-xs font-bold uppercase tracking-wider text-[#202224]">
+                <TableHead className="py-3.5 px-5 text-right text-xs font-bold uppercase tracking-wider text-[#202224] dark:text-[#F5F6FA]">
                   Total / Final
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {/* (+) Origens */}
-              <TableRow className="border-b border-[#E8E8E8]/70">
+              <TableRow className="border-b border-[#E8E8E8]/70 dark:border-[#2E3138]">
                 <TableCell className="py-4 px-5 font-semibold text-[#00B69B]">
                   (+) Origens
                 </TableCell>
@@ -190,7 +190,7 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
               </TableRow>
 
               {/* (-) Aplicações */}
-              <TableRow className="border-b border-[#E8E8E8]/70">
+              <TableRow className="border-b border-[#E8E8E8]/70 dark:border-[#2E3138]">
                 <TableCell className="py-4 px-5 font-semibold text-[#F93C65]">
                   (-) Aplicações
                 </TableCell>
@@ -208,8 +208,8 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
               </TableRow>
 
               {/* (=) Saldo Mensal */}
-              <TableRow className="border-b border-[#E8E8E8]/70 bg-[#FAFBFD]">
-                <TableCell className="py-4 px-5 font-semibold text-[#202224]">
+              <TableRow className="border-b border-[#E8E8E8]/70 dark:border-[#2E3138] bg-[#FAFBFD] dark:bg-[#202226]">
+                <TableCell className="py-4 px-5 font-semibold text-[#202224] dark:text-[#F5F6FA]">
                   (=) Saldo Mensal
                 </TableCell>
                 {cashFlow.months.map((m) => (
@@ -217,7 +217,7 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
                     key={m.month}
                     className={cn(
                       "py-4 px-4 text-right font-mono text-xs font-medium",
-                      m.netBalanceCents >= 0 ? "text-[#202224]" : "text-[#F93C65]"
+                      m.netBalanceCents >= 0 ? "text-[#202224] dark:text-[#F5F6FA]" : "text-[#F93C65]"
                     )}
                   >
                     {formatCurrencyFromCents(m.netBalanceCents)}

@@ -86,7 +86,7 @@ export function TransactionsDataTable({
         accessorFn: (row) => row.documentRef ?? row.budgetResourceCode ?? row.id.slice(0, 6),
         header: "ID / REF",
         cell: ({ row }) => (
-          <span className="font-mono text-sm font-semibold text-[#202224]">
+          <span className="font-mono text-sm font-semibold text-[#202224] dark:text-[#F5F6FA]">
             {row.original.documentRef ??
               row.original.budgetResourceCode ??
               row.original.id.slice(0, 7).toUpperCase()}
@@ -98,11 +98,11 @@ export function TransactionsDataTable({
         header: "DESCRIÇÃO",
         cell: ({ row }) => (
           <div className="space-y-0.5">
-            <div className="font-semibold text-[#202224]">
+            <div className="font-semibold text-[#202224] dark:text-[#F5F6FA]">
               {row.original.description}
             </div>
             {row.original.budgetResourceCode && (
-              <div className="text-xs text-[#606060]">
+              <div className="text-xs text-[#606060] dark:text-[#9CA3AF]">
                 Vínculo: {row.original.budgetResourceCode} |{" "}
                 {row.original.budgetResourceName}
               </div>
@@ -258,19 +258,19 @@ export function TransactionsDataTable({
       {/* 1. Busca rápida + Exportação ocupando 100% da largura no topo */}
       <div className="flex w-full flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40 dark:text-[#F5F6FA]/40" />
           <Input
             placeholder="Buscar descrição ou NF-e..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-11 w-full rounded-xl border-[#D5D5D5] bg-white pl-10 text-sm"
+            className="h-11 w-full rounded-xl border-[#D5D5D5] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21] pl-10 text-sm"
           />
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <Button
             variant="outline"
             onClick={handleExportCsv}
-            className="h-11 rounded-xl border-[#D5D5D5] bg-white font-semibold text-[#202224] px-4"
+            className="h-11 rounded-xl border-[#D5D5D5] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21] font-semibold text-[#202224] dark:text-[#F5F6FA] hover:bg-slate-50 dark:hover:bg-[#23262B] px-4"
           >
             <Download className="h-4 w-4" />
             <span>Exportar CSV</span>
@@ -278,7 +278,7 @@ export function TransactionsDataTable({
           <Button
             variant="outline"
             onClick={triggerPortfolioPdfPrint}
-            className="h-11 rounded-xl border-[#D5D5D5] bg-white font-semibold text-[#202224] px-4"
+            className="h-11 rounded-xl border-[#D5D5D5] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21] font-semibold text-[#202224] dark:text-[#F5F6FA] hover:bg-slate-50 dark:hover:bg-[#23262B] px-4"
           >
             <FileText className="h-4 w-4" />
             <span>Relatório PDF</span>
@@ -287,19 +287,19 @@ export function TransactionsDataTable({
       </div>
 
       {/* 2. Barra de Filtros Segmentada ocupando 100% da largura */}
-      <div className="flex w-full flex-wrap items-stretch overflow-hidden rounded-xl border border-[#D5D5D5] bg-[#F9F9FB] shadow-2xs">
+      <div className="flex w-full flex-wrap items-stretch overflow-hidden rounded-xl border border-[#D5D5D5] dark:border-[#2E3138] bg-[#F9F9FB] dark:bg-[#1B1D21] shadow-2xs">
         {/* Ícone Funil */}
-        <div className="flex items-center justify-center border-r border-[#D5D5D5] bg-white px-5 py-3 shrink-0">
-          <Filter className="h-4 w-4 text-[#202224]" />
+        <div className="flex items-center justify-center border-r border-[#D5D5D5] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21] px-5 py-3 shrink-0">
+          <Filter className="h-4 w-4 text-[#202224] dark:text-[#F5F6FA]" />
         </div>
 
         {/* Label Filter By */}
-        <div className="flex items-center border-r border-[#D5D5D5] bg-white px-5 py-3 text-sm font-bold text-[#202224] shrink-0">
+        <div className="flex items-center border-r border-[#D5D5D5] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21] px-5 py-3 text-sm font-bold text-[#202224] dark:text-[#F5F6FA] shrink-0">
           Filtrar Por
         </div>
 
         {/* Select Data / Mês */}
-        <div className="flex flex-1 min-w-[140px] items-center border-r border-[#D5D5D5] bg-white">
+        <div className="flex flex-1 min-w-[140px] items-center border-r border-[#D5D5D5] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21]">
           <Select
             value={selectedMonth}
             onValueChange={(val) =>
@@ -308,7 +308,7 @@ export function TransactionsDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white dark:bg-[#1B1D21] px-4 py-3 text-sm font-bold text-[#202224] dark:text-[#F5F6FA] shadow-none focus:ring-0">
               <SelectValue placeholder="Data / Mês" />
             </SelectTrigger>
             <SelectContent>
@@ -323,7 +323,7 @@ export function TransactionsDataTable({
         </div>
 
         {/* Select Grupo de Entrega */}
-        <div className="flex flex-1 min-w-[170px] items-center border-r border-[#D5D5D5] bg-white">
+        <div className="flex flex-1 min-w-[170px] items-center border-r border-[#D5D5D5] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21]">
           <Select
             value={selectedDeliveryGroup}
             onValueChange={(val) =>
@@ -332,7 +332,7 @@ export function TransactionsDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white dark:bg-[#1B1D21] px-4 py-3 text-sm font-bold text-[#202224] dark:text-[#F5F6FA] shadow-none focus:ring-0">
               <SelectValue placeholder="Grupo de Entrega" />
             </SelectTrigger>
             <SelectContent>
@@ -347,7 +347,7 @@ export function TransactionsDataTable({
         </div>
 
         {/* Select Método Comprobatório */}
-        <div className="flex flex-1 min-w-[170px] items-center border-r border-[#D5D5D5] bg-white">
+        <div className="flex flex-1 min-w-[170px] items-center border-r border-[#D5D5D5] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21]">
           <Select
             value={selectedTrackingMethod}
             onValueChange={(val) =>
@@ -356,7 +356,7 @@ export function TransactionsDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white dark:bg-[#1B1D21] px-4 py-3 text-sm font-bold text-[#202224] dark:text-[#F5F6FA] shadow-none focus:ring-0">
               <SelectValue placeholder="Comprovante" />
             </SelectTrigger>
             <SelectContent>
@@ -377,7 +377,7 @@ export function TransactionsDataTable({
             setColumnFilters([]);
             setGlobalFilter("");
           }}
-          className="flex items-center gap-2 bg-white px-5 py-3 text-sm font-semibold text-[#EA0234] transition-colors hover:bg-red-50/60 cursor-pointer shrink-0"
+          className="flex items-center gap-2 bg-white dark:bg-[#1B1D21] px-5 py-3 text-sm font-semibold text-[#EA0234] transition-colors hover:bg-red-50/60 dark:hover:bg-red-950/20 cursor-pointer shrink-0"
         >
           <RotateCcw className="h-4 w-4" />
           <span>Resetar Filtro</span>
@@ -385,15 +385,15 @@ export function TransactionsDataTable({
       </div>
 
       {/* Card da Tabela estilo tabela.png */}
-      <div className="overflow-hidden rounded-2xl border border-[#D5D5D5]/70 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.03)]">
+      <div className="overflow-hidden rounded-2xl border border-[#D5D5D5]/70 dark:border-[#2E3138] bg-white dark:bg-[#1B1D21] shadow-[0_6px_24px_-4px_rgba(16,24,40,0.03)]">
         <Table>
-          <TableHeader className="bg-[#FCFDFD] border-b border-[#D5D5D5]/70">
+          <TableHeader className="bg-[#FCFDFD] dark:bg-[#202226] border-b border-[#D5D5D5]/70 dark:border-[#2E3138]">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-[#FCFDFD]">
+              <TableRow key={headerGroup.id} className="hover:bg-[#FCFDFD] dark:hover:bg-[#202226]">
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="h-12 px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-[#202224]"
+                    className="h-12 px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-[#202224] dark:text-[#F5F6FA]"
                   >
                     {header.isPlaceholder
                       ? null
@@ -411,12 +411,12 @@ export function TransactionsDataTable({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="border-b border-[#D5D5D5]/50 hover:bg-[#F9F9FB]"
+                  className="border-b border-[#D5D5D5]/50 dark:border-[#2E3138] hover:bg-[#F9F9FB] dark:hover:bg-[#23262B]"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className="px-6 py-4 text-sm text-[#202224]"
+                      className="px-6 py-4 text-sm text-[#202224] dark:text-[#F5F6FA]"
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
@@ -430,7 +430,7 @@ export function TransactionsDataTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-28 text-center text-sm text-[#606060]"
+                  className="h-28 text-center text-sm text-[#606060] dark:text-[#9CA3AF]"
                 >
                   Nenhum lançamento encontrado para os filtros selecionados.
                 </TableCell>
@@ -442,17 +442,17 @@ export function TransactionsDataTable({
 
       {/* Paginação estilo tabela.png (Showing 1-09 of X + Botões < | >) */}
       <div className="flex items-center justify-between px-1 pt-1">
-        <p className="text-sm font-medium text-[#202224]/60">
+        <p className="text-sm font-medium text-[#202224]/60 dark:text-[#F5F6FA]/60">
           Mostrando {startRow}-{formattedEndRow} de {totalFiltered}
         </p>
 
-        <div className="inline-flex items-center overflow-hidden rounded-lg border border-[#D5D5D5] bg-[#FAFBFD] shadow-2xs">
+        <div className="inline-flex items-center overflow-hidden rounded-lg border border-[#D5D5D5] dark:border-[#2E3138] bg-[#FAFBFD] dark:bg-[#1B1D21] shadow-2xs">
           <button
             type="button"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
             aria-label="Página anterior"
-            className="flex h-8 w-10 items-center justify-center border-r border-[#D5D5D5] text-[#202224] transition-colors hover:bg-white disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="flex h-8 w-10 items-center justify-center border-r border-[#D5D5D5] dark:border-[#2E3138] text-[#202224] dark:text-[#F5F6FA] transition-colors hover:bg-white dark:hover:bg-[#23262B] disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -461,7 +461,7 @@ export function TransactionsDataTable({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
             aria-label="Próxima página"
-            className="flex h-8 w-10 items-center justify-center text-[#202224] transition-colors hover:bg-white disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="flex h-8 w-10 items-center justify-center text-[#202224] dark:text-[#F5F6FA] transition-colors hover:bg-white dark:hover:bg-[#23262B] disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
