@@ -43,25 +43,13 @@ const DEMO_ACCOUNTS = [
     badge: "default" as const,
   },
   {
-    label: "Lucas (Manufatura & CNC)",
-    email: "lucas@genesisracing.com",
-    team: "Equipe Gênesis",
-    badge: "purple" as const,
-  },
-  {
-    label: "Beatriz (Marketing & Patrocínio)",
-    email: "beatriz@genesisracing.com",
-    team: "Equipe Gênesis",
-    badge: "purple" as const,
-  },
-  {
-    label: "Carlos (Manufatura & CNC)",
+    label: "Carlos Eduardo (Finanças & Gestão)",
     email: "carlos@alpharacing.com",
     team: "Equipe Alpha",
     badge: "magenta" as const,
   },
   {
-    label: "Marina (Engenharia & CAD)",
+    label: "Marina Santos (Engenharia & CAD)",
     email: "marina@alpharacing.com",
     team: "Equipe Alpha",
     badge: "magenta" as const,

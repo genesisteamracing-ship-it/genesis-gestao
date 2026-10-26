@@ -54,9 +54,9 @@ async function ensureTeamCategories(teamId: string): Promise<Map<string, string>
 }
 
 async function main() {
-  console.log("🌱 Iniciando seed Multi-Equipe do STEM Racing Financial & Resource ERP...");
+  console.log("🌱 Iniciando seed Multi-Equipe: Gênesis ZERADA e Alpha com dados...");
 
-  // 1. Criar as Equipes: Equipe Gênesis e Equipe Alpha
+  // 1. Criar ou garantir as Equipes: Equipe Gênesis e Equipe Alpha
   const genesisTeam = await prisma.team.upsert({
     where: { slug: "equipe-genesis" },
     update: { name: "Equipe Gênesis", isActive: true },
@@ -79,18 +79,34 @@ async function main() {
     },
   });
 
-  console.log("✅ Equipes criadas: Equipe Gênesis e Equipe Alpha.");
+  console.log("✅ Equipes garantidas: Equipe Gênesis e Equipe Alpha.");
 
-  // 2. Criar categorias de todos os setores para cada Equipe
-  const genesisCats = await ensureTeamCategories(genesisTeam.id);
+  // 2. Garantir categorias estruturais para ambas as equipes
+  await ensureTeamCategories(genesisTeam.id);
   const alphaCats = await ensureTeamCategories(alphaTeam.id);
 
-  // 3. Seed de Usuários (SuperAdmin + Integrantes da Equipe Gênesis + Integrantes da Equipe Alpha)
+  // 3. LIMPEZA TOTAL DA EQUIPE GÊNESIS (deixar banco da Gênesis 100% zerado)
+  await prisma.transaction.deleteMany({
+    where: { teamId: genesisTeam.id },
+  });
+  await prisma.budgetResource.deleteMany({
+    where: { teamId: genesisTeam.id },
+  });
+  await prisma.user.deleteMany({
+    where: {
+      teamId: genesisTeam.id,
+      email: { not: "superadmin@genesisracing.com" },
+    },
+  });
+  console.log("🧹 Equipe Gênesis 100% zerada (0 recursos, 0 transações, sem outros integrantes).");
+
+  // 4. SuperAdmin único da plataforma
   const defaultPasswordHash = await bcrypt.hash("Genesis@2026", 12);
 
   const superAdmin = await prisma.user.upsert({
     where: { email: "superadmin@genesisracing.com" },
     update: {
+      name: "SuperAdmin Plataforma",
       role: UserRole.SUPER_ADMIN,
       teamId: genesisTeam.id,
       isActive: true,
@@ -107,33 +123,8 @@ async function main() {
     },
   });
 
-  const sampleUsers = [
-    // Integrantes da Equipe Gênesis
-    {
-      name: "Lucas Mendes (Gênesis)",
-      email: "lucas@genesisracing.com",
-      role: UserRole.TEAM_LEAD,
-      teamId: genesisTeam.id,
-      deliveryGroup: DeliveryGroup.MANUFACTURING_CNC,
-      jobTitle: "Líder de Manufatura & CNC",
-    },
-    {
-      name: "Sofia Albuquerque (Gênesis)",
-      email: "sofia@genesisracing.com",
-      role: UserRole.TEAM_LEAD,
-      teamId: genesisTeam.id,
-      deliveryGroup: DeliveryGroup.ENGINEERING_CAD,
-      jobTitle: "Engenheira Chefe CAD/CFD",
-    },
-    {
-      name: "Beatriz Costa (Gênesis)",
-      email: "beatriz@genesisracing.com",
-      role: UserRole.FINANCE_MANAGER,
-      teamId: genesisTeam.id,
-      deliveryGroup: DeliveryGroup.MARKETING_SPONSOR,
-      jobTitle: "Diretora Financeira & Marketing",
-    },
-    // Integrantes da Equipe Alpha
+  // 5. Integrantes da Equipe Alpha
+  const alphaUsers = [
     {
       name: "Carlos Eduardo (Alpha)",
       email: "carlos@alpharacing.com",
@@ -152,7 +143,7 @@ async function main() {
     },
   ];
 
-  for (const u of sampleUsers) {
+  for (const u of alphaUsers) {
     await prisma.user.upsert({
       where: { email: u.email },
       update: {
@@ -171,241 +162,9 @@ async function main() {
     });
   }
 
-  console.log("✅ SuperAdmin e integrantes da Equipe Gênesis e Equipe Alpha sincronizados.");
+  console.log("✅ SuperAdmin e integrantes da Equipe Alpha sincronizados.");
 
-  // 4. Dados Financeiros da Equipe Gênesis
-  const genesisBudgetCount = await prisma.budgetResource.count({
-    where: { teamId: genesisTeam.id },
-  });
-
-  if (genesisBudgetCount === 0) {
-    const genesisBudgets = [
-      {
-        teamId: genesisTeam.id,
-        code: "ORC-001",
-        deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT,
-        categoryId: genesisCats.get("Inscrição")!,
-        resourceName: "Taxa de Inscrição Nacional STEM Racing",
-        acquisitionStrategy: AcquisitionStrategy.FINANCIAL_SPONSOR,
-        allocatedTo: "Beatriz Costa",
-        plannedMonth: 1,
-        utilizationForecast: 100,
-        plannedAmountCents: 180000,
-      },
-      {
-        teamId: genesisTeam.id,
-        code: "ORC-002",
-        deliveryGroup: DeliveryGroup.ENGINEERING_CAD,
-        categoryId: genesisCats.get("Prototipagem Rápida & Impressão 3D")!,
-        resourceName: "Filamento fibra de carbono para asas dianteira/traseira",
-        acquisitionStrategy: AcquisitionStrategy.DIRECT_PURCHASE,
-        allocatedTo: "Sofia Albuquerque",
-        plannedMonth: 2,
-        utilizationForecast: 85,
-        plannedAmountCents: 65000,
-      },
-      {
-        teamId: genesisTeam.id,
-        code: "ORC-003",
-        deliveryGroup: DeliveryGroup.MANUFACTURING_CNC,
-        categoryId: genesisCats.get("Blocos Poliuretano")!,
-        resourceName: "Kit 6 Blocos de Poliuretano Oficial STEM Racing",
-        acquisitionStrategy: AcquisitionStrategy.DIRECT_PURCHASE,
-        allocatedTo: "Lucas Mendes",
-        plannedMonth: 2,
-        utilizationForecast: 100,
-        plannedAmountCents: 120000,
-      },
-      {
-        teamId: genesisTeam.id,
-        code: "ORC-004",
-        deliveryGroup: DeliveryGroup.MANUFACTURING_CNC,
-        categoryId: genesisCats.get("Usinagem CNC")!,
-        resourceName: "Horas de Centro de Usinagem CNC 4 Eixos",
-        acquisitionStrategy: AcquisitionStrategy.BARTER_PARTNERSHIP,
-        allocatedTo: "Lucas Mendes",
-        plannedMonth: 3,
-        utilizationForecast: 95,
-        plannedAmountCents: 150000,
-      },
-      {
-        teamId: genesisTeam.id,
-        code: "ORC-005",
-        deliveryGroup: DeliveryGroup.MANUFACTURING_CNC,
-        categoryId: genesisCats.get("Rolamentos & Componentes Mecânicos")!,
-        resourceName: "Rolamentos Cerâmicos Híbridos ABEC-9",
-        acquisitionStrategy: AcquisitionStrategy.DIRECT_PURCHASE,
-        allocatedTo: "Lucas Mendes",
-        plannedMonth: 3,
-        utilizationForecast: 100,
-        plannedAmountCents: 80000,
-      },
-      {
-        teamId: genesisTeam.id,
-        code: "ORC-006",
-        deliveryGroup: DeliveryGroup.PIT_DISPLAY,
-        categoryId: genesisCats.get("Estande MDF")!,
-        resourceName: "Estrutura Modular em MDF Naval + Corte Laser",
-        acquisitionStrategy: AcquisitionStrategy.FINANCIAL_SPONSOR,
-        allocatedTo: "Coordenador Pit Display",
-        plannedMonth: 4,
-        utilizationForecast: 90,
-        plannedAmountCents: 220000,
-      },
-      {
-        teamId: genesisTeam.id,
-        code: "ORC-007",
-        deliveryGroup: DeliveryGroup.MARKETING_SPONSOR,
-        categoryId: genesisCats.get("Uniformes")!,
-        resourceName: "Camisas Oficiais Dry-Fit e Jaquetas de Paddock (8 un)",
-        acquisitionStrategy: AcquisitionStrategy.OWN_FUNDS_RAFFLE,
-        allocatedTo: "Beatriz Costa",
-        plannedMonth: 5,
-        utilizationForecast: 100,
-        plannedAmountCents: 110000,
-      },
-      {
-        teamId: genesisTeam.id,
-        code: "ORC-008",
-        deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT,
-        categoryId: genesisCats.get("Logística & Hospedagem")!,
-        resourceName: "Transporte e Credenciamento Etapa Nacional",
-        acquisitionStrategy: AcquisitionStrategy.FINANCIAL_SPONSOR,
-        allocatedTo: "Beatriz Costa",
-        plannedMonth: 6,
-        utilizationForecast: 100,
-        plannedAmountCents: 250000,
-      },
-    ];
-
-    const createdGenesisBudgets = [];
-    for (const item of genesisBudgets) {
-      const created = await prisma.budgetResource.create({ data: item });
-      createdGenesisBudgets.push(created);
-    }
-
-    await prisma.transaction.createMany({
-      data: [
-        {
-          teamId: genesisTeam.id,
-          date: new Date("2026-05-05T10:00:00Z"),
-          referenceMonth: 1,
-          type: TransactionType.ORIGIN,
-          deliveryGroup: DeliveryGroup.MARKETING_SPONSOR,
-          categoryId: genesisCats.get("Patrocínio Ouro")!,
-          description: "Aporte Patrocínio Ouro - Agenesis Tech Corp (1ª Parcela)",
-          trackingMethod: TrackingMethod.SPONSOR_CONTRACT,
-          documentRef: "CONT-GEN-001",
-          amountCents: 500000,
-        },
-        {
-          teamId: genesisTeam.id,
-          date: new Date("2026-05-12T14:30:00Z"),
-          referenceMonth: 1,
-          type: TransactionType.APPLICATION,
-          deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT,
-          categoryId: genesisCats.get("Inscrição")!,
-          budgetResourceId: createdGenesisBudgets[0].id,
-          description: "Pagamento Inscrição Nacional STEM Racing (Equipe Gênesis)",
-          trackingMethod: TrackingMethod.BANK_PIX_STATEMENT,
-          documentRef: "PIX-GEN-8910",
-          amountCents: 180000,
-        },
-        {
-          teamId: genesisTeam.id,
-          date: new Date("2026-06-08T11:15:00Z"),
-          referenceMonth: 2,
-          type: TransactionType.APPLICATION,
-          deliveryGroup: DeliveryGroup.ENGINEERING_CAD,
-          categoryId: genesisCats.get("Prototipagem Rápida & Impressão 3D")!,
-          budgetResourceId: createdGenesisBudgets[1].id,
-          description: "Compra de Filamento PAHT-CF15 e Bicos Endurecidos",
-          trackingMethod: TrackingMethod.NFE,
-          documentRef: "NFe-0004921",
-          amountCents: 62000,
-        },
-        {
-          teamId: genesisTeam.id,
-          date: new Date("2026-06-18T16:00:00Z"),
-          referenceMonth: 2,
-          type: TransactionType.APPLICATION,
-          deliveryGroup: DeliveryGroup.MANUFACTURING_CNC,
-          categoryId: genesisCats.get("Blocos Poliuretano")!,
-          budgetResourceId: createdGenesisBudgets[2].id,
-          description: "Aquisição Lote Oficial Blocos Modelagem",
-          trackingMethod: TrackingMethod.NFE,
-          documentRef: "NFe-0019283",
-          amountCents: 120000,
-        },
-        {
-          teamId: genesisTeam.id,
-          date: new Date("2026-07-04T09:00:00Z"),
-          referenceMonth: 3,
-          type: TransactionType.ORIGIN,
-          deliveryGroup: DeliveryGroup.MARKETING_SPONSOR,
-          categoryId: genesisCats.get("Permuta / Apoio Técnico")!,
-          budgetResourceId: createdGenesisBudgets[3].id,
-          description: "[PERMUTA - ORIGEM] Parceria Técnica SENAI Usinagem CNC",
-          trackingMethod: TrackingMethod.SPONSOR_CONTRACT,
-          documentRef: "PARC-SENAI-03",
-          amountCents: 150000,
-        },
-        {
-          teamId: genesisTeam.id,
-          date: new Date("2026-07-04T09:05:00Z"),
-          referenceMonth: 3,
-          type: TransactionType.APPLICATION,
-          deliveryGroup: DeliveryGroup.MANUFACTURING_CNC,
-          categoryId: genesisCats.get("Usinagem CNC")!,
-          budgetResourceId: createdGenesisBudgets[3].id,
-          description: "[PERMUTA - APLICAÇÃO] Usinagem CNC 4 Eixos de 3 Protótipos",
-          trackingMethod: TrackingMethod.SPONSOR_CONTRACT,
-          documentRef: "PARC-SENAI-03",
-          amountCents: 150000,
-        },
-        {
-          teamId: genesisTeam.id,
-          date: new Date("2026-07-19T15:20:00Z"),
-          referenceMonth: 3,
-          type: TransactionType.APPLICATION,
-          deliveryGroup: DeliveryGroup.MANUFACTURING_CNC,
-          categoryId: genesisCats.get("Rolamentos & Componentes Mecânicos")!,
-          budgetResourceId: createdGenesisBudgets[4].id,
-          description: "Compra Rolamentos Cerâmicos de Baixo Atrito",
-          trackingMethod: TrackingMethod.NFE,
-          documentRef: "NFe-0083412",
-          amountCents: 95000,
-        },
-        {
-          teamId: genesisTeam.id,
-          date: new Date("2026-08-03T10:00:00Z"),
-          referenceMonth: 4,
-          type: TransactionType.ORIGIN,
-          deliveryGroup: DeliveryGroup.MARKETING_SPONSOR,
-          categoryId: genesisCats.get("Patrocínio Prata")!,
-          description: "Cota Patrocínio Prata - Metalúrgica Vanguarda",
-          trackingMethod: TrackingMethod.SPONSOR_CONTRACT,
-          documentRef: "CONT-2026-004",
-          amountCents: 280000,
-        },
-        {
-          teamId: genesisTeam.id,
-          date: new Date("2026-08-15T17:45:00Z"),
-          referenceMonth: 4,
-          type: TransactionType.APPLICATION,
-          deliveryGroup: DeliveryGroup.PIT_DISPLAY,
-          categoryId: genesisCats.get("Estande MDF")!,
-          budgetResourceId: createdGenesisBudgets[5].id,
-          description: "Chapas MDF Naval + Corte CNC + LED Totem Pit Display",
-          trackingMethod: TrackingMethod.NFE,
-          documentRef: "NFe-0038190",
-          amountCents: 210000,
-        },
-      ],
-    });
-  }
-
-  // 5. Dados Financeiros da Equipe Alpha (totalmente independentes!)
+  // 6. Dados Financeiros da Equipe Alpha (orçamentos e lançamentos)
   const alphaBudgetCount = await prisma.budgetResource.count({
     where: { teamId: alphaTeam.id },
   });
@@ -417,7 +176,7 @@ async function main() {
         code: "ORC-001",
         deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT,
         categoryId: alphaCats.get("Inscrição")!,
-        resourceName: "[Alpha] Inscrição Regional & Credenciamento",
+        resourceName: "Inscrição Regional & Credenciamento STEM Racing",
         acquisitionStrategy: AcquisitionStrategy.FINANCIAL_SPONSOR,
         allocatedTo: "Carlos Eduardo",
         plannedMonth: 1,
@@ -429,7 +188,7 @@ async function main() {
         code: "ORC-002",
         deliveryGroup: DeliveryGroup.ENGINEERING_CAD,
         categoryId: alphaCats.get("Softwares & Licenças CAD/CFD")!,
-        resourceName: "[Alpha] Cluster Simulação Aerodinâmica CFD Cloud",
+        resourceName: "Cluster de Simulação Aerodinâmica CFD Cloud",
         acquisitionStrategy: AcquisitionStrategy.BARTER_PARTNERSHIP,
         allocatedTo: "Marina Santos",
         plannedMonth: 2,
@@ -441,7 +200,7 @@ async function main() {
         code: "ORC-003",
         deliveryGroup: DeliveryGroup.MANUFACTURING_CNC,
         categoryId: alphaCats.get("Blocos Poliuretano")!,
-        resourceName: "[Alpha] Lote Blocos + Rodas em Alumínio 7075",
+        resourceName: "Lote Blocos Poliuretano + Rodas Alumínio 7075",
         acquisitionStrategy: AcquisitionStrategy.DIRECT_PURCHASE,
         allocatedTo: "Carlos Eduardo",
         plannedMonth: 3,
@@ -453,7 +212,7 @@ async function main() {
         code: "ORC-004",
         deliveryGroup: DeliveryGroup.MARKETING_SPONSOR,
         categoryId: alphaCats.get("Uniformes")!,
-        resourceName: "[Alpha] Kit Uniformes Equipe Alpha Motorsport",
+        resourceName: "Kit Uniformes Oficiais Equipe Alpha Motorsport",
         acquisitionStrategy: AcquisitionStrategy.FINANCIAL_SPONSOR,
         allocatedTo: "Marina Santos",
         plannedMonth: 4,
@@ -477,7 +236,7 @@ async function main() {
           type: TransactionType.ORIGIN,
           deliveryGroup: DeliveryGroup.MARKETING_SPONSOR,
           categoryId: alphaCats.get("Patrocínio Ouro")!,
-          description: "[Alpha] Patrocínio Master - Alpha Motors S/A",
+          description: "Patrocínio Master - Alpha Motors S/A (1ª Parcela)",
           trackingMethod: TrackingMethod.SPONSOR_CONTRACT,
           documentRef: "ALPHA-CONT-01",
           amountCents: 420000,
@@ -490,7 +249,7 @@ async function main() {
           deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT,
           categoryId: alphaCats.get("Inscrição")!,
           budgetResourceId: createdAlphaBudgets[0].id,
-          description: "[Alpha] Pagamento Inscrição Regional STEM Racing",
+          description: "Pagamento Inscrição Regional STEM Racing (Equipe Alpha)",
           trackingMethod: TrackingMethod.BANK_PIX_STATEMENT,
           documentRef: "ALPHA-PIX-101",
           amountCents: 180000,
@@ -503,7 +262,7 @@ async function main() {
           deliveryGroup: DeliveryGroup.MANUFACTURING_CNC,
           categoryId: alphaCats.get("Blocos Poliuretano")!,
           budgetResourceId: createdAlphaBudgets[2].id,
-          description: "[Alpha] Compra Blocos e Eixos de Titânio",
+          description: "Compra Blocos e Eixos de Titânio de Alta Precisão",
           trackingMethod: TrackingMethod.NFE,
           documentRef: "ALPHA-NFE-552",
           amountCents: 160000,
@@ -512,7 +271,7 @@ async function main() {
     });
   }
 
-  console.log("✅ Dados financeiros independentes para Equipe Gênesis e Equipe Alpha populados!");
+  console.log("✅ Dados da Equipe Alpha populados e prontos para teste!");
 }
 
 main()
