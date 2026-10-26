@@ -1,4 +1,12 @@
-import { PrismaClient, DeliveryGroup, AcquisitionStrategy, TransactionType, TrackingMethod } from "@prisma/client";
+import {
+  PrismaClient,
+  DeliveryGroup,
+  AcquisitionStrategy,
+  TransactionType,
+  TrackingMethod,
+  UserRole,
+} from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -23,6 +31,80 @@ const DEFAULT_CATEGORIES: Array<{ name: string; deliveryGroup: DeliveryGroup }> 
 async function main() {
   console.log("🌱 Iniciando seed do STEM Racing Financial & Resource ERP...");
 
+  // 1. Seed de Usuários (SuperAdmin + Líderes de cada Equipe)
+  const defaultPasswordHash = await bcrypt.hash("Genesis@2026", 12);
+
+  const superAdmin = await prisma.user.upsert({
+    where: { email: "superadmin@genesisracing.com" },
+    update: {
+      role: UserRole.SUPER_ADMIN,
+      isActive: true,
+    },
+    create: {
+      name: "SuperAdmin Genesis",
+      email: "superadmin@genesisracing.com",
+      passwordHash: defaultPasswordHash,
+      role: UserRole.SUPER_ADMIN,
+      jobTitle: "Team Principal & SuperAdmin",
+      deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT,
+      isActive: true,
+    },
+  });
+
+  const initialMembers = [
+    {
+      name: "Lucas Mendes",
+      email: "manufatura@genesisracing.com",
+      role: UserRole.TEAM_LEAD,
+      jobTitle: "Líder de Manufatura & CNC",
+      deliveryGroup: DeliveryGroup.MANUFACTURING_CNC,
+    },
+    {
+      name: "Sofia Albuquerque",
+      email: "engenharia@genesisracing.com",
+      role: UserRole.TEAM_LEAD,
+      jobTitle: "Engenheira Chefe CAD/CFD",
+      deliveryGroup: DeliveryGroup.ENGINEERING_CAD,
+    },
+    {
+      name: "Beatriz Costa",
+      email: "marketing@genesisracing.com",
+      role: UserRole.FINANCE_MANAGER,
+      jobTitle: "Diretora de Marketing & Patrocínios",
+      deliveryGroup: DeliveryGroup.MARKETING_SPONSOR,
+    },
+    {
+      name: "Gabriel Rocha",
+      email: "pitdisplay@genesisracing.com",
+      role: UserRole.TEAM_LEAD,
+      jobTitle: "Coordenador de Pit Display & Estande",
+      deliveryGroup: DeliveryGroup.PIT_DISPLAY,
+    },
+    {
+      name: "Auditor Oficial STEM",
+      email: "auditor@stemracing.com",
+      role: UserRole.AUDITOR,
+      jobTitle: "Juiz de Auditoria Financeira",
+      deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT,
+    },
+  ];
+
+  for (const member of initialMembers) {
+    await prisma.user.upsert({
+      where: { email: member.email },
+      update: {},
+      create: {
+        ...member,
+        passwordHash: defaultPasswordHash,
+        isActive: true,
+        createdById: superAdmin.id,
+      },
+    });
+  }
+
+  console.log("✅ SuperAdmin e integrantes iniciais das equipes sincronizados.");
+
+  // 2. Seed de Categorias
   const categoryMap = new Map<string, string>();
 
   for (const cat of DEFAULT_CATEGORIES) {
@@ -51,7 +133,7 @@ async function main() {
         allocatedTo: "Gerente de Projeto",
         plannedMonth: 1,
         utilizationForecast: 100,
-        plannedAmountCents: 180000, // R$ 1.800,00
+        plannedAmountCents: 180000,
       },
       {
         code: "ORC-002",
@@ -62,7 +144,7 @@ async function main() {
         allocatedTo: "Líder de Engenharia CAD",
         plannedMonth: 2,
         utilizationForecast: 85,
-        plannedAmountCents: 65000, // R$ 650,00
+        plannedAmountCents: 65000,
       },
       {
         code: "ORC-003",
@@ -73,7 +155,7 @@ async function main() {
         allocatedTo: "Líder de Manufatura",
         plannedMonth: 2,
         utilizationForecast: 100,
-        plannedAmountCents: 120000, // R$ 1.200,00
+        plannedAmountCents: 120000,
       },
       {
         code: "ORC-004",
@@ -84,7 +166,7 @@ async function main() {
         allocatedTo: "Líder de Manufatura",
         plannedMonth: 3,
         utilizationForecast: 95,
-        plannedAmountCents: 150000, // R$ 1.500,00
+        plannedAmountCents: 150000,
       },
       {
         code: "ORC-005",
@@ -95,7 +177,7 @@ async function main() {
         allocatedTo: "Engenheiro de Performance",
         plannedMonth: 3,
         utilizationForecast: 100,
-        plannedAmountCents: 80000, // R$ 800,00
+        plannedAmountCents: 80000,
       },
       {
         code: "ORC-006",
@@ -106,7 +188,7 @@ async function main() {
         allocatedTo: "Coordenador de Pit Display",
         plannedMonth: 4,
         utilizationForecast: 90,
-        plannedAmountCents: 220000, // R$ 2.200,00
+        plannedAmountCents: 220000,
       },
       {
         code: "ORC-007",
@@ -117,7 +199,7 @@ async function main() {
         allocatedTo: "Diretor de Marketing",
         plannedMonth: 5,
         utilizationForecast: 100,
-        plannedAmountCents: 110000, // R$ 1.100,00
+        plannedAmountCents: 110000,
       },
       {
         code: "ORC-008",
@@ -128,7 +210,7 @@ async function main() {
         allocatedTo: "Gerente de Projeto",
         plannedMonth: 6,
         utilizationForecast: 100,
-        plannedAmountCents: 250000, // R$ 2.500,00
+        plannedAmountCents: 250000,
       },
     ];
 
@@ -137,8 +219,6 @@ async function main() {
       const created = await prisma.budgetResource.create({ data: item });
       createdBudgets.push(created);
     }
-
-    console.log(`✅ ${createdBudgets.length} recursos orçamentários previstos criados.`);
 
     const existingTxCount = await prisma.transaction.count();
     if (existingTxCount === 0) {
@@ -153,7 +233,7 @@ async function main() {
             description: "Aporte Patrocínio Ouro - Agenesis Tech Corp (1ª Parcela)",
             trackingMethod: TrackingMethod.SPONSOR_CONTRACT,
             documentRef: "CONT-2026-001",
-            amountCents: 500000, // R$ 5.000,00
+            amountCents: 500000,
           },
           {
             date: new Date("2026-05-12T14:30:00Z"),
@@ -165,7 +245,7 @@ async function main() {
             description: "Pagamento Inscrição Nacional STEM Racing",
             trackingMethod: TrackingMethod.BANK_PIX_STATEMENT,
             documentRef: "PIX-E8910234",
-            amountCents: 180000, // R$ 1.800,00
+            amountCents: 180000,
           },
           {
             date: new Date("2026-06-08T11:15:00Z"),
@@ -177,7 +257,7 @@ async function main() {
             description: "Compra de Filamento PAHT-CF15 e Bicos Endurecidos",
             trackingMethod: TrackingMethod.NFE,
             documentRef: "NFe-0004921",
-            amountCents: 62000, // R$ 620,00
+            amountCents: 62000,
           },
           {
             date: new Date("2026-06-18T16:00:00Z"),
@@ -189,7 +269,7 @@ async function main() {
             description: "Aquisição Lote Oficial Blocos Modelagem",
             trackingMethod: TrackingMethod.NFE,
             documentRef: "NFe-0019283",
-            amountCents: 120000, // R$ 1.200,00
+            amountCents: 120000,
           },
           {
             date: new Date("2026-07-04T09:00:00Z"),
@@ -201,7 +281,7 @@ async function main() {
             description: "[PERMUTA - ORIGEM] Parceria Técnica SENAI Usinagem CNC",
             trackingMethod: TrackingMethod.SPONSOR_CONTRACT,
             documentRef: "PARC-SENAI-03",
-            amountCents: 150000, // R$ 1.500,00
+            amountCents: 150000,
           },
           {
             date: new Date("2026-07-04T09:05:00Z"),
@@ -213,7 +293,7 @@ async function main() {
             description: "[PERMUTA - APLICAÇÃO] Usinagem CNC 4 Eixos de 3 Protótipos",
             trackingMethod: TrackingMethod.SPONSOR_CONTRACT,
             documentRef: "PARC-SENAI-03",
-            amountCents: 150000, // R$ 1.500,00
+            amountCents: 150000,
           },
           {
             date: new Date("2026-07-19T15:20:00Z"),
@@ -225,7 +305,7 @@ async function main() {
             description: "Compra Rolamentos Cerâmicos de Baixo Atrito",
             trackingMethod: TrackingMethod.NFE,
             documentRef: "NFe-0083412",
-            amountCents: 95000, // R$ 950,00 (Levemente acima do previsto para demonstrar variação)
+            amountCents: 95000,
           },
           {
             date: new Date("2026-08-03T10:00:00Z"),
@@ -236,7 +316,7 @@ async function main() {
             description: "Cota Patrocínio Prata - Metalúrgica Vanguarda",
             trackingMethod: TrackingMethod.SPONSOR_CONTRACT,
             documentRef: "CONT-2026-004",
-            amountCents: 280000, // R$ 2.800,00
+            amountCents: 280000,
           },
           {
             date: new Date("2026-08-15T17:45:00Z"),
@@ -248,11 +328,10 @@ async function main() {
             description: "Chapas MDF Naval + Corte CNC + LED Totem Pit Display",
             trackingMethod: TrackingMethod.NFE,
             documentRef: "NFe-0038190",
-            amountCents: 210000, // R$ 2.100,00
+            amountCents: 210000,
           },
         ],
       });
-      console.log("✅ Lançamentos financeiros de demonstração criados.");
     }
   }
 }

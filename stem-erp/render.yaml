@@ -6,7 +6,7 @@ services:
     name: stem-racing-erp
     runtime: node
     plan: free
-    buildCommand: npm install --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build
+    buildCommand: npm install --include=dev && npx prisma generate && npx prisma migrate deploy && npx tsx prisma/seed.ts && npm run build
     startCommand: npm run start
     healthCheckPath: /api/metrics
     autoDeploy: true
@@ -15,6 +15,8 @@ services:
         value: production
       - key: NEON_BRANCH
         value: production
+      - key: AUTH_SECRET
+        generateValue: true
       - key: DATABASE_URL
         sync: false # Cole aqui a URL Pooled do Neon (presente no seu .env.local)
       - key: DATABASE_URL_UNPOOLED

@@ -1,16 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { UserRole } from "@prisma/client";
 import {
   createBudgetResourceSchema,
   createTransactionSchema,
   type CreateBudgetResourceInput,
   type CreateTransactionInput,
 } from "@/lib/validations/financial";
+import { requireAuthUser } from "@/services/auth-service";
 import {
   createBudgetResourceService,
   createTransactionService,
   getDashboardMetricsService,
+  resolveTeamScope,
 } from "@/services/financial-service";
 import type { DashboardMetricsDTO } from "@/types/financial";
 
@@ -24,6 +27,15 @@ export interface ActionResponse<T = unknown> {
 export async function createBudgetResourceAction(
   rawData: CreateBudgetResourceInput
 ): Promise<ActionResponse<{ code: string }>> {
+  const user = await requireAuthUser();
+
+  if (user.role === UserRole.AUDITOR) {
+    return {
+      success: false,
+      message: "Acesso negado: o perfil Auditor possui permissão somente de leitura.",
+    };
+  }
+
   const parsed = createBudgetResourceSchema.safeParse(rawData);
 
   if (!parsed.success) {
@@ -34,8 +46,20 @@ export async function createBudgetResourceAction(
     };
   }
 
+  // Isolamento de Equipe: força o deliveryGroup da equipe do usuário caso não seja SUPER_ADMIN
+  const scopedGroup = resolveTeamScope(user);
+  if (scopedGroup && parsed.data.deliveryGroup !== scopedGroup) {
+    return {
+      success: false,
+      message: "Acesso negado: você só pode planejar recursos na sua própria equipe.",
+    };
+  }
+
   try {
-    const created = await createBudgetResourceService(parsed.data);
+    const created = await createBudgetResourceService({
+      ...parsed.data,
+      deliveryGroup: scopedGroup ?? parsed.data.deliveryGroup,
+    });
 
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
@@ -58,6 +82,15 @@ export async function createBudgetResourceAction(
 export async function createTransactionAction(
   rawData: CreateTransactionInput
 ): Promise<ActionResponse> {
+  const user = await requireAuthUser();
+
+  if (user.role === UserRole.AUDITOR) {
+    return {
+      success: false,
+      message: "Acesso negado: o perfil Auditor possui permissão somente de leitura.",
+    };
+  }
+
   const parsed = createTransactionSchema.safeParse(rawData);
 
   if (!parsed.success) {
@@ -68,8 +101,21 @@ export async function createTransactionAction(
     };
   }
 
+  // Isolamento de Equipe: força o deliveryGroup da equipe do usuário caso não seja SUPER_ADMIN
+  const scopedGroup = resolveTeamScope(user);
+  if (scopedGroup && parsed.data.deliveryGroup !== scopedGroup) {
+    return {
+      success: false,
+      message:
+        "Acesso negado: você só pode registrar lançamentos na sua própria equipe.",
+    };
+  }
+
   try {
-    await createTransactionService(parsed.data);
+    await createTransactionService({
+      ...parsed.data,
+      deliveryGroup: scopedGroup ?? parsed.data.deliveryGroup,
+    });
 
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
@@ -91,5 +137,6 @@ export async function createTransactionAction(
 }
 
 export async function getDashboardMetricsAction(): Promise<DashboardMetricsDTO> {
-  return getDashboardMetricsService();
+  const user = await requireAuthUser();
+  return getDashboardMetricsService(user);
 }

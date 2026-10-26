@@ -1,9 +1,11 @@
 import * as React from "react";
+import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
 
 interface DashboardShellProps {
+  currentUser: AuthenticatedUserDTO;
   categories: CategoryDTO[];
   budgetResources: BudgetResourceDTO[];
   title: string;
@@ -13,6 +15,7 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({
+  currentUser,
   categories,
   budgetResources,
   title,
@@ -22,10 +25,11 @@ export function DashboardShell({
 }: DashboardShellProps) {
   return (
     <div className="flex min-h-screen bg-[#F5F6FA] text-[#202224]">
-      <AppSidebar />
+      <AppSidebar currentUser={currentUser} />
 
       <div className="flex flex-1 flex-col min-w-0">
         <AppHeader
+          currentUser={currentUser}
           categories={categories}
           budgetResources={budgetResources}
         />

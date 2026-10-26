@@ -1,10 +1,11 @@
-import { DeliveryGroup, TransactionType } from "@prisma/client";
+import { DeliveryGroup, TransactionType, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { DELIVERY_GROUP_LABELS, PROJECT_MONTHS, PROJECT_MONTH_LABELS } from "@/lib/constants";
 import type {
   CreateBudgetResourceInput,
   CreateTransactionInput,
 } from "@/lib/validations/financial";
+import type { AuthenticatedUserDTO } from "@/types/auth";
 import type {
   BudgetResourceDTO,
   CashFlowMonthPoint,
@@ -24,6 +25,20 @@ const ALL_DELIVERY_GROUPS: DeliveryGroup[] = [
   DeliveryGroup.MARKETING_SPONSOR,
   DeliveryGroup.PROJECT_MANAGEMENT,
 ];
+
+/**
+ * Resolve o escopo de equipe do usuário logado:
+ * - SUPER_ADMIN: vê todas as equipes (undefined)
+ * - Outros perfis: vê estritamente sua própria equipe (user.deliveryGroup)
+ */
+export function resolveTeamScope(
+  user?: AuthenticatedUserDTO | null
+): DeliveryGroup | undefined {
+  if (!user || user.role === UserRole.SUPER_ADMIN) {
+    return undefined;
+  }
+  return user.deliveryGroup ?? undefined;
+}
 
 /**
  * Função utilitária pura: Cálculo do Fluxo de Caixa na Linha do Tempo (Meses 1 a 6)
@@ -80,9 +95,14 @@ export function calculatePhysicalFinancialSchedule(
   transactions: Pick<
     TransactionDTO,
     "deliveryGroup" | "referenceMonth" | "type" | "amountCents"
-  >[]
+  >[],
+  scopedDeliveryGroup?: DeliveryGroup
 ): DeliveryGroupScheduleRow[] {
-  return ALL_DELIVERY_GROUPS.map((deliveryGroup) => {
+  const targetGroups = scopedDeliveryGroup
+    ? [scopedDeliveryGroup]
+    : ALL_DELIVERY_GROUPS;
+
+  return targetGroups.map((deliveryGroup) => {
     const months = PROJECT_MONTHS.map((month) => {
       const plannedCents = budgetResources
         .filter(
@@ -194,7 +214,6 @@ export async function createTransactionService(input: CreateTransactionInput) {
       ? input.documentRef.trim()
       : null;
 
-  // Regra de Permuta (BARTER_PARTNERSHIP): gera automaticamente 1 ORIGIN (Patrocínio In-loco) e 1 APPLICATION (Custo do Recurso)
   if (input.isBarterCounterpart) {
     return prisma.$transaction(async (tx) => {
       const originEntry = await tx.transaction.create({
@@ -249,12 +268,33 @@ export async function createTransactionService(input: CreateTransactionInput) {
   return { transaction };
 }
 
-export async function getDashboardMetricsService(): Promise<DashboardMetricsDTO> {
+const FALLBACK_SYSTEM_USER: AuthenticatedUserDTO = {
+  id: "system",
+  sessionId: "system",
+  name: "SuperAdmin Genesis",
+  email: "superadmin@genesisracing.com",
+  role: UserRole.SUPER_ADMIN,
+  deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT,
+  jobTitle: "Team Principal & SuperAdmin",
+};
+
+export async function getDashboardMetricsService(
+  currentUser?: AuthenticatedUserDTO | null
+): Promise<DashboardMetricsDTO> {
+  const effectiveUser = currentUser ?? FALLBACK_SYSTEM_USER;
+  const scopedDeliveryGroup = resolveTeamScope(effectiveUser);
+
+  const whereScope = scopedDeliveryGroup
+    ? { deliveryGroup: scopedDeliveryGroup }
+    : undefined;
+
   const [rawCategories, rawBudgetResources, rawTransactions] = await Promise.all([
     prisma.category.findMany({
+      where: whereScope,
       orderBy: [{ deliveryGroup: "asc" }, { name: "asc" }],
     }),
     prisma.budgetResource.findMany({
+      where: whereScope,
       include: {
         category: true,
         transactions: {
@@ -265,6 +305,7 @@ export async function getDashboardMetricsService(): Promise<DashboardMetricsDTO>
       orderBy: [{ plannedMonth: "asc" }, { code: "asc" }],
     }),
     prisma.transaction.findMany({
+      where: whereScope,
       include: {
         category: true,
         budgetResource: {
@@ -325,7 +366,11 @@ export async function getDashboardMetricsService(): Promise<DashboardMetricsDTO>
   }));
 
   const cashFlow = calculateCashFlowTimeline(transactions);
-  const schedule = calculatePhysicalFinancialSchedule(budgetResources, transactions);
+  const schedule = calculatePhysicalFinancialSchedule(
+    budgetResources,
+    transactions,
+    scopedDeliveryGroup
+  );
 
   const totalPlannedBudgetCents = budgetResources.reduce(
     (acc, b) => acc + b.plannedAmountCents,
@@ -342,6 +387,7 @@ export async function getDashboardMetricsService(): Promise<DashboardMetricsDTO>
   };
 
   return {
+    currentUser: effectiveUser,
     kpis,
     cashFlow,
     schedule,

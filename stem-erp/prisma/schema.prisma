@@ -35,6 +35,23 @@ enum TrackingMethod {
   BANK_PIX_STATEMENT  // Comprovante PIX / Extrato Bancário
 }
 
+enum UserRole {
+  SUPER_ADMIN         // Controle Total + Gestão de Membros e Equipes
+  FINANCE_MANAGER     // Diretor Financeiro da Equipe
+  TEAM_LEAD           // Líder / Integrante da Equipe
+  AUDITOR             // Juiz / Auditor (Somente Leitura)
+}
+
+enum AuthEventType {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  ACCOUNT_LOCKED
+  LOGOUT
+  SESSION_REVOKED
+  USER_CREATED
+  USER_ROLE_UPDATED
+}
+
 // 1. Categorias de Custo/Receita
 model Category {
   id            String           @id @default(cuid())
@@ -84,4 +101,56 @@ model Transaction {
 
   @@index([referenceMonth, type])
   @@index([deliveryGroup, referenceMonth])
+}
+
+// 4. Usuários / Integrantes da Plataforma
+model User {
+  id                  String          @id @default(cuid())
+  name                String
+  email               String          @unique
+  passwordHash        String
+  role                UserRole        @default(TEAM_LEAD)
+  jobTitle            String?         // Ex: Engenheiro de Manufatura CNC
+  deliveryGroup       DeliveryGroup?  // Equipe à qual pertence (Isolamento de Dados)
+  isActive            Boolean         @default(true)
+  failedLoginAttempts Int             @default(0)
+  lockedUntil         DateTime?       // Bloqueio automático anti-força bruta
+  lastLoginAt         DateTime?
+  createdById         String?
+  sessions            Session[]
+  auditLogs           AuthAuditLog[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([role, deliveryGroup])
+}
+
+// 5. Sessões Ativas (Controle Stateful + Revogação Remota via Cookie httpOnly)
+model Session {
+  id           String    @id @default(cuid()) // Usado como `jti` no JWT
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+// 6. Trilha de Auditoria de Segurança (Detecção de Tentativas de Invasão)
+model AuthAuditLog {
+  id           String        @id @default(cuid())
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  emailAttempt String
+  event        AuthEventType
+  ipAddress    String?
+  userAgent    String?
+  details      String?
+  createdAt    DateTime      @default(now())
+
+  @@index([emailAttempt, createdAt])
+  @@index([event, createdAt])
 }

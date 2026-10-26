@@ -1,8 +1,10 @@
 import type {
   AcquisitionStrategy,
+  AuthEventType,
   DeliveryGroup,
   TrackingMethod,
   TransactionType,
+  UserRole,
 } from "@prisma/client";
 
 export const DELIVERY_GROUP_LABELS: Record<DeliveryGroup, string> = {
@@ -38,6 +40,23 @@ export const TRACKING_METHOD_LABELS: Record<TrackingMethod, string> = {
   RECEIPT: "Recibo Simples",
   SPONSOR_CONTRACT: "Contrato de Patrocínio",
   BANK_PIX_STATEMENT: "PIX / Extrato Bancário",
+};
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  SUPER_ADMIN: "SuperAdmin (Global)",
+  FINANCE_MANAGER: "Gestor Financeiro",
+  TEAM_LEAD: "Integrante / Líder de Equipe",
+  AUDITOR: "Auditor (Somente Leitura)",
+};
+
+export const AUTH_EVENT_LABELS: Record<AuthEventType, string> = {
+  LOGIN_SUCCESS: "Login Autorizado",
+  LOGIN_FAILED: "Senha Incorreta / Falha",
+  ACCOUNT_LOCKED: "Conta Bloqueada (Anti-Invasão)",
+  LOGOUT: "Logout Seguro",
+  SESSION_REVOKED: "Sessão Revogada",
+  USER_CREATED: "Integrante Cadastrado",
+  USER_ROLE_UPDATED: "Permissão / Equipe Atualizada",
 };
 
 export const PROJECT_MONTHS = [1, 2, 3, 4, 5, 6] as const;

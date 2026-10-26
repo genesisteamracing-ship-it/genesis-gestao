@@ -4,7 +4,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CalendarPlus, Loader2 } from "lucide-react";
+import { CalendarPlus, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import {
   ACQUISITION_STRATEGY_LABELS,
@@ -18,6 +18,7 @@ import {
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
 import { createBudgetResourceAction } from "@/actions/financial-actions";
+import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { CategoryDTO } from "@/types/financial";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,24 +70,36 @@ type BudgetFormValues = z.infer<typeof budgetFormSchema>;
 
 interface CreateBudgetResourceDialogProps {
   categories: CategoryDTO[];
+  currentUser?: AuthenticatedUserDTO;
   triggerLabel?: string;
 }
 
 export function CreateBudgetResourceDialog({
   categories,
+  currentUser,
   triggerLabel = "+ Planejar Recurso (Orçamento)",
 }: CreateBudgetResourceDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
 
+  const isSuperAdmin = !currentUser || currentUser.role === "SUPER_ADMIN";
+  const lockedGroup = !isSuperAdmin ? currentUser?.deliveryGroup ?? null : null;
+
+  const allowedGroups = React.useMemo(() => {
+    if (lockedGroup) return [lockedGroup];
+    return [...deliveryGroupValues];
+  }, [lockedGroup]);
+
+  const defaultGroup = lockedGroup ?? "MANUFACTURING_CNC";
+
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
     defaultValues: {
-      deliveryGroup: "MANUFACTURING_CNC",
+      deliveryGroup: defaultGroup,
       categoryId: "",
       resourceName: "",
       acquisitionStrategy: "DIRECT_PURCHASE",
-      allocatedTo: "",
+      allocatedTo: currentUser?.name ?? "",
       plannedMonth: 1,
       utilizationForecast: 100,
       plannedAmountReais: "",
@@ -111,12 +124,16 @@ export function CreateBudgetResourceDialog({
     }
   }, [filteredCategories, form]);
 
+  if (currentUser?.role === "AUDITOR") {
+    return null;
+  }
+
   function onSubmit(values: BudgetFormValues) {
     const plannedAmountCents = parseReaisToCents(values.plannedAmountReais);
 
     startTransition(async () => {
       const result = await createBudgetResourceAction({
-        deliveryGroup: values.deliveryGroup,
+        deliveryGroup: lockedGroup ?? values.deliveryGroup,
         categoryId: values.categoryId,
         resourceName: values.resourceName,
         acquisitionStrategy: values.acquisitionStrategy,
@@ -132,7 +149,16 @@ export function CreateBudgetResourceDialog({
       }
 
       toast.success(result.message);
-      form.reset();
+      form.reset({
+        deliveryGroup: defaultGroup,
+        categoryId: filteredCategories[0]?.id ?? "",
+        resourceName: "",
+        acquisitionStrategy: "DIRECT_PURCHASE",
+        allocatedTo: currentUser?.name ?? "",
+        plannedMonth: 1,
+        utilizationForecast: 100,
+        plannedAmountReais: "",
+      });
       setOpen(false);
     });
   }
@@ -142,8 +168,8 @@ export function CreateBudgetResourceDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-slate-300 font-semibold">
-          <CalendarPlus className="h-4 w-4 text-slate-700" />
+        <Button variant="outline" className="border-[#D5D5D5] font-semibold">
+          <CalendarPlus className="h-4 w-4 text-[#4880FF]" />
           <span>{triggerLabel}</span>
         </Button>
       </DialogTrigger>
@@ -166,11 +192,16 @@ export function CreateBudgetResourceDialog({
                 name="deliveryGroup"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Grupo de Entrega</FormLabel>
+                    <FormLabel className="flex items-center gap-1.5">
+                      <span>Equipe / Grupo de Entrega</span>
+                      {lockedGroup && (
+                        <Lock className="h-3 w-3 text-[#4880FF]" />
+                      )}
+                    </FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
                       value={field.value}
+                      disabled={Boolean(lockedGroup)}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -178,7 +209,7 @@ export function CreateBudgetResourceDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {deliveryGroupValues.map((group) => (
+                        {allowedGroups.map((group) => (
                           <SelectItem key={group} value={group}>
                             {DELIVERY_GROUP_LABELS[group]}
                           </SelectItem>
@@ -196,10 +227,7 @@ export function CreateBudgetResourceDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria Orçamentária</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione a categoria" />
@@ -243,10 +271,7 @@ export function CreateBudgetResourceDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Estratégia de Aquisição</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Como será adquirido?" />
@@ -272,10 +297,7 @@ export function CreateBudgetResourceDialog({
                   <FormItem>
                     <FormLabel>Responsável (Alocação)</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Ex: Líder de Manufatura"
-                        {...field}
-                      />
+                      <Input placeholder="Ex: Líder de Manufatura" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

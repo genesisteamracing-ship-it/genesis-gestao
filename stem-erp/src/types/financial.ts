@@ -4,6 +4,7 @@ import type {
   TrackingMethod,
   TransactionType,
 } from "@prisma/client";
+import type { AuthenticatedUserDTO } from "./auth";
 
 export interface CategoryDTO {
   id: string;
@@ -94,6 +95,7 @@ export interface DashboardKPIsDTO {
 }
 
 export interface DashboardMetricsDTO {
+  currentUser: AuthenticatedUserDTO;
   kpis: DashboardKPIsDTO;
   cashFlow: CashFlowSummaryDTO;
   schedule: DeliveryGroupScheduleRow[];

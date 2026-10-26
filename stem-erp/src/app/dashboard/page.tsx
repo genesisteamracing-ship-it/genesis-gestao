@@ -1,3 +1,4 @@
+import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
@@ -11,10 +12,20 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const metrics = await getDashboardMetricsAction();
+  const isSuperAdmin = metrics.currentUser.role === "SUPER_ADMIN";
+  const subtitle = isSuperAdmin
+    ? "Visão Global consolidada de todas as equipes da competição STEM Racing"
+    : `Visão exclusiva da equipe ${
+        metrics.currentUser.deliveryGroup
+          ? DELIVERY_GROUP_LABELS[metrics.currentUser.deliveryGroup]
+          : "Geral"
+      }`;
 
   return (
     <DashboardShell
       title="Dashboard"
+      subtitle={subtitle}
+      currentUser={metrics.currentUser}
       categories={metrics.categories}
       budgetResources={metrics.budgetResources}
     >

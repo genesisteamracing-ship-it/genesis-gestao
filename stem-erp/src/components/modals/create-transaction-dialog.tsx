@@ -4,7 +4,14 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowDownCircle, ArrowUpCircle, Loader2, PlusCircle, Repeat } from "lucide-react";
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Loader2,
+  Lock,
+  PlusCircle,
+  Repeat,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   DELIVERY_GROUP_LABELS,
@@ -19,6 +26,7 @@ import {
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
 import { createTransactionAction } from "@/actions/financial-actions";
+import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,16 +79,28 @@ type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 interface CreateTransactionDialogProps {
   categories: CategoryDTO[];
   budgetResources: BudgetResourceDTO[];
+  currentUser?: AuthenticatedUserDTO;
   triggerLabel?: string;
 }
 
 export function CreateTransactionDialog({
   categories,
   budgetResources,
+  currentUser,
   triggerLabel = "+ Lançar Transação (Realizado)",
 }: CreateTransactionDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
+
+  const isSuperAdmin = !currentUser || currentUser.role === "SUPER_ADMIN";
+  const lockedGroup = !isSuperAdmin ? currentUser?.deliveryGroup ?? null : null;
+
+  const allowedGroups = React.useMemo(() => {
+    if (lockedGroup) return [lockedGroup];
+    return [...deliveryGroupValues];
+  }, [lockedGroup]);
+
+  const defaultGroup = lockedGroup ?? "MANUFACTURING_CNC";
 
   const todayISO = React.useMemo(
     () => new Date().toISOString().split("T")[0],
@@ -93,7 +113,7 @@ export function CreateTransactionDialog({
       date: todayISO,
       referenceMonth: 1,
       type: "APPLICATION",
-      deliveryGroup: "MANUFACTURING_CNC",
+      deliveryGroup: defaultGroup,
       categoryId: "",
       budgetResourceId: "NONE",
       description: "",
@@ -124,12 +144,16 @@ export function CreateTransactionDialog({
     }
   }, [filteredCategories, form]);
 
+  if (currentUser?.role === "AUDITOR") {
+    return null;
+  }
+
   function handleBudgetResourceChange(resourceId: string) {
     form.setValue("budgetResourceId", resourceId);
     if (resourceId !== "NONE") {
       const found = budgetResources.find((b) => b.id === resourceId);
       if (found) {
-        form.setValue("deliveryGroup", found.deliveryGroup);
+        form.setValue("deliveryGroup", lockedGroup ?? found.deliveryGroup);
         form.setValue("categoryId", found.categoryId);
         form.setValue("referenceMonth", found.plannedMonth);
         if (found.acquisitionStrategy === "BARTER_PARTNERSHIP") {
@@ -148,7 +172,7 @@ export function CreateTransactionDialog({
         date: new Date(`${values.date}T12:00:00Z`),
         referenceMonth: values.referenceMonth,
         type: values.type,
-        deliveryGroup: values.deliveryGroup,
+        deliveryGroup: lockedGroup ?? values.deliveryGroup,
         categoryId: values.categoryId,
         budgetResourceId:
           values.budgetResourceId === "NONE" ? null : values.budgetResourceId,
@@ -169,7 +193,7 @@ export function CreateTransactionDialog({
         date: todayISO,
         referenceMonth: 1,
         type: "APPLICATION",
-        deliveryGroup: "MANUFACTURING_CNC",
+        deliveryGroup: defaultGroup,
         categoryId: filteredCategories[0]?.id ?? "",
         budgetResourceId: "NONE",
         description: "",
@@ -204,7 +228,6 @@ export function CreateTransactionDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Tabs rápidas para escolher 🔴 Despesa (Aplicação) ou 🟢 Receita (Origem) */}
             <FormField
               control={form.control}
               name="type"
@@ -240,7 +263,6 @@ export function CreateTransactionDialog({
               )}
             />
 
-            {/* Vínculo opcional com item do orçamento */}
             <FormField
               control={form.control}
               name="budgetResourceId"
@@ -269,7 +291,7 @@ export function CreateTransactionDialog({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Ao selecionar um recurso planejado, o grupo, categoria e mês são
+                    Ao selecionar um recurso planejado, a categoria e mês são
                     preenchidos automaticamente.
                   </FormDescription>
                   <FormMessage />
@@ -283,15 +305,24 @@ export function CreateTransactionDialog({
                 name="deliveryGroup"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Grupo de Entrega</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel className="flex items-center gap-1.5">
+                      <span>Equipe / Grupo de Entrega</span>
+                      {lockedGroup && (
+                        <Lock className="h-3 w-3 text-[#4880FF]" />
+                      )}
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={Boolean(lockedGroup)}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o grupo" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {deliveryGroupValues.map((group) => (
+                        {allowedGroups.map((group) => (
                           <SelectItem key={group} value={group}>
                             {DELIVERY_GROUP_LABELS[group]}
                           </SelectItem>
@@ -459,7 +490,6 @@ export function CreateTransactionDialog({
               />
             </div>
 
-            {/* Regra de Negócio: Permutas (BARTER_PARTNERSHIP) */}
             <FormField
               control={form.control}
               name="isBarterCounterpart"

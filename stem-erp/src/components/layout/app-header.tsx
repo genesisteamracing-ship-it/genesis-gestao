@@ -4,27 +4,46 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 import {
-  Bell,
-  ChevronDown,
+  Globe2,
   Layers,
   LayoutDashboard,
   ListOrdered,
+  Lock,
+  LogOut,
   Search,
+  Users,
 } from "lucide-react";
+import { logoutAction } from "@/actions/auth-actions";
+import { DELIVERY_GROUP_LABELS, USER_ROLE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
+import { Badge } from "@/components/ui/badge";
 import { CreateBudgetResourceDialog } from "@/components/modals/create-budget-resource-dialog";
 import { CreateTransactionDialog } from "@/components/modals/create-transaction-dialog";
 
 interface AppHeaderProps {
+  currentUser: AuthenticatedUserDTO;
   categories: CategoryDTO[];
   budgetResources: BudgetResourceDTO[];
 }
 
-export function AppHeader({ categories, budgetResources }: AppHeaderProps) {
+export function AppHeader({
+  currentUser,
+  categories,
+  budgetResources,
+}: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = React.useState("");
+
+  const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
+  const initials = currentUser.name
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,7 +56,7 @@ export function AppHeader({ categories, budgetResources }: AppHeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-[#E8E8E8] bg-white">
       <div className="flex min-h-[70px] flex-wrap items-center justify-between gap-4 px-6 py-2.5 lg:px-8">
-        {/* Busca estilo DashStack + Navegação Mobile */}
+        {/* Busca estilo DashStack + Indicador de Escopo de Equipe */}
         <div className="flex flex-1 items-center gap-4">
           <Link
             href="/dashboard"
@@ -49,7 +68,7 @@ export function AppHeader({ categories, budgetResources }: AppHeaderProps) {
 
           <form
             onSubmit={handleSearchSubmit}
-            className="relative hidden w-full max-w-[380px] sm:block"
+            className="relative hidden w-full max-w-[340px] sm:block"
           >
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
             <input
@@ -60,84 +79,123 @@ export function AppHeader({ categories, budgetResources }: AppHeaderProps) {
               className="h-[38px] w-full rounded-full border border-[#D5D5D5] bg-[#F5F6FA] pl-11 pr-4 text-sm text-[#202224] placeholder:text-[#202224]/50 focus:border-[#4880FF] focus:bg-white focus:outline-none transition-colors"
             />
           </form>
+
+          {/* Badge de Isolamento de Dados por Equipe */}
+          <div className="hidden xl:flex items-center">
+            {isSuperAdmin ? (
+              <Badge variant="default" className="gap-1.5 px-3 py-1">
+                <Globe2 className="h-3.5 w-3.5" />
+                <span>Visão Global (Todas as Equipes)</span>
+              </Badge>
+            ) : (
+              <Badge variant="purple" className="gap-1.5 px-3 py-1">
+                <Lock className="h-3.5 w-3.5" />
+                <span>
+                  Equipe:{" "}
+                  {currentUser.deliveryGroup
+                    ? DELIVERY_GROUP_LABELS[currentUser.deliveryGroup]
+                    : "Geral"}
+                </span>
+              </Badge>
+            )}
+          </div>
         </div>
 
-        {/* Ações Globais (Modais shadcn/ui) + Notificações + Perfil */}
+        {/* Ações Globais + Perfil Autenticado */}
         <div className="flex flex-wrap items-center gap-3">
           <CreateBudgetResourceDialog
             categories={categories}
+            currentUser={currentUser}
             triggerLabel="+ Planejar Recurso"
           />
           <CreateTransactionDialog
             categories={categories}
             budgetResources={budgetResources}
+            currentUser={currentUser}
             triggerLabel="+ Lançar Transação"
           />
 
-          {/* Ícone de Notificação com Badge estilo DashStack */}
-          <div className="relative ml-1 hidden sm:flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#F5F6FA]">
-            <Bell className="h-5 w-5 text-[#4880FF]" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F93C65] px-1 text-[10px] font-bold text-white">
-              6
-            </span>
-          </div>
-
-          {/* Perfil Equipe estilo DashStack */}
+          {/* Perfil do Usuário Autenticado */}
           <div className="hidden items-center gap-3 border-l border-[#E8E8E8] pl-4 md:flex">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#4880FF]/15 text-sm font-bold text-[#4880FF]">
-              GR
+              {initials}
             </div>
             <div className="leading-tight">
               <div className="text-sm font-bold text-[#202224]">
-                Genesis Racing
+                {currentUser.name}
               </div>
               <div className="text-xs font-medium text-[#565656]">
-                Gestão & Auditoria
+                {currentUser.jobTitle || USER_ROLE_LABELS[currentUser.role]}
               </div>
             </div>
-            <ChevronDown className="h-4 w-4 text-[#565656]" />
           </div>
         </div>
       </div>
 
-      {/* Barra de navegação rápida no Mobile (quando a Sidebar está oculta) */}
-      <div className="flex items-center gap-2 border-t border-[#E8E8E8] px-4 py-2 lg:hidden">
-        <Link
-          href="/dashboard"
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
-            pathname === "/dashboard"
-              ? "bg-[#4880FF] text-white"
-              : "text-[#202224] hover:bg-[#F5F6FA]"
+      {/* Barra de navegação rápida no Mobile */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E8E8E8] px-4 py-2 lg:hidden">
+        <div className="flex items-center gap-1.5">
+          <Link
+            href="/dashboard"
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
+              pathname === "/dashboard"
+                ? "bg-[#4880FF] text-white"
+                : "text-[#202224] hover:bg-[#F5F6FA]"
+            )}
+          >
+            <LayoutDashboard className="h-3.5 w-3.5" />
+            <span>Dashboard</span>
+          </Link>
+          <Link
+            href="/planejamento"
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
+              pathname === "/planejamento"
+                ? "bg-[#4880FF] text-white"
+                : "text-[#202224] hover:bg-[#F5F6FA]"
+            )}
+          >
+            <Layers className="h-3.5 w-3.5" />
+            <span>Planejamento</span>
+          </Link>
+          <Link
+            href="/lancamentos"
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
+              pathname === "/lancamentos"
+                ? "bg-[#4880FF] text-white"
+                : "text-[#202224] hover:bg-[#F5F6FA]"
+            )}
+          >
+            <ListOrdered className="h-3.5 w-3.5" />
+            <span>Livro Caixa</span>
+          </Link>
+          {isSuperAdmin && (
+            <Link
+              href="/equipe"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
+                pathname === "/equipe"
+                  ? "bg-[#4880FF] text-white"
+                  : "text-[#202224] hover:bg-[#F5F6FA]"
+              )}
+            >
+              <Users className="h-3.5 w-3.5" />
+              <span>Equipe</span>
+            </Link>
           )}
-        >
-          <LayoutDashboard className="h-3.5 w-3.5" />
-          <span>Dashboard</span>
-        </Link>
-        <Link
-          href="/planejamento"
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
-            pathname === "/planejamento"
-              ? "bg-[#4880FF] text-white"
-              : "text-[#202224] hover:bg-[#F5F6FA]"
-          )}
-        >
-          <Layers className="h-3.5 w-3.5" />
-          <span>Planejamento</span>
-        </Link>
-        <Link
-          href="/lancamentos"
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold",
-            pathname === "/lancamentos"
-              ? "bg-[#4880FF] text-white"
-              : "text-[#202224] hover:bg-[#F5F6FA]"
-          )}
-        >
-          <ListOrdered className="h-3.5 w-3.5" />
-          <span>Livro Caixa</span>
-        </Link>
+        </div>
+
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#EF3826] hover:bg-red-50 cursor-pointer"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Sair</span>
+          </button>
+        </form>
       </div>
     </header>
   );
