@@ -5,6 +5,8 @@ import { CashFlowTimeline } from "@/components/dashboard/cash-flow-timeline";
 import { PhysicalFinancialSchedule } from "@/components/dashboard/physical-financial-schedule";
 import { ResourcesDataTable } from "@/components/tables/resources-data-table";
 import { TransactionsDataTable } from "@/components/tables/transactions-data-table";
+import { CreateBudgetResourceDialog } from "@/components/modals/create-budget-resource-dialog";
+import { CreateTransactionDialog } from "@/components/modals/create-transaction-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +26,21 @@ export default async function DashboardPage() {
       availableTeams={metrics.availableTeams}
       categories={metrics.categories}
       budgetResources={metrics.budgetResources}
+      headerAction={
+        <div className="flex flex-wrap items-center gap-2.5">
+          <CreateBudgetResourceDialog
+            categories={metrics.categories}
+            currentUser={metrics.currentUser}
+            triggerLabel="+ Planejar Recurso"
+          />
+          <CreateTransactionDialog
+            categories={metrics.categories}
+            budgetResources={metrics.budgetResources}
+            currentUser={metrics.currentUser}
+            triggerLabel="+ Lançar Transação"
+          />
+        </div>
+      }
     >
       {/* Topo: 4 KPI Cards no estilo DashStack (financial.png) */}
       <KpiCards kpis={metrics.kpis} />

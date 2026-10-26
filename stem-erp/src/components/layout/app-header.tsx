@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 import {
+  ChevronDown,
   Flag,
   Layers,
   LayoutDashboard,
   ListOrdered,
   Lock,
   LogOut,
-  Search,
+  User,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -28,33 +29,36 @@ import type {
 } from "@/types/financial";
 import { Badge } from "@/components/ui/badge";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CreateBudgetResourceDialog } from "@/components/modals/create-budget-resource-dialog";
-import { CreateTransactionDialog } from "@/components/modals/create-transaction-dialog";
 
 interface AppHeaderProps {
   currentUser: AuthenticatedUserDTO;
   activeTeam?: ActiveTeamSummaryDTO;
   availableTeams?: ActiveTeamSummaryDTO[];
-  categories: CategoryDTO[];
-  budgetResources: BudgetResourceDTO[];
+  categories?: CategoryDTO[];
+  budgetResources?: BudgetResourceDTO[];
 }
 
 export function AppHeader({
   currentUser,
   activeTeam,
   availableTeams = [],
-  categories,
-  budgetResources,
 }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = React.useState("");
   const [isSwitchingTeam, startTransition] = React.useTransition();
 
   const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
@@ -64,14 +68,6 @@ export function AppHeader({
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
-  function handleSearchSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!searchTerm.trim()) return;
-    if (pathname !== "/lancamentos" && pathname !== "/planejamento") {
-      router.push("/lancamentos");
-    }
-  }
 
   function handleTeamChange(newTeamId: string) {
     startTransition(async () => {
@@ -88,7 +84,7 @@ export function AppHeader({
   return (
     <header className="sticky top-0 z-30 border-b border-[#E8E8E8] bg-white">
       <div className="flex min-h-[70px] flex-wrap items-center justify-between gap-4 px-6 py-2.5 lg:px-8">
-        {/* Busca estilo DashStack + Indicador/Seletor de Equipe */}
+        {/* Logo Mobile + Indicador/Seletor de Equipe */}
         <div className="flex flex-1 items-center gap-4">
           <Link
             href="/dashboard"
@@ -98,22 +94,8 @@ export function AppHeader({
             <span className="text-[#202224]">Gestão</span>
           </Link>
 
-          <form
-            onSubmit={handleSearchSubmit}
-            className="relative hidden w-full max-w-[300px] sm:block"
-          >
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
-            <input
-              type="search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Pesquisar recursos, NF-e ou patrocínios..."
-              className="h-[38px] w-full rounded-full border border-[#D5D5D5] bg-[#F5F6FA] pl-11 pr-4 text-sm text-[#202224] placeholder:text-[#202224]/50 focus:border-[#4880FF] focus:bg-white focus:outline-none transition-colors"
-            />
-          </form>
-
           {/* Seletor de Equipe (SuperAdmin) ou Badge de Isolamento Multi-Equipe */}
-          <div className="hidden xl:flex items-center gap-2">
+          <div className="flex items-center gap-2">
             {isSuperAdmin && availableTeams.length > 0 ? (
               <div className="flex items-center gap-2 rounded-lg border border-[#D5D5D5] bg-[#F5F6FA] px-3 py-1">
                 <Flag className="h-3.5 w-3.5 text-[#4880FF]" />
@@ -151,35 +133,66 @@ export function AppHeader({
           </div>
         </div>
 
-        {/* Ações Globais + Perfil Autenticado */}
-        <div className="flex flex-wrap items-center gap-3">
-          <CreateBudgetResourceDialog
-            categories={categories}
-            currentUser={currentUser}
-            triggerLabel="+ Planejar Recurso"
-          />
-          <CreateTransactionDialog
-            categories={categories}
-            budgetResources={budgetResources}
-            currentUser={currentUser}
-            triggerLabel="+ Lançar Transação"
-          />
+        {/* Perfil Autenticado com Dropdown Menu (Nome + Dropdown com Sair) */}
+        <div className="flex items-center gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-3 rounded-xl border border-transparent p-1.5 text-left transition-colors hover:border-[#E8E8E8] hover:bg-[#F5F6FA] focus:outline-none focus:ring-2 focus:ring-[#4880FF]/20 cursor-pointer"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#4880FF]/15 text-sm font-bold text-[#4880FF]">
+                  {initials}
+                </div>
+                <div className="hidden text-left leading-tight md:block">
+                  <div className="text-sm font-bold text-[#202224]">
+                    {currentUser.name}
+                  </div>
+                  <div className="text-xs font-medium text-[#565656]">
+                    {currentUser.teamName ?? "Global"} •{" "}
+                    {currentUser.jobTitle || USER_ROLE_LABELS[currentUser.role]}
+                  </div>
+                </div>
+                <ChevronDown className="h-4 w-4 text-[#202224]/50 transition-transform duration-200" />
+              </button>
+            </DropdownMenuTrigger>
 
-          {/* Perfil do Usuário Autenticado */}
-          <div className="hidden items-center gap-3 border-l border-[#E8E8E8] pl-4 md:flex">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#4880FF]/15 text-sm font-bold text-[#4880FF]">
-              {initials}
-            </div>
-            <div className="leading-tight">
-              <div className="text-sm font-bold text-[#202224]">
-                {currentUser.name}
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-bold leading-none text-[#202224]">
+                    {currentUser.name}
+                  </p>
+                  <p className="text-xs leading-none text-[#606060]">
+                    {currentUser.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              <div className="px-3 py-2 text-xs text-[#606060] space-y-0.5">
+                <div className="flex items-center gap-1.5 font-medium text-[#202224]">
+                  <User className="h-3.5 w-3.5 text-[#4880FF]" />
+                  <span>{USER_ROLE_LABELS[currentUser.role]}</span>
+                </div>
+                <div>{currentUser.teamName ?? "Sem Equipe Definida"}</div>
               </div>
-              <div className="text-xs font-medium text-[#565656]">
-                {currentUser.teamName ?? "Global"} •{" "}
-                {currentUser.jobTitle || USER_ROLE_LABELS[currentUser.role]}
-              </div>
-            </div>
-          </div>
+
+              <DropdownMenuSeparator />
+
+              <form action={logoutAction} className="w-full">
+                <DropdownMenuItem asChild>
+                  <button
+                    type="submit"
+                    className="w-full text-[#EF3826] focus:bg-red-50 focus:text-[#EF3826] cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4 text-[#EF3826]" />
+                    <span>Sair</span>
+                  </button>
+                </DropdownMenuItem>
+              </form>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
