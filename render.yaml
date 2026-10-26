@@ -1,0 +1,22 @@
+# Render Blueprint Specification (para repositório na raiz agenesis-gesta)
+# Documentação: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: stem-racing-erp
+    runtime: node
+    plan: free
+    rootDir: stem-erp
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/metrics
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEON_BRANCH
+        value: production
+      - key: DATABASE_URL
+        sync: false # Cole aqui a URL Pooled do Neon (presente no seu .env.local)
+      - key: DATABASE_URL_UNPOOLED
+        sync: false # Cole aqui a URL Direct/Unpooled do Neon (presente no seu .env.local)

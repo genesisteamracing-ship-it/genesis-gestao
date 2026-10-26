@@ -1,0 +1,87 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum DeliveryGroup {
+  ENGINEERING_CAD     // Engenharia & CAD
+  MANUFACTURING_CNC   // Manufatura & CNC
+  PIT_DISPLAY         // Pit Display & Estande
+  MARKETING_SPONSOR   // Marketing & Patrocínio
+  PROJECT_MANAGEMENT  // Gestão do Projeto
+}
+
+enum AcquisitionStrategy {
+  DIRECT_PURCHASE     // Compra Direta
+  FINANCIAL_SPONSOR   // Patrocínio Financeiro
+  BARTER_PARTNERSHIP  // Permuta / Parceria Técnica
+  OWN_FUNDS_RAFFLE    // Recursos Próprios / Rifa / Evento
+}
+
+enum TransactionType {
+  ORIGIN              // Origem (Entrada / Ganho / Patrocínio)
+  APPLICATION         // Aplicação (Saída / Despesa)
+}
+
+enum TrackingMethod {
+  NFE                 // Nota Fiscal Eletrônica
+  RECEIPT             // Recibo Simples
+  SPONSOR_CONTRACT    // Contrato de Patrocínio
+  BANK_PIX_STATEMENT  // Comprovante PIX / Extrato Bancário
+}
+
+// 1. Categorias de Custo/Receita
+model Category {
+  id            String           @id @default(cuid())
+  name          String           @unique // Ex: Matéria-Prima, Usinagem, Uniformes, Aporte Ouro
+  deliveryGroup DeliveryGroup
+  budgetItems   BudgetResource[]
+  transactions  Transaction[]
+  createdAt     DateTime         @default(now())
+}
+
+// 2. Planejamento de Recursos e Orçamento (PREVISTO)
+model BudgetResource {
+  id                  String              @id @default(cuid())
+  code                String              @unique // Ex: ORC-001
+  deliveryGroup       DeliveryGroup
+  categoryId          String
+  category            Category            @relation(fields: [categoryId], references: [id])
+  resourceName        String              // Ex: Blocos de Poliuretano Oficial
+  acquisitionStrategy AcquisitionStrategy
+  allocatedTo         String              // Responsável (Ex: Líder de Manufatura)
+  plannedMonth        Int                 // 1 a 6 (ou 1 a 12 referente ao ciclo do projeto)
+  utilizationForecast Int                 // 0 a 100 (%)
+  plannedAmountCents  Int                 // Valor previsto em centavos
+  transactions        Transaction[]       // Transações reais atreladas a este item planejado
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([deliveryGroup, plannedMonth])
+}
+
+// 3. Lançamentos Financeiros e Fluxo de Caixa (REALIZADO)
+model Transaction {
+  id               String          @id @default(cuid())
+  date             DateTime        // Data real do fato gerador
+  referenceMonth   Int             // Mês na linha do tempo do projeto (1 a 6)
+  type             TransactionType // ORIGIN (Ganho) ou APPLICATION (Despesa)
+  deliveryGroup    DeliveryGroup
+  categoryId       String
+  category         Category        @relation(fields: [categoryId], references: [id])
+  budgetResourceId String?         // Opcional: vincula o gasto diretamente a um item do orçamento
+  budgetResource   BudgetResource? @relation(fields: [budgetResourceId], references: [id])
+  description      String
+  trackingMethod   TrackingMethod
+  documentRef      String?         // Número da NF-e, código da transação ou link do comprovante
+  amountCents      Int             // Valor realizado em centavos
+  createdAt        DateTime        @default(now())
+
+  @@index([referenceMonth, type])
+  @@index([deliveryGroup, referenceMonth])
+}
