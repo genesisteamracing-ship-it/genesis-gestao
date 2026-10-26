@@ -6,13 +6,8 @@ import {
   Layers,
   LayoutDashboard,
   ListOrdered,
-  LogOut,
-  Printer,
-  ShieldCheck,
   Users,
 } from "lucide-react";
-import { logoutAction } from "@/actions/auth-actions";
-import { triggerPortfolioPdfPrint } from "@/lib/export-utils";
 import { cn } from "@/lib/utils";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 
@@ -96,33 +91,6 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
             );
           })}
         </nav>
-      </div>
-
-      {/* Rodapé da Sidebar (Imprimir + Status + Logout) */}
-      <div className="border-t border-[#E8E8E8] p-5 space-y-1">
-        <button
-          type="button"
-          onClick={triggerPortfolioPdfPrint}
-          className="flex w-full items-center gap-3.5 rounded-lg px-4 py-2.5 text-sm font-medium text-[#202224] transition-colors hover:bg-[#F5F6FA] cursor-pointer"
-        >
-          <Printer className="h-4 w-4 text-[#202224]/70" />
-          <span>Imprimir Portfólio</span>
-        </button>
-
-        <div className="flex items-center gap-3.5 rounded-lg px-4 py-2 text-xs font-medium text-[#00B69B]">
-          <ShieldCheck className="h-4 w-4 shrink-0" />
-          <span>Sessão httpOnly Ativa</span>
-        </div>
-
-        <form action={logoutAction}>
-          <button
-            type="submit"
-            className="flex w-full items-center gap-3.5 rounded-lg px-4 py-2.5 text-sm font-semibold text-[#EF3826] transition-colors hover:bg-red-50/70 cursor-pointer"
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            <span>Logout</span>
-          </button>
-        </form>
       </div>
     </aside>
   );
