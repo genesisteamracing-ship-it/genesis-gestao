@@ -1,4 +1,11 @@
-import { DeliveryGroup, TransactionType, UserRole } from "@prisma/client";
+import {
+  DeliveryGroup,
+  ReturnActionCategory,
+  SponsorTier,
+  TrackingMethod,
+  TransactionType,
+  UserRole,
+} from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import {
@@ -10,10 +17,15 @@ import {
 import type {
   CreateBudgetResourceInput,
   CreateCategoryInput,
+  CreateReturnActionInput,
+  CreateSponsorInput,
   CreateTransactionInput,
   DeleteBudgetResourceInput,
+  DeleteReturnActionInput,
+  DeleteSponsorInput,
   DeleteTransactionInput,
   UpdateBudgetResourceInput,
+  UpdateSponsorInput,
   UpdateTransactionInput,
 } from "@/lib/validations/financial";
 import type { AuthenticatedUserDTO } from "@/types/auth";
@@ -26,8 +38,11 @@ import type {
   DashboardKPIsDTO,
   DashboardMetricsDTO,
   DeliveryGroupScheduleRow,
+  ReturnActionDTO,
   ScheduleAlertStatus,
   SeasonMonthDTO,
+  SponsorDTO,
+  SponsorRoiSummaryDTO,
   TeamMemberOptionDTO,
   TransactionDTO,
 } from "@/types/financial";
@@ -384,6 +399,27 @@ export async function createTransactionService(
       ? input.documentRef.trim()
       : null;
 
+  const cleanSponsorId =
+    input.sponsorId && input.sponsorId !== "NONE" && input.sponsorId.trim().length > 0
+      ? input.sponsorId
+      : null;
+
+  if (input.trackingMethod === TrackingMethod.SPONSOR_CONTRACT && !cleanSponsorId) {
+    throw new Error("Selecione a empresa patrocinadora para contratos de patrocínio.");
+  }
+
+  if (cleanSponsorId) {
+    const sponsor = await prisma.sponsor.findFirst({
+      where: {
+        id: cleanSponsorId,
+        teamId,
+      },
+    });
+    if (!sponsor) {
+      throw new Error("A empresa patrocinadora selecionada não pertence à sua equipe.");
+    }
+  }
+
   const referenceMonth = await deriveReferenceMonthFromDate(teamId, input.date);
 
   if (input.isBarterCounterpart) {
@@ -397,6 +433,7 @@ export async function createTransactionService(
           deliveryGroup: input.deliveryGroup,
           categoryId: input.categoryId,
           budgetResourceId: cleanBudgetResourceId,
+          sponsorId: cleanSponsorId,
           description: `[PERMUTA - ORIGEM] ${input.description.trim()}`,
           trackingMethod: input.trackingMethod,
           documentRef: cleanDocRef,
@@ -413,6 +450,7 @@ export async function createTransactionService(
           deliveryGroup: input.deliveryGroup,
           categoryId: input.categoryId,
           budgetResourceId: cleanBudgetResourceId,
+          sponsorId: cleanSponsorId,
           description: `[PERMUTA - APLICAÇÃO] ${input.description.trim()}`,
           trackingMethod: input.trackingMethod,
           documentRef: cleanDocRef,
@@ -433,6 +471,7 @@ export async function createTransactionService(
       deliveryGroup: input.deliveryGroup,
       categoryId: input.categoryId,
       budgetResourceId: cleanBudgetResourceId,
+      sponsorId: cleanSponsorId,
       description: input.description.trim(),
       trackingMethod: input.trackingMethod,
       documentRef: cleanDocRef,
@@ -543,6 +582,27 @@ export async function updateTransactionService(
       ? input.documentRef.trim()
       : null;
 
+  const cleanSponsorId =
+    input.sponsorId && input.sponsorId !== "NONE" && input.sponsorId.trim().length > 0
+      ? input.sponsorId
+      : null;
+
+  if (input.trackingMethod === TrackingMethod.SPONSOR_CONTRACT && !cleanSponsorId) {
+    throw new Error("Selecione a empresa patrocinadora para contratos de patrocínio.");
+  }
+
+  if (cleanSponsorId) {
+    const sponsor = await prisma.sponsor.findFirst({
+      where: {
+        id: cleanSponsorId,
+        teamId,
+      },
+    });
+    if (!sponsor) {
+      throw new Error("A empresa patrocinadora selecionada não pertence à sua equipe.");
+    }
+  }
+
   const referenceMonth = await deriveReferenceMonthFromDate(teamId, input.date);
 
   return prisma.transaction.update({
@@ -554,6 +614,7 @@ export async function updateTransactionService(
       deliveryGroup: input.deliveryGroup,
       categoryId: input.categoryId,
       budgetResourceId: cleanBudgetResourceId,
+      sponsorId: cleanSponsorId,
       description: input.description.trim(),
       trackingMethod: input.trackingMethod,
       documentRef: cleanDocRef,
@@ -614,6 +675,165 @@ export async function createCategoryService(
   };
 }
 
+export async function createSponsorService(
+  teamId: string,
+  input: CreateSponsorInput
+): Promise<SponsorDTO> {
+  const cleanName = input.name.trim();
+
+  const existing = await prisma.sponsor.findFirst({
+    where: {
+      teamId,
+      name: {
+        equals: cleanName,
+        mode: "insensitive",
+      },
+    },
+  });
+
+  if (existing) {
+    throw new Error("Já existe uma empresa com este nome na equipe.");
+  }
+
+  const created = await prisma.sponsor.create({
+    data: {
+      teamId,
+      name: cleanName,
+      tier: input.tier,
+      contactName: input.contactName?.trim() || null,
+      notes: input.notes?.trim() || null,
+    },
+  });
+
+  return {
+    id: created.id,
+    name: created.name,
+    tier: created.tier,
+    contactName: created.contactName,
+    notes: created.notes,
+    createdAt: created.createdAt.toISOString(),
+  };
+}
+
+export async function updateSponsorService(
+  teamId: string,
+  input: UpdateSponsorInput
+): Promise<SponsorDTO> {
+  const existing = await prisma.sponsor.findFirst({
+    where: { id: input.id, teamId },
+  });
+
+  if (!existing) {
+    throw new Error("Empresa não encontrada na equipe.");
+  }
+
+  const cleanName = input.name.trim();
+  const nameCollision = await prisma.sponsor.findFirst({
+    where: {
+      teamId,
+      id: { not: input.id },
+      name: { equals: cleanName, mode: "insensitive" },
+    },
+  });
+
+  if (nameCollision) {
+    throw new Error("Já existe outra empresa com este nome na equipe.");
+  }
+
+  const updated = await prisma.sponsor.update({
+    where: { id: input.id },
+    data: {
+      name: cleanName,
+      tier: input.tier,
+      contactName: input.contactName?.trim() || null,
+      notes: input.notes?.trim() || null,
+    },
+  });
+
+  return {
+    id: updated.id,
+    name: updated.name,
+    tier: updated.tier,
+    contactName: updated.contactName,
+    notes: updated.notes,
+    createdAt: updated.createdAt.toISOString(),
+  };
+}
+
+export async function deleteSponsorService(
+  teamId: string,
+  input: DeleteSponsorInput
+) {
+  const existing = await prisma.sponsor.findFirst({
+    where: { id: input.id, teamId },
+  });
+
+  if (!existing) {
+    throw new Error("Empresa não encontrada na equipe.");
+  }
+
+  return prisma.sponsor.delete({
+    where: { id: input.id },
+  });
+}
+
+export async function createReturnActionService(
+  teamId: string,
+  input: CreateReturnActionInput
+): Promise<ReturnActionDTO> {
+  const sponsor = await prisma.sponsor.findFirst({
+    where: { id: input.sponsorId, teamId },
+  });
+
+  if (!sponsor) {
+    throw new Error("Empresa patrocinadora não encontrada na equipe.");
+  }
+
+  const created = await prisma.returnAction.create({
+    data: {
+      teamId,
+      sponsorId: input.sponsorId,
+      date: input.date,
+      title: input.title.trim(),
+      category: input.category,
+      reachCount: input.reachCount ?? null,
+      returnCents: input.returnCents,
+      description: input.description?.trim() || null,
+    },
+  });
+
+  return {
+    id: created.id,
+    sponsorId: created.sponsorId,
+    sponsorName: sponsor.name,
+    sponsorTier: sponsor.tier,
+    date: created.date.toISOString(),
+    title: created.title,
+    category: created.category,
+    reachCount: created.reachCount,
+    returnCents: created.returnCents,
+    description: created.description,
+    createdAt: created.createdAt.toISOString(),
+  };
+}
+
+export async function deleteReturnActionService(
+  teamId: string,
+  input: DeleteReturnActionInput
+) {
+  const existing = await prisma.returnAction.findFirst({
+    where: { id: input.id, teamId },
+  });
+
+  if (!existing) {
+    throw new Error("Ação de retorno não encontrada na equipe.");
+  }
+
+  return prisma.returnAction.delete({
+    where: { id: input.id },
+  });
+}
+
 const FALLBACK_SYSTEM_USER: AuthenticatedUserDTO = {
   id: "system",
   sessionId: "system",
@@ -636,7 +856,14 @@ export async function getDashboardMetricsService(
   // Dentro da equipe, todos os 5 setores (Engenharia, Manufatura, Pit Display, Marketing, Gestão) se veem.
   const whereTeam = { teamId: activeTeam.id };
 
-  const [rawCategories, rawBudgetResources, rawTransactions, rawMembers] = await Promise.all([
+  const [
+    rawCategories,
+    rawBudgetResources,
+    rawTransactions,
+    rawMembers,
+    rawSponsors,
+    rawReturnActions,
+  ] = await Promise.all([
     prisma.category.findMany({
       where: whereTeam,
       orderBy: [{ deliveryGroup: "asc" }, { name: "asc" }],
@@ -656,6 +883,13 @@ export async function getDashboardMetricsService(
       where: whereTeam,
       include: {
         category: true,
+        sponsor: {
+          select: {
+            id: true,
+            name: true,
+            tier: true,
+          },
+        },
         budgetResource: {
           select: {
             code: true,
@@ -679,6 +913,31 @@ export async function getDashboardMetricsService(
         deliveryGroup: true,
       },
       orderBy: { name: "asc" },
+    }),
+    prisma.sponsor.findMany({
+      where: whereTeam,
+      include: {
+        transactions: {
+          select: { amountCents: true },
+        },
+        returnActions: {
+          select: { returnCents: true },
+        },
+      },
+      orderBy: [{ tier: "desc" }, { name: "asc" }],
+    }),
+    prisma.returnAction.findMany({
+      where: whereTeam,
+      include: {
+        sponsor: {
+          select: {
+            id: true,
+            name: true,
+            tier: true,
+          },
+        },
+      },
+      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     }),
   ]);
 
@@ -732,7 +991,68 @@ export async function getDashboardMetricsService(
     trackingMethod: t.trackingMethod,
     documentRef: t.documentRef,
     amountCents: t.amountCents,
+    sponsorId: t.sponsor?.id ?? null,
+    sponsorName: t.sponsor?.name ?? null,
+    sponsorTier: t.sponsor?.tier ?? null,
     createdAt: t.createdAt.toISOString(),
+  }));
+
+  const sponsors: SponsorDTO[] = rawSponsors.map((s) => ({
+    id: s.id,
+    name: s.name,
+    tier: s.tier,
+    contactName: s.contactName,
+    notes: s.notes,
+    createdAt: s.createdAt.toISOString(),
+  }));
+
+  const sponsorRoiSummaries: SponsorRoiSummaryDTO[] = rawSponsors.map((s) => {
+    const investedCents = s.transactions.reduce((acc, t) => acc + t.amountCents, 0);
+    const deliveredReturnCents = s.returnActions.reduce(
+      (acc, r) => acc + r.returnCents,
+      0
+    );
+    const netReturnCents = deliveredReturnCents - investedCents;
+    const roiPercent =
+      investedCents > 0
+        ? Math.round((netReturnCents / investedCents) * 100)
+        : deliveredReturnCents > 0
+        ? 100
+        : 0;
+
+    const returnMultiple =
+      investedCents > 0
+        ? `${(deliveredReturnCents / investedCents).toFixed(2)}x`
+        : "0.00x";
+
+    return {
+      id: s.id,
+      name: s.name,
+      tier: s.tier,
+      contactName: s.contactName,
+      notes: s.notes,
+      investedCents,
+      deliveredReturnCents,
+      netReturnCents,
+      roiPercent,
+      returnMultiple,
+      transactionsCount: s.transactions.length,
+      actionsCount: s.returnActions.length,
+    };
+  });
+
+  const returnActions: ReturnActionDTO[] = rawReturnActions.map((r) => ({
+    id: r.id,
+    sponsorId: r.sponsorId,
+    sponsorName: r.sponsor.name,
+    sponsorTier: r.sponsor.tier,
+    date: r.date.toISOString(),
+    title: r.title,
+    category: r.category,
+    reachCount: r.reachCount,
+    returnCents: r.returnCents,
+    description: r.description,
+    createdAt: r.createdAt.toISOString(),
   }));
 
   const seasonMonths = getSeasonMonthsFromTeam(activeTeam);
@@ -773,5 +1093,8 @@ export async function getDashboardMetricsService(
     seasonMonths,
     budgetResources,
     transactions,
+    sponsors,
+    sponsorRoiSummaries,
+    returnActions,
   };
 }

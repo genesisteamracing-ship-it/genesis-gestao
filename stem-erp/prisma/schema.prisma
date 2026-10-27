@@ -36,6 +36,22 @@ enum TrackingMethod {
   BANK_PIX_STATEMENT  // Comprovante PIX / Extrato Bancário
 }
 
+enum SponsorTier {
+  BRONZE   // Cota Bronze
+  SILVER   // Cota Prata
+  GOLD     // Cota Ouro
+  DIAMOND  // Cota Diamante
+}
+
+enum ReturnActionCategory {
+  CAR_UNIFORM_BRANDING // Logo no Carro / Uniforme / Equipamentos
+  SOCIAL_MEDIA         // Publicação / Reels / Stories em Redes Sociais
+  PIT_DISPLAY_EVENT    // Exposição em Pit Display / Estande / Eventos
+  PRESS_PORTFOLIO      // Imprensa / Portfólio Oficial / Apresentações
+  SOCIAL_WORKSHOP      // Ação / Oficina em Projeto Social
+  OTHER_ACTIVATION     // Outras Ativações de Marca
+}
+
 enum UserRole {
   SUPER_ADMIN         // Administrador Global da Plataforma (Cria Equipes e Usuários)
   FINANCE_MANAGER     // Diretor Financeiro da Equipe
@@ -68,6 +84,8 @@ model Team {
   categories      Category[]
   budgetResources BudgetResource[]
   transactions    Transaction[]
+  sponsors        Sponsor[]
+  returnActions   ReturnAction[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -126,10 +144,13 @@ model Transaction {
   trackingMethod   TrackingMethod
   documentRef      String?         // Número da NF-e, código da transação ou link do comprovante
   amountCents      Int             // Valor realizado em centavos
+  sponsorId        String?         // Empresa patrocinadora (obrigatório se contrato de patrocínio)
+  sponsor          Sponsor?        @relation(fields: [sponsorId], references: [id], onDelete: SetNull)
   createdAt        DateTime        @default(now())
 
   @@index([teamId, referenceMonth, type])
   @@index([teamId, deliveryGroup, referenceMonth])
+  @@index([teamId, sponsorId])
 }
 
 // 4. Usuários / Integrantes da Plataforma
@@ -184,4 +205,41 @@ model AuthAuditLog {
 
   @@index([emailAttempt, createdAt])
   @@index([event, createdAt])
+}
+
+// 7. Empresas Patrocinadoras (Isoladas por Equipe, Cotas Bronze/Prata/Ouro/Diamante)
+model Sponsor {
+  id            String         @id @default(cuid())
+  teamId        String
+  team          Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  name          String         // Ex: Bosch, SENAI, Haas Automation
+  tier          SponsorTier    // BRONZE, SILVER, GOLD, DIAMOND
+  contactName   String?        // Nome do ponto focal / contato na empresa
+  notes         String?        // Contrapartidas e observações
+  transactions  Transaction[]  // Lançamentos vinculados (investimento da empresa)
+  returnActions ReturnAction[] // Ações executadas pela equipe para entrega de retorno
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([teamId, name])
+  @@index([teamId, tier])
+}
+
+// 8. Ações de Retorno da Equipe aos Patrocinadores
+model ReturnAction {
+  id          String               @id @default(cuid())
+  teamId      String
+  team        Team                 @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  sponsorId   String
+  sponsor     Sponsor              @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  date        DateTime             // Data da realização da ação
+  title       String               // Ex: Exposição de Logo no Bico do Carro F1
+  category    ReturnActionCategory // Categoria da entrega de retorno
+  reachCount  Int?                 // Alcance estimado / público / impressões
+  returnCents Int                  // Valoração do retorno entregue em centavos
+  description String?              // Detalhamento auditável / links de evidência
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([teamId, sponsorId, date])
 }

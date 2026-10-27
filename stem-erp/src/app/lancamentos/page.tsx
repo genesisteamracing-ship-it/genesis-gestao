@@ -21,6 +21,7 @@ export default async function LancamentosPage() {
         <CreateTransactionDialog
           categories={metrics.categories}
           budgetResources={metrics.budgetResources}
+          sponsors={metrics.sponsors}
           currentUser={metrics.currentUser}
           triggerLabel="+ Lançar Transação"
         />

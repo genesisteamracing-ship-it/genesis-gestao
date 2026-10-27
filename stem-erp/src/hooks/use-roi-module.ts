@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
+import type { SponsorTier } from "@prisma/client";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import { deliveryGroupValues } from "@/lib/validations/financial";
 import { parseReaisToCents } from "@/lib/utils";
-import type { DashboardMetricsDTO } from "@/types/financial";
+import type { DashboardMetricsDTO, SponsorRoiSummaryDTO } from "@/types/financial";
 
 export interface SectorRoiRow {
   deliveryGroup: (typeof deliveryGroupValues)[number];
@@ -17,6 +18,10 @@ export interface SectorRoiRow {
 }
 
 export function useRoiModule(metrics: DashboardMetricsDTO) {
+  // Filtro de Empresas Patrocinadoras
+  const [tierFilter, setTierFilter] = React.useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
+
   // Estado do Simulador de ROI para Patrocinadores
   const [sponsorInvestmentReais, setSponsorInvestmentReais] =
     React.useState("2500,00");
@@ -25,7 +30,71 @@ export function useRoiModule(metrics: DashboardMetricsDTO) {
   const [brandActivationsReais, setBrandActivationsReais] =
     React.useState("1800,00");
 
-  // Métricas reais consolidadas da Equipe
+  const sponsorRoiSummaries = metrics.sponsorRoiSummaries ?? [];
+
+  // Métricas agregadas de Patrocinadores
+  const sponsorAggregates = React.useMemo(() => {
+    const totalInvestedCents = sponsorRoiSummaries.reduce(
+      (acc, s) => acc + s.investedCents,
+      0
+    );
+    const totalReturnCents = sponsorRoiSummaries.reduce(
+      (acc, s) => acc + s.deliveredReturnCents,
+      0
+    );
+    const netReturnCents = totalReturnCents - totalInvestedCents;
+    const globalRoiPercent =
+      totalInvestedCents > 0
+        ? Math.round((netReturnCents / totalInvestedCents) * 100)
+        : totalReturnCents > 0
+        ? 100
+        : 0;
+
+    const globalMultiple =
+      totalInvestedCents > 0
+        ? `${(totalReturnCents / totalInvestedCents).toFixed(2)}x`
+        : "0.00x";
+
+    const tierCounts: Record<SponsorTier, number> = {
+      DIAMOND: 0,
+      GOLD: 0,
+      SILVER: 0,
+      BRONZE: 0,
+    };
+
+    for (const s of sponsorRoiSummaries) {
+      tierCounts[s.tier] = (tierCounts[s.tier] || 0) + 1;
+    }
+
+    return {
+      totalInvestedCents,
+      totalReturnCents,
+      netReturnCents,
+      globalRoiPercent,
+      globalMultiple,
+      tierCounts,
+      totalSponsorsCount: sponsorRoiSummaries.length,
+    };
+  }, [sponsorRoiSummaries]);
+
+  // Lista filtrada de Patrocinadores
+  const filteredSponsors = React.useMemo(() => {
+    return sponsorRoiSummaries.filter((s) => {
+      if (tierFilter !== "ALL" && s.tier !== tierFilter) {
+        return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = s.name.toLowerCase().includes(q);
+        const matchesContact = s.contactName?.toLowerCase().includes(q);
+        const matchesNotes = s.notes?.toLowerCase().includes(q);
+        return matchesName || matchesContact || matchesNotes;
+      }
+      return true;
+    });
+  }, [sponsorRoiSummaries, tierFilter, searchQuery]);
+
+  // Métricas reais consolidadas da Equipe (Orçamento x Captação)
   const summary = React.useMemo(() => {
     const { kpis, budgetResources } = metrics;
 
@@ -154,6 +223,12 @@ export function useRoiModule(metrics: DashboardMetricsDTO) {
   return {
     summary,
     simulation,
+    sponsorAggregates,
+    filteredSponsors,
+    tierFilter,
+    setTierFilter,
+    searchQuery,
+    setSearchQuery,
     sponsorInvestmentReais,
     setSponsorInvestmentReais,
     estimatedReach,

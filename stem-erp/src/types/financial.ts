@@ -1,6 +1,8 @@
 import type {
   AcquisitionStrategy,
   DeliveryGroup,
+  ReturnActionCategory,
+  SponsorTier,
   TrackingMethod,
   TransactionType,
 } from "@prisma/client";
@@ -73,7 +75,48 @@ export interface TransactionDTO {
   trackingMethod: TrackingMethod;
   documentRef: string | null;
   amountCents: number;
+  sponsorId: string | null;
+  sponsorName: string | null;
+  sponsorTier: SponsorTier | null;
   createdAt: string;
+}
+
+export interface SponsorDTO {
+  id: string;
+  name: string;
+  tier: SponsorTier;
+  contactName: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface ReturnActionDTO {
+  id: string;
+  sponsorId: string;
+  sponsorName: string;
+  sponsorTier: SponsorTier;
+  date: string;
+  title: string;
+  category: ReturnActionCategory;
+  reachCount: number | null;
+  returnCents: number;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface SponsorRoiSummaryDTO {
+  id: string;
+  name: string;
+  tier: SponsorTier;
+  contactName: string | null;
+  notes: string | null;
+  investedCents: number;
+  deliveredReturnCents: number;
+  netReturnCents: number;
+  roiPercent: number;
+  returnMultiple: string;
+  transactionsCount: number;
+  actionsCount: number;
 }
 
 export interface CashFlowMonthPoint {
@@ -134,4 +177,7 @@ export interface DashboardMetricsDTO {
   seasonMonths: SeasonMonthDTO[];
   budgetResources: BudgetResourceDTO[];
   transactions: TransactionDTO[];
+  sponsors: SponsorDTO[];
+  sponsorRoiSummaries: SponsorRoiSummaryDTO[];
+  returnActions: ReturnActionDTO[];
 }

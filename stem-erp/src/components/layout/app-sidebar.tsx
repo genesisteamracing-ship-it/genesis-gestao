@@ -8,6 +8,7 @@ import {
   Layers,
   LayoutDashboard,
   ListOrdered,
+  Megaphone,
   TrendingUp,
   Users,
   Wallet,
@@ -51,6 +52,19 @@ const FINANCE_SUB_ITEMS = [
   },
 ] as const;
 
+const ROI_SUB_ITEMS = [
+  {
+    href: "/roi",
+    label: "Visão Geral & Cotas",
+    icon: TrendingUp,
+  },
+  {
+    href: "/roi/acoes",
+    label: "Ações de Retorno",
+    icon: Megaphone,
+  },
+] as const;
+
 interface AppSidebarProps {
   currentUser: AuthenticatedUserDTO;
 }
@@ -71,7 +85,18 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
     }
   }, [isFinanceRouteActive]);
 
-  const isRoiActive = pathname === "/roi" || pathname.startsWith("/roi/");
+  const isRoiRouteActive = ROI_SUB_ITEMS.some(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
+  );
+
+  const [isRoiOpen, setIsRoiOpen] = React.useState<boolean>(true);
+
+  React.useEffect(() => {
+    if (isRoiRouteActive) {
+      setIsRoiOpen(true);
+    }
+  }, [isRoiRouteActive]);
+
   const isEquipeActive =
     pathname === "/equipe" || pathname.startsWith("/equipe/");
 
@@ -146,21 +171,57 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
             )}
           </div>
 
-          {/* Módulo: ROI */}
+          {/* Combo / Grupo: ROI & Patrocínio */}
           <div className="relative px-5">
-            {isRoiActive && (
+            {isRoiRouteActive && !isRoiOpen && (
               <span
                 aria-hidden="true"
                 className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
               />
             )}
-            <Link
-              href="/roi"
-              className={sidebarItemStyles({ isActive: isRoiActive })}
+
+            <button
+              type="button"
+              onClick={() => setIsRoiOpen((prev) => !prev)}
+              aria-expanded={isRoiOpen}
+              className={sidebarItemStyles({
+                isActive: isRoiRouteActive && !isRoiOpen,
+              })}
             >
-              <TrendingUp className="h-4 w-4 shrink-0" />
-              <span>ROI</span>
-            </Link>
+              <TrendingUp className="h-4 w-4 shrink-0 text-primary" />
+              <span className="flex-1 text-left">ROI</span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                  isRoiOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {isRoiOpen && (
+              <div className="mt-1 ml-4 space-y-1 border-l border-border pl-2.5">
+                {ROI_SUB_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    pathname === item.href ||
+                    (item.href !== "/roi" && pathname.startsWith(`${item.href}/`)) ||
+                    (item.href === "/roi" && pathname === "/roi");
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={sidebarItemStyles({
+                        isActive,
+                        isSubItem: true,
+                      })}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Módulo SuperAdmin: Equipe & Acessos */}

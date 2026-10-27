@@ -38,6 +38,7 @@ export function DashboardView({ initialMetrics }: DashboardViewProps) {
           <CreateTransactionDialog
             categories={data.categories}
             budgetResources={data.budgetResources}
+            sponsors={data.sponsors}
             currentUser={data.currentUser}
             triggerLabel="+ Lançar Transação"
           />

@@ -5,15 +5,23 @@ import { UserRole } from "@prisma/client";
 import {
   createBudgetResourceSchema,
   createCategorySchema,
+  createReturnActionSchema,
+  createSponsorSchema,
   createTransactionSchema,
   deleteBudgetResourceSchema,
+  deleteReturnActionSchema,
+  deleteSponsorSchema,
   deleteTransactionSchema,
   updateBudgetResourceSchema,
   updateTransactionSchema,
   type CreateBudgetResourceInput,
   type CreateCategoryInput,
+  type CreateReturnActionInput,
+  type CreateSponsorInput,
   type CreateTransactionInput,
   type DeleteBudgetResourceInput,
+  type DeleteReturnActionInput,
+  type DeleteSponsorInput,
   type DeleteTransactionInput,
   type UpdateBudgetResourceInput,
   type UpdateTransactionInput,
@@ -22,15 +30,24 @@ import { requireAuthUser } from "@/services/auth-service";
 import {
   createBudgetResourceService,
   createCategoryService,
+  createReturnActionService,
+  createSponsorService,
   createTransactionService,
   deleteBudgetResourceService,
+  deleteReturnActionService,
+  deleteSponsorService,
   deleteTransactionService,
   getDashboardMetricsService,
   resolveActiveTeam,
   updateBudgetResourceService,
   updateTransactionService,
 } from "@/services/financial-service";
-import type { CategoryDTO, DashboardMetricsDTO } from "@/types/financial";
+import type {
+  CategoryDTO,
+  DashboardMetricsDTO,
+  ReturnActionDTO,
+  SponsorDTO,
+} from "@/types/financial";
 
 export interface ActionResponse<T = unknown> {
   success: boolean;
@@ -68,6 +85,8 @@ export async function createBudgetResourceAction(
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
     revalidatePath("/lancamentos");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
 
     return {
       success: true,
@@ -116,6 +135,8 @@ export async function createTransactionAction(
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
     revalidatePath("/lancamentos");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
 
     return {
       success: true,
@@ -164,6 +185,8 @@ export async function updateBudgetResourceAction(
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
     revalidatePath("/lancamentos");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
 
     return {
       success: true,
@@ -207,6 +230,8 @@ export async function deleteBudgetResourceAction(
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
     revalidatePath("/lancamentos");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
 
     return {
       success: true,
@@ -251,6 +276,8 @@ export async function updateTransactionAction(
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
     revalidatePath("/lancamentos");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
 
     return {
       success: true,
@@ -294,6 +321,8 @@ export async function deleteTransactionAction(
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
     revalidatePath("/lancamentos");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
 
     return {
       success: true,
@@ -340,6 +369,8 @@ export async function createCategoryAction(
     revalidatePath("/dashboard");
     revalidatePath("/planejamento");
     revalidatePath("/lancamentos");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
 
     return {
       success: true,
@@ -352,6 +383,186 @@ export async function createCategoryAction(
       error instanceof Error
         ? error.message
         : "Não foi possível cadastrar a categoria.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}
+
+export async function createSponsorAction(
+  rawData: CreateSponsorInput
+): Promise<ActionResponse<SponsorDTO>> {
+  const user = await requireAuthUser();
+
+  if (user.role === UserRole.AUDITOR) {
+    return {
+      success: false,
+      message: "Acesso negado: o perfil Auditor possui permissão somente de leitura.",
+    };
+  }
+
+  const parsed = createSponsorSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message || "Verifique os dados da empresa.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const { activeTeam } = await resolveActiveTeam(user);
+    const created = await createSponsorService(activeTeam.id, parsed.data);
+
+    revalidatePath("/dashboard");
+    revalidatePath("/lancamentos");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
+
+    return {
+      success: true,
+      message: `Empresa "${created.name}" cadastrada com sucesso!`,
+      data: created,
+    };
+  } catch (error) {
+    console.error("[createSponsorAction] Erro:", error);
+    const message =
+      error instanceof Error ? error.message : "Erro ao cadastrar empresa.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}
+
+export async function deleteSponsorAction(
+  rawData: DeleteSponsorInput
+): Promise<ActionResponse> {
+  const user = await requireAuthUser();
+
+  if (user.role === UserRole.AUDITOR) {
+    return {
+      success: false,
+      message: "Acesso negado: o perfil Auditor possui permissão somente de leitura.",
+    };
+  }
+
+  const parsed = deleteSponsorSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "ID da empresa inválido.",
+    };
+  }
+
+  try {
+    const { activeTeam } = await resolveActiveTeam(user);
+    await deleteSponsorService(activeTeam.id, parsed.data);
+
+    revalidatePath("/dashboard");
+    revalidatePath("/lancamentos");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
+
+    return {
+      success: true,
+      message: "Empresa patrocinadora removida com sucesso!",
+    };
+  } catch (error) {
+    console.error("[deleteSponsorAction] Erro:", error);
+    const message =
+      error instanceof Error ? error.message : "Erro ao excluir empresa.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}
+
+export async function createReturnActionAction(
+  rawData: CreateReturnActionInput
+): Promise<ActionResponse<ReturnActionDTO>> {
+  const user = await requireAuthUser();
+
+  if (user.role === UserRole.AUDITOR) {
+    return {
+      success: false,
+      message: "Acesso negado: o perfil Auditor possui permissão somente de leitura.",
+    };
+  }
+
+  const parsed = createReturnActionSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message:
+        parsed.error.issues[0]?.message ||
+        "Verifique os campos da ação de retorno.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const { activeTeam } = await resolveActiveTeam(user);
+    const created = await createReturnActionService(activeTeam.id, parsed.data);
+
+    revalidatePath("/dashboard");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
+
+    return {
+      success: true,
+      message: `Ação "${created.title}" registrada com sucesso!`,
+      data: created,
+    };
+  } catch (error) {
+    console.error("[createReturnActionAction] Erro:", error);
+    const message =
+      error instanceof Error ? error.message : "Erro ao registrar ação de retorno.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}
+
+export async function deleteReturnActionAction(
+  rawData: DeleteReturnActionInput
+): Promise<ActionResponse> {
+  const user = await requireAuthUser();
+
+  if (user.role === UserRole.AUDITOR) {
+    return {
+      success: false,
+      message: "Acesso negado: o perfil Auditor possui permissão somente de leitura.",
+    };
+  }
+
+  const parsed = deleteReturnActionSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "ID da ação inválido.",
+    };
+  }
+
+  try {
+    const { activeTeam } = await resolveActiveTeam(user);
+    await deleteReturnActionService(activeTeam.id, parsed.data);
+
+    revalidatePath("/dashboard");
+    revalidatePath("/roi");
+    revalidatePath("/roi/acoes");
+
+    return {
+      success: true,
+      message: "Ação de retorno removida com sucesso!",
+    };
+  } catch (error) {
+    console.error("[deleteReturnActionAction] Erro:", error);
+    const message =
+      error instanceof Error ? error.message : "Erro ao excluir ação de retorno.";
     return {
       success: false,
       message,

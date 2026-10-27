@@ -2,6 +2,8 @@ import type {
   AcquisitionStrategy,
   AuthEventType,
   DeliveryGroup,
+  ReturnActionCategory,
+  SponsorTier,
   TrackingMethod,
   TransactionType,
   UserRole,
@@ -42,6 +44,22 @@ export const TRACKING_METHOD_LABELS: Record<TrackingMethod, string> = {
   RECEIPT: "Recibo Simples",
   SPONSOR_CONTRACT: "Contrato de Patrocínio",
   BANK_PIX_STATEMENT: "PIX / Extrato Bancário",
+};
+
+export const SPONSOR_TIER_LABELS: Record<SponsorTier, string> = {
+  BRONZE: "Cota Bronze",
+  SILVER: "Cota Prata",
+  GOLD: "Cota Ouro",
+  DIAMOND: "Cota Diamante",
+};
+
+export const RETURN_ACTION_CATEGORY_LABELS: Record<ReturnActionCategory, string> = {
+  CAR_UNIFORM_BRANDING: "Logo no Carro / Uniforme",
+  SOCIAL_MEDIA: "Redes Sociais (Reels / Post)",
+  PIT_DISPLAY_EVENT: "Pit Display & Eventos",
+  PRESS_PORTFOLIO: "Imprensa & Portfólio Oficial",
+  SOCIAL_WORKSHOP: "Oficina em Projeto Social",
+  OTHER_ACTIVATION: "Outras Ativações de Marca",
 };
 
 export const USER_ROLE_LABELS: Record<UserRole, string> = {

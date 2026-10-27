@@ -4,15 +4,18 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import Link from "next/link";
 import {
   ArrowDownCircle,
   ArrowUpCircle,
+  Building2,
   Loader2,
   PlusCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   DELIVERY_GROUP_LABELS,
+  SPONSOR_TIER_LABELS,
   TRACKING_METHOD_LABELS,
 } from "@/lib/constants";
 import {
@@ -22,10 +25,15 @@ import {
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
 import { createTransactionAction } from "@/actions/financial-actions";
+import { useDashboardMetrics } from "@/hooks/use-dashboard-metrics";
 import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
 import { useSeasonMonths } from "@/providers/season-provider";
 import type { AuthenticatedUserDTO } from "@/types/auth";
-import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
+import type {
+  BudgetResourceDTO,
+  CategoryDTO,
+  SponsorDTO,
+} from "@/types/financial";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -61,6 +69,7 @@ const transactionFormSchema = z.object({
   deliveryGroup: z.enum(deliveryGroupValues),
   categoryId: z.string().min(1, "Selecione uma categoria"),
   budgetResourceId: z.string().optional(),
+  sponsorId: z.string().optional().nullable(),
   description: z.string().min(3, "Descreva a transação (mín. 3 caracteres)"),
   trackingMethod: z.enum(trackingMethodValues),
   documentRef: z.string().optional(),
@@ -76,6 +85,7 @@ type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 interface CreateTransactionDialogProps {
   categories: CategoryDTO[];
   budgetResources: BudgetResourceDTO[];
+  sponsors?: SponsorDTO[];
   currentUser?: AuthenticatedUserDTO;
   triggerLabel?: string;
 }
@@ -83,12 +93,15 @@ interface CreateTransactionDialogProps {
 export function CreateTransactionDialog({
   categories,
   budgetResources,
+  sponsors = [],
   currentUser,
   triggerLabel = "+ Lançar Transação (Realizado)",
 }: CreateTransactionDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
   const invalidateDashboard = useInvalidateDashboard();
+  const { metrics } = useDashboardMetrics();
+  const availableSponsors = sponsors.length > 0 ? sponsors : (metrics?.sponsors ?? []);
 
   const defaultGroup = currentUser?.deliveryGroup ?? "MANUFACTURING_CNC";
 
@@ -105,6 +118,7 @@ export function CreateTransactionDialog({
       deliveryGroup: defaultGroup,
       categoryId: "",
       budgetResourceId: "NONE",
+      sponsorId: "NONE",
       description: "",
       trackingMethod: "NFE",
       documentRef: "",
@@ -122,6 +136,19 @@ export function CreateTransactionDialog({
   const watchedType = form.watch("type");
   const watchedDeliveryGroup = form.watch("deliveryGroup");
   const watchedReais = form.watch("amountReais");
+  const watchedTrackingMethod = form.watch("trackingMethod");
+  const watchedBudgetResourceId = form.watch("budgetResourceId");
+
+  const selectedResource = React.useMemo(
+    () => budgetResources.find((b) => b.id === watchedBudgetResourceId),
+    [budgetResources, watchedBudgetResourceId]
+  );
+
+  const isSponsorRelated =
+    watchedTrackingMethod === "SPONSOR_CONTRACT" ||
+    watchedDeliveryGroup === "MARKETING_SPONSOR" ||
+    selectedResource?.acquisitionStrategy === "FINANCIAL_SPONSOR" ||
+    selectedResource?.acquisitionStrategy === "BARTER_PARTNERSHIP";
 
   const filteredCategories = React.useMemo(() => {
     const matching = categories.filter(
@@ -168,6 +195,8 @@ export function CreateTransactionDialog({
         categoryId: values.categoryId,
         budgetResourceId:
           values.budgetResourceId === "NONE" ? null : values.budgetResourceId,
+        sponsorId:
+          values.sponsorId === "NONE" || !values.sponsorId ? null : values.sponsorId,
         description: values.description,
         trackingMethod: values.trackingMethod,
         documentRef: values.documentRef,
@@ -188,6 +217,7 @@ export function CreateTransactionDialog({
         deliveryGroup: defaultGroup,
         categoryId: filteredCategories[0]?.id ?? "",
         budgetResourceId: "NONE",
+        sponsorId: "NONE",
         description: "",
         trackingMethod: "NFE",
         documentRef: "",
@@ -424,6 +454,62 @@ export function CreateTransactionDialog({
                 </FormItem>
               )}
             />
+
+            {isSponsorRelated && (
+              <FormField
+                control={form.control}
+                name="sponsorId"
+                render={({ field }) => (
+                  <FormItem className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <FormLabel className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Building2 className="h-4 w-4 text-primary" />
+                        <span>
+                          Empresa Patrocinadora{" "}
+                          {watchedTrackingMethod === "SPONSOR_CONTRACT" && (
+                            <span className="text-destructive">*</span>
+                          )}
+                        </span>
+                      </FormLabel>
+                      <Link
+                        href="/roi"
+                        target="_blank"
+                        className="text-xs font-semibold text-primary hover:underline"
+                      >
+                        + Gerenciar Empresas no ROI
+                      </Link>
+                    </div>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ?? "NONE"}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-card">
+                          <SelectValue placeholder="Selecione a empresa patrocinadora" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="NONE">
+                          {watchedTrackingMethod === "SPONSOR_CONTRACT"
+                            ? "Selecione uma empresa..."
+                            : "Sem empresa vinculada (Lançamento comum)"}
+                        </SelectItem>
+                        {availableSponsors.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} ({SPONSOR_TIER_LABELS[s.tier]})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-[11px] text-muted-foreground">
+                      O valor deste lançamento alimentará automaticamente o investimento
+                      da empresa para apuração do ROI e contrapartidas.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <DialogFooter className="pt-2">
               <Button
