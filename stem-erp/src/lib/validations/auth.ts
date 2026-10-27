@@ -63,7 +63,18 @@ export const updateMemberAccessSchema = z.object({
   isActive: z.boolean(),
 });
 
+export const deleteTeamSchema = z.object({
+  teamId: z.string().min(1, "ID da equipe é obrigatório"),
+  confirmationText: z
+    .string()
+    .trim()
+    .refine((val: string): boolean => val === "EXCLUIR", {
+      message: 'Digite exatamente "EXCLUIR" em letras maiúsculas para confirmar.',
+    }),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type UpdateMemberAccessInput = z.infer<typeof updateMemberAccessSchema>;
+export type DeleteTeamInput = z.infer<typeof deleteTeamSchema>;

@@ -14,6 +14,7 @@ import {
 import type {
   CreateMemberInput,
   CreateTeamInput,
+  DeleteTeamInput,
   LoginInput,
   UpdateMemberAccessInput,
 } from "@/lib/validations/auth";
@@ -718,4 +719,86 @@ export async function getTeamManagementMetricsService(): Promise<TeamManagementM
       blockedInvasionAttempts: blockedAttemptsCount,
     },
   };
+}
+
+export async function deleteTeamService(
+  superAdmin: AuthenticatedUserDTO,
+  input: DeleteTeamInput
+) {
+  if (superAdmin.role !== "SUPER_ADMIN") {
+    throw new Error("Apenas o SuperAdmin pode excluir equipes.");
+  }
+
+  if (input.confirmationText !== "EXCLUIR") {
+    throw new Error('Confirmação inválida. Digite "EXCLUIR" em maiúsculas.');
+  }
+
+  const team = await prisma.team.findUnique({
+    where: { id: input.teamId },
+    select: { id: true, name: true },
+  });
+
+  if (!team) {
+    throw new Error("Equipe não encontrada ou já foi removida.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Deletar os usuários não-SuperAdmin vinculados a essa equipe
+    await tx.user.deleteMany({
+      where: {
+        teamId: team.id,
+        role: { not: "SUPER_ADMIN" },
+      },
+    });
+
+    // 2. Desvincular qualquer SuperAdmin que estivesse associado a ela
+    await tx.user.updateMany({
+      where: {
+        teamId: team.id,
+        role: "SUPER_ADMIN",
+      },
+      data: {
+        teamId: null,
+      },
+    });
+
+    // 3. Deletar a equipe (Cascade deleta categories, budgetResources e transactions)
+    await tx.team.delete({
+      where: { id: team.id },
+    });
+
+    // 4. Registrar trilha de auditoria
+    const { ipAddress, userAgent } = await getRequestMetadata();
+    await tx.authAuditLog.create({
+      data: {
+        userId: superAdmin.id,
+        emailAttempt: superAdmin.email,
+        event: AuthEventType.TEAM_CREATED,
+        ipAddress,
+        userAgent,
+        details: `Equipe "${team.name}" e todos os seus registros foram excluídos permanentemente pelo SuperAdmin.`,
+      },
+    });
+  });
+
+  // 5. Se o SuperAdmin estava com essa equipe ativa no cookie, alternar ou limpar
+  const cookieStore = await cookies();
+  const currentActiveTeamId = cookieStore.get(ACTIVE_TEAM_COOKIE_NAME)?.value;
+  if (currentActiveTeamId === team.id) {
+    const nextAvailableTeam = await prisma.team.findFirst({
+      select: { id: true },
+    });
+
+    if (nextAvailableTeam) {
+      cookieStore.set(
+        ACTIVE_TEAM_COOKIE_NAME,
+        nextAvailableTeam.id,
+        getHttpOnlyCookieOptions()
+      );
+    } else {
+      cookieStore.delete(ACTIVE_TEAM_COOKIE_NAME);
+    }
+  }
+
+  return team;
 }

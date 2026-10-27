@@ -11,10 +11,12 @@ import { prisma } from "@/lib/prisma";
 import {
   createMemberSchema,
   createTeamSchema,
+  deleteTeamSchema,
   loginSchema,
   updateMemberAccessSchema,
   type CreateMemberInput,
   type CreateTeamInput,
+  type DeleteTeamInput,
   type LoginInput,
   type UpdateMemberAccessInput,
 } from "@/lib/validations/auth";
@@ -22,6 +24,7 @@ import {
   authenticateUserService,
   createTeamMemberService,
   createTeamService,
+  deleteTeamService,
   getTeamManagementMetricsService,
   logoutUserService,
   requireSuperAdmin,
@@ -241,6 +244,43 @@ export async function unlockUserAccountAction(
       error instanceof Error
         ? error.message
         : "Erro ao desbloquear conta.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}
+
+export async function deleteTeamAction(
+  rawData: DeleteTeamInput
+): Promise<ActionResponse> {
+  const superAdmin = await requireSuperAdmin();
+
+  const parsed = deleteTeamSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message:
+        parsed.error.issues[0]?.message ||
+        'Confirmação inválida. Digite "EXCLUIR" em maiúsculas.',
+    };
+  }
+
+  try {
+    const deletedTeam = await deleteTeamService(superAdmin, parsed.data);
+
+    revalidatePath("/equipe");
+    revalidatePath("/dashboard");
+    revalidatePath("/planejamento");
+    revalidatePath("/lancamentos");
+
+    return {
+      success: true,
+      message: `Equipe "${deletedTeam.name}" excluída com sucesso!`,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Erro ao excluir equipe.";
     return {
       success: false,
       message,

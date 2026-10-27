@@ -9,6 +9,7 @@ import { getDashboardMetricsAction } from "@/actions/financial-actions";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { CreateTeamDialog } from "@/components/modals/create-team-dialog";
 import { CreateMemberDialog } from "@/components/modals/create-member-dialog";
+import { DeleteTeamDialog } from "@/components/modals/delete-team-dialog";
 import { TeamMembersDataTable } from "@/components/tables/team-members-data-table";
 import { SecurityAuditTable } from "@/components/tables/security-audit-table";
 import { Badge } from "@/components/ui/badge";
@@ -148,7 +149,12 @@ export default async function EquipePage() {
                       {team.schoolOrOrg || "Escuderia STEM Racing"}
                     </p>
                   </div>
-                  <Badge variant="success">Isolamento Ativo</Badge>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="success">Isolamento Ativo</Badge>
+                    {financialMetrics.currentUser.role === "SUPER_ADMIN" && (
+                      <DeleteTeamDialog teamId={team.id} teamName={team.name} />
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted p-3 text-center">
