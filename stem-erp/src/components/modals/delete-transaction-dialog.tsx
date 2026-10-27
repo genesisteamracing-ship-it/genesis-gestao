@@ -4,6 +4,7 @@ import * as React from "react";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteTransactionAction } from "@/actions/financial-actions";
+import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
 import { formatCurrencyFromCents, formatDateBR } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/financial";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export function DeleteTransactionDialog({
   onOpenChange,
 }: DeleteTransactionDialogProps) {
   const [isPending, startTransition] = React.useTransition();
+  const invalidateDashboard = useInvalidateDashboard();
 
   function handleDelete() {
     startTransition(async () => {
@@ -39,6 +41,7 @@ export function DeleteTransactionDialog({
       }
 
       toast.success(res.message);
+      invalidateDashboard();
       onOpenChange(false);
     });
   }

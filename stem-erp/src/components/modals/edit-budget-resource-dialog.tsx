@@ -18,6 +18,7 @@ import {
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
 import { updateBudgetResourceAction } from "@/actions/financial-actions";
+import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
 import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,6 +81,7 @@ export function EditBudgetResourceDialog({
   onOpenChange,
 }: EditBudgetResourceDialogProps) {
   const [isPending, startTransition] = React.useTransition();
+  const invalidateDashboard = useInvalidateDashboard();
 
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
@@ -142,6 +144,7 @@ export function EditBudgetResourceDialog({
       }
 
       toast.success(result.message);
+      invalidateDashboard();
       onOpenChange(false);
     });
   }

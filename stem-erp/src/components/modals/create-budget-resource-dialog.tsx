@@ -18,6 +18,7 @@ import {
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
 import { createBudgetResourceAction } from "@/actions/financial-actions";
+import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { CategoryDTO } from "@/types/financial";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ export function CreateBudgetResourceDialog({
 }: CreateBudgetResourceDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
+  const invalidateDashboard = useInvalidateDashboard();
 
   const defaultGroup = currentUser?.deliveryGroup ?? "MANUFACTURING_CNC";
 
@@ -141,6 +143,7 @@ export function CreateBudgetResourceDialog({
       }
 
       toast.success(result.message);
+      invalidateDashboard();
       form.reset({
         deliveryGroup: defaultGroup,
         categoryId: filteredCategories[0]?.id ?? "",

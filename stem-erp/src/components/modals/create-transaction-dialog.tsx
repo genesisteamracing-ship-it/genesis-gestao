@@ -24,6 +24,7 @@ import {
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
 import { createTransactionAction } from "@/actions/financial-actions";
+import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,7 @@ export function CreateTransactionDialog({
 }: CreateTransactionDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
+  const invalidateDashboard = useInvalidateDashboard();
 
   const defaultGroup = currentUser?.deliveryGroup ?? "MANUFACTURING_CNC";
 
@@ -178,6 +180,7 @@ export function CreateTransactionDialog({
       }
 
       toast.success(result.message);
+      invalidateDashboard();
       form.reset({
         date: todayISO,
         referenceMonth: 1,

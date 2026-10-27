@@ -4,6 +4,7 @@ import * as React from "react";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteTeamAction } from "@/actions/auth-actions";
+import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,6 +26,7 @@ export function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [confirmationText, setConfirmationText] = React.useState("");
   const [isPending, startTransition] = React.useTransition();
+  const invalidateDashboard = useInvalidateDashboard();
 
   const isConfirmed = confirmationText.trim() === "EXCLUIR";
 
@@ -43,6 +45,7 @@ export function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogProps) {
       }
 
       toast.success(res.message);
+      invalidateDashboard();
       setOpen(false);
       setConfirmationText("");
     });

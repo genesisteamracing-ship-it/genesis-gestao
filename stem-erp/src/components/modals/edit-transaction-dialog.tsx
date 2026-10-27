@@ -19,6 +19,7 @@ import {
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
 import { updateTransactionAction } from "@/actions/financial-actions";
+import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
 import type {
   BudgetResourceDTO,
   CategoryDTO,
@@ -86,6 +87,7 @@ export function EditTransactionDialog({
   onOpenChange,
 }: EditTransactionDialogProps) {
   const [isPending, startTransition] = React.useTransition();
+  const invalidateDashboard = useInvalidateDashboard();
 
   function getISODate(d: Date | string) {
     try {
@@ -166,6 +168,7 @@ export function EditTransactionDialog({
       }
 
       toast.success(result.message);
+      invalidateDashboard();
       onOpenChange(false);
     });
   }

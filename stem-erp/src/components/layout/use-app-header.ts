@@ -4,12 +4,14 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { logoutAction, switchSuperAdminTeamAction } from "@/actions/auth-actions";
+import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 
 export function useAppHeader(currentUser: AuthenticatedUserDTO) {
   const router = useRouter();
   const [isSwitchingTeam, startTransition] = React.useTransition();
   const [isLoggingOut, startLogoutTransition] = React.useTransition();
+  const invalidateDashboard = useInvalidateDashboard();
 
   const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
   const initials = React.useMemo(
@@ -32,10 +34,11 @@ export function useAppHeader(currentUser: AuthenticatedUserDTO) {
           return;
         }
         toast.success(res.message);
+        invalidateDashboard();
         router.refresh();
       });
     },
-    [router]
+    [router, invalidateDashboard]
   );
 
   const handleLogout = React.useCallback(() => {
