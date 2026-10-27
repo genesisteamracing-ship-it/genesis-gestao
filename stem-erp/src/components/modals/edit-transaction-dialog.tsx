@@ -384,49 +384,30 @@ export function EditTransactionDialog({
               )}
             />
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="trackingMethod"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Método de Rastreabilidade / Comprovação</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {trackingMethodValues.map((tm) => (
-                          <SelectItem key={tm} value={tm}>
-                            {TRACKING_METHOD_LABELS[tm]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="documentRef"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Doc. / Código Comprobatório</FormLabel>
+            <FormField
+              control={form.control}
+              name="trackingMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Método de Rastreabilidade / Comprovação</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <Input
-                        placeholder="Ex: NF-e 004829, Link Google Drive..."
-                        {...field}
-                      />
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    <SelectContent>
+                      {trackingMethodValues.map((tm) => (
+                        <SelectItem key={tm} value={tm}>
+                          {TRACKING_METHOD_LABELS[tm]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter className="pt-2">
               <Button

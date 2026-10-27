@@ -421,49 +421,30 @@ export function CreateTransactionDialog({
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="trackingMethod"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Método Comprobatório</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o método" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {trackingMethodValues.map((method) => (
-                          <SelectItem key={method} value={method}>
-                            {TRACKING_METHOD_LABELS[method]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="documentRef"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nº Documento / Comprovante</FormLabel>
+            <FormField
+              control={form.control}
+              name="trackingMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Método Comprobatório</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <Input
-                        placeholder="Ex: NFe-004921, PIX-E8910, CONT-01"
-                        {...field}
-                      />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o método" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    <SelectContent>
+                      {trackingMethodValues.map((method) => (
+                        <SelectItem key={method} value={method}>
+                          {TRACKING_METHOD_LABELS[method]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter className="pt-2">
               <Button
