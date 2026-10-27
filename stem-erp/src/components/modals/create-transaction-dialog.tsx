@@ -9,7 +9,6 @@ import {
   ArrowUpCircle,
   Loader2,
   PlusCircle,
-  Repeat,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -118,7 +117,6 @@ export function CreateTransactionDialog({
   const watchedType = form.watch("type");
   const watchedDeliveryGroup = form.watch("deliveryGroup");
   const watchedReais = form.watch("amountReais");
-  const watchedIsBarter = form.watch("isBarterCounterpart");
 
   const filteredCategories = React.useMemo(() => {
     const matching = categories.filter(
@@ -234,14 +232,14 @@ export function CreateTransactionDialog({
                           className="gap-2 data-[state=active]:bg-destructive/10 data-[state=active]:text-destructive"
                         >
                           <ArrowDownCircle className="h-4 w-4 text-destructive" />
-                          <span>🔴 Despesa (Aplicação)</span>
+                          <span>Despesa (Aplicação)</span>
                         </TabsTrigger>
                         <TabsTrigger
                           value="ORIGIN"
                           className="gap-2 data-[state=active]:bg-success/10 data-[state=active]:text-success"
                         >
                           <ArrowUpCircle className="h-4 w-4 text-success" />
-                          <span>🟢 Receita (Origem)</span>
+                          <span>Receita (Origem)</span>
                         </TabsTrigger>
                       </TabsList>
                     </Tabs>
@@ -277,10 +275,6 @@ export function CreateTransactionDialog({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>
-                    Ao selecionar um recurso planejado, o setor, categoria e mês são
-                    preenchidos automaticamente.
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -468,37 +462,6 @@ export function CreateTransactionDialog({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="isBarterCounterpart"
-              render={({ field }) => (
-                <FormItem className="rounded-lg border border-purple/30 bg-purple/10 p-3.5">
-                  <div className="flex items-start gap-3">
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-border text-purple focus:ring-ring cursor-pointer"
-                      />
-                    </FormControl>
-                    <div className="space-y-1">
-                      <FormLabel className="flex items-center gap-1.5 text-xs font-semibold text-foreground cursor-pointer">
-                        <Repeat className="h-3.5 w-3.5 text-purple" />
-                        <span>Lançar contrapartida de permuta? (BARTER_PARTNERSHIP)</span>
-                      </FormLabel>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Gera automaticamente em transação atômica 1{" "}
-                        <strong>ORIGIN</strong> (Patrocínio In-loco) e 1{" "}
-                        <strong>APPLICATION</strong> (Custo do Recurso) de mesmo valor,
-                        contabilizando o recurso no orçamento sem alterar o saldo bancário.
-                      </p>
-                    </div>
-                  </div>
-                </FormItem>
-              )}
-            />
-
             <DialogFooter className="pt-2">
               <Button
                 type="button"
@@ -510,20 +473,12 @@ export function CreateTransactionDialog({
               </Button>
               <Button
                 type="submit"
-                variant={
-                  watchedIsBarter
-                    ? "default"
-                    : watchedType === "ORIGIN"
-                    ? "emerald"
-                    : "default"
-                }
+                variant={watchedType === "ORIGIN" ? "emerald" : "default"}
                 disabled={isPending}
               >
                 {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 <span>
-                  {watchedIsBarter
-                    ? "Registrar Permuta Dupla"
-                    : watchedType === "ORIGIN"
+                  {watchedType === "ORIGIN"
                     ? "Registrar Receita (Origem)"
                     : "Registrar Despesa (Aplicação)"}
                 </span>
