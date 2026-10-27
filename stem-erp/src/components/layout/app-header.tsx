@@ -11,6 +11,7 @@ import {
   ListOrdered,
   Lock,
   LogOut,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import { tv } from "tailwind-variants";
@@ -202,6 +203,13 @@ export function AppHeader({
           >
             <ListOrdered className="h-3.5 w-3.5" />
             <span>Livro Caixa</span>
+          </Link>
+          <Link
+            href="/roi"
+            className={mobileNavLinkStyles({ isActive: pathname === "/roi" })}
+          >
+            <TrendingUp className="h-3.5 w-3.5" />
+            <span>ROI</span>
           </Link>
           {isSuperAdmin && (
             <Link
