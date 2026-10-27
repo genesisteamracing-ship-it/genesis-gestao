@@ -8,15 +8,15 @@ import { useThemeToggle } from "@/components/layout/use-theme-toggle";
 export const themeToggleStyles = tv({
   slots: {
     container:
-      "relative flex h-9 w-[76px] items-center rounded-full bg-border p-1 transition-all duration-300 ease-out cursor-pointer hover:opacity-90 shadow-inner select-none",
+      "relative flex h-9 w-[76px] items-center justify-between rounded-full bg-[#E8E8E8] dark:bg-[#2A2B2F] p-1 transition-all duration-300 ease-out cursor-pointer hover:opacity-90 shadow-inner select-none",
     indicator:
-      "absolute top-1 left-1 h-7 w-7 rounded-full bg-card shadow-sm transition-transform duration-300 ease-spring",
+      "absolute top-1 left-1 h-7 w-7 rounded-full bg-white shadow-sm transition-transform duration-300 ease-spring",
     iconSlot: "relative z-10 flex h-7 w-7 items-center justify-center",
   },
   variants: {
     isDark: {
       true: {
-        indicator: "translate-x-[38px]",
+        indicator: "translate-x-[40px]",
       },
       false: {
         indicator: "translate-x-0",
@@ -34,12 +34,12 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <div className="flex h-9 w-[76px] items-center justify-between rounded-full bg-border p-1">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-card shadow-2xs">
-          <Sun className="h-4 w-4 text-foreground" />
+      <div className="flex h-9 w-[76px] items-center justify-between rounded-full bg-[#E8E8E8] dark:bg-[#2A2B2F] p-1">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white shadow-2xs">
+          <Sun className="h-4 w-4 text-black" />
         </div>
         <div className="flex h-7 w-7 items-center justify-center">
-          <Moon className="h-4 w-4 text-muted-foreground" />
+          <Moon className="h-4 w-4 text-black" />
         </div>
       </div>
     );
@@ -53,14 +53,17 @@ export function ThemeToggle() {
       title={isDark ? "Alternar para tema claro" : "Alternar para tema escuro"}
       className={styles.container()}
     >
+      {/* Indicador deslizante redondo sempre branco */}
       <span aria-hidden="true" className={styles.indicator()} />
 
+      {/* Ícone Sol (Preto) */}
       <div className={styles.iconSlot()}>
-        <Sun className="h-4 w-4 text-foreground" />
+        <Sun className="h-4 w-4 text-black" />
       </div>
 
+      {/* Ícone Lua (Preto) alinhado à direita */}
       <div className={styles.iconSlot()}>
-        <Moon className="h-4 w-4 text-foreground" />
+        <Moon className="h-4 w-4 text-black" />
       </div>
     </button>
   );
