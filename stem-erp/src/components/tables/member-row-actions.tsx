@@ -35,7 +35,7 @@ export function MemberRowActions({ member, teams }: MemberRowActionsProps) {
             className="h-8 w-8 rounded-lg border-border/80 bg-card hover:bg-muted/80 hover:text-foreground"
             aria-label={`Ações de gerenciamento para ${member.name}`}
           >
-            <Settings className="h-4 w-4 text-muted-foreground transition-transform duration-200 hover:rotate-45" />
+            <Settings className="h-4 w-4 text-white transition-transform duration-200 hover:rotate-45" />
           </Button>
         </DropdownMenuTrigger>
 

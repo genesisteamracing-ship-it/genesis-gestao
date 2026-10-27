@@ -25,7 +25,11 @@ export default async function LancamentosPage() {
         />
       }
     >
-      <TransactionsDataTable transactions={metrics.transactions} />
+      <TransactionsDataTable
+        transactions={metrics.transactions}
+        categories={metrics.categories}
+        budgetResources={metrics.budgetResources}
+      />
     </DashboardShell>
   );
 }

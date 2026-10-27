@@ -24,7 +24,10 @@ export default async function PlanejamentoPage() {
         />
       }
     >
-      <ResourcesDataTable resources={metrics.budgetResources} />
+      <ResourcesDataTable
+        resources={metrics.budgetResources}
+        categories={metrics.categories}
+      />
     </DashboardShell>
   );
 }

@@ -22,7 +22,11 @@ import {
   trackingMethodValues,
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents, formatDateBR } from "@/lib/utils";
-import type { TransactionDTO } from "@/types/financial";
+import type {
+  BudgetResourceDTO,
+  CategoryDTO,
+  TransactionDTO,
+} from "@/types/financial";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,9 +47,12 @@ import {
 } from "@/components/ui/table";
 import { StateView } from "@/components/ui/state-view";
 import { useTransactionsTable } from "@/components/tables/use-transactions-table";
+import { TransactionRowActions } from "@/components/tables/transaction-row-actions";
 
 interface TransactionsDataTableProps {
   transactions: TransactionDTO[];
+  categories?: CategoryDTO[];
+  budgetResources?: BudgetResourceDTO[];
   isLoading?: boolean;
 }
 
@@ -68,6 +75,8 @@ function getTrackingBadgeVariant(
 
 export function TransactionsDataTable({
   transactions,
+  categories = [],
+  budgetResources = [],
   isLoading = false,
 }: TransactionsDataTableProps) {
   const columns = React.useMemo<ColumnDef<TransactionDTO>[]>(
@@ -170,8 +179,19 @@ export function TransactionsDataTable({
           </Badge>
         ),
       },
+      {
+        id: "actions",
+        header: "AÇÕES",
+        cell: ({ row }) => (
+          <TransactionRowActions
+            transaction={row.original}
+            categories={categories}
+            budgetResources={budgetResources}
+          />
+        ),
+      },
     ],
-    []
+    [categories, budgetResources]
   );
 
   const {

@@ -4,6 +4,10 @@ import { DELIVERY_GROUP_LABELS, PROJECT_MONTHS, PROJECT_MONTH_LABELS } from "@/l
 import type {
   CreateBudgetResourceInput,
   CreateTransactionInput,
+  DeleteBudgetResourceInput,
+  DeleteTransactionInput,
+  UpdateBudgetResourceInput,
+  UpdateTransactionInput,
 } from "@/lib/validations/financial";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type {
@@ -332,6 +336,138 @@ export async function createTransactionService(
   });
 
   return { transaction };
+}
+
+export async function updateBudgetResourceService(
+  teamId: string,
+  input: UpdateBudgetResourceInput
+) {
+  const existing = await prisma.budgetResource.findFirst({
+    where: { id: input.id, teamId },
+  });
+
+  if (!existing) {
+    throw new Error("Recurso orçamentário não encontrado ou não pertence à sua equipe.");
+  }
+
+  const category = await prisma.category.findFirst({
+    where: { id: input.categoryId, teamId },
+  });
+
+  if (!category) {
+    throw new Error("A categoria selecionada não pertence à sua equipe.");
+  }
+
+  return prisma.budgetResource.update({
+    where: { id: input.id },
+    data: {
+      deliveryGroup: input.deliveryGroup,
+      categoryId: input.categoryId,
+      resourceName: input.resourceName.trim(),
+      acquisitionStrategy: input.acquisitionStrategy,
+      allocatedTo: input.allocatedTo.trim(),
+      plannedMonth: input.plannedMonth,
+      utilizationForecast: input.utilizationForecast,
+      plannedAmountCents: input.plannedAmountCents,
+    },
+  });
+}
+
+export async function deleteBudgetResourceService(
+  teamId: string,
+  input: DeleteBudgetResourceInput
+) {
+  const existing = await prisma.budgetResource.findFirst({
+    where: { id: input.id, teamId },
+  });
+
+  if (!existing) {
+    throw new Error("Recurso orçamentário não encontrado ou não pertence à sua equipe.");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.transaction.updateMany({
+      where: { budgetResourceId: input.id },
+      data: { budgetResourceId: null },
+    });
+
+    return tx.budgetResource.delete({
+      where: { id: input.id },
+    });
+  });
+}
+
+export async function updateTransactionService(
+  teamId: string,
+  input: UpdateTransactionInput
+) {
+  const existing = await prisma.transaction.findFirst({
+    where: { id: input.id, teamId },
+  });
+
+  if (!existing) {
+    throw new Error("Transação não encontrada ou não pertence à sua equipe.");
+  }
+
+  const category = await prisma.category.findFirst({
+    where: { id: input.categoryId, teamId },
+  });
+
+  if (!category) {
+    throw new Error("A categoria selecionada não pertence à sua equipe.");
+  }
+
+  const cleanBudgetResourceId =
+    input.budgetResourceId && input.budgetResourceId !== "NONE"
+      ? input.budgetResourceId
+      : null;
+
+  if (cleanBudgetResourceId) {
+    const resource = await prisma.budgetResource.findFirst({
+      where: { id: cleanBudgetResourceId, teamId },
+    });
+    if (!resource) {
+      throw new Error("O recurso orçamentário selecionado não pertence à sua equipe.");
+    }
+  }
+
+  const cleanDocRef =
+    input.documentRef && input.documentRef.trim().length > 0
+      ? input.documentRef.trim()
+      : null;
+
+  return prisma.transaction.update({
+    where: { id: input.id },
+    data: {
+      date: input.date,
+      referenceMonth: input.referenceMonth,
+      type: input.type,
+      deliveryGroup: input.deliveryGroup,
+      categoryId: input.categoryId,
+      budgetResourceId: cleanBudgetResourceId,
+      description: input.description.trim(),
+      trackingMethod: input.trackingMethod,
+      documentRef: cleanDocRef,
+      amountCents: input.amountCents,
+    },
+  });
+}
+
+export async function deleteTransactionService(
+  teamId: string,
+  input: DeleteTransactionInput
+) {
+  const existing = await prisma.transaction.findFirst({
+    where: { id: input.id, teamId },
+  });
+
+  if (!existing) {
+    throw new Error("Transação não encontrada ou não pertence à sua equipe.");
+  }
+
+  return prisma.transaction.delete({
+    where: { id: input.id },
+  });
 }
 
 const FALLBACK_SYSTEM_USER: AuthenticatedUserDTO = {

@@ -22,7 +22,7 @@ import {
   deliveryGroupValues,
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents } from "@/lib/utils";
-import type { BudgetResourceDTO } from "@/types/financial";
+import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,9 +43,11 @@ import {
 } from "@/components/ui/table";
 import { StateView } from "@/components/ui/state-view";
 import { useResourcesTable } from "@/components/tables/use-resources-table";
+import { ResourceRowActions } from "@/components/tables/resource-row-actions";
 
 interface ResourcesDataTableProps {
   resources: BudgetResourceDTO[];
+  categories?: CategoryDTO[];
   isLoading?: boolean;
 }
 
@@ -68,6 +70,7 @@ function getStrategyBadgeVariant(
 
 export function ResourcesDataTable({
   resources,
+  categories = [],
   isLoading = false,
 }: ResourcesDataTableProps) {
   const columns = React.useMemo<ColumnDef<BudgetResourceDTO>[]>(
@@ -168,8 +171,18 @@ export function ResourcesDataTable({
           );
         },
       },
+      {
+        id: "actions",
+        header: "AÇÕES",
+        cell: ({ row }) => (
+          <ResourceRowActions
+            resource={row.original}
+            categories={categories}
+          />
+        ),
+      },
     ],
-    []
+    [categories]
   );
 
   const {

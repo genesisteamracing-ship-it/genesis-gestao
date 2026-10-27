@@ -69,5 +69,28 @@ export const createTransactionSchema = z.object({
   isBarterCounterpart: z.boolean().optional().default(false),
 });
 
+export const updateBudgetResourceSchema = createBudgetResourceSchema.extend({
+  id: z.string().min(1, "ID do recurso é obrigatório"),
+});
+
+export const deleteBudgetResourceSchema = z.object({
+  id: z.string().min(1, "ID do recurso é obrigatório"),
+});
+
+export const updateTransactionSchema = createTransactionSchema
+  .omit({ isBarterCounterpart: true })
+  .extend({
+    id: z.string().min(1, "ID da transação é obrigatório"),
+  });
+
+export const deleteTransactionSchema = z.object({
+  id: z.string().min(1, "ID da transação é obrigatório"),
+});
+
 export type CreateBudgetResourceInput = z.infer<typeof createBudgetResourceSchema>;
+export type UpdateBudgetResourceInput = z.infer<typeof updateBudgetResourceSchema>;
+export type DeleteBudgetResourceInput = z.infer<typeof deleteBudgetResourceSchema>;
+
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
+export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
+export type DeleteTransactionInput = z.infer<typeof deleteTransactionSchema>;
