@@ -13,6 +13,7 @@ export const DELIVERY_GROUP_LABELS: Record<DeliveryGroup, string> = {
   PIT_DISPLAY: "Pit Display & Estande",
   MARKETING_SPONSOR: "Marketing & Patrocínio",
   PROJECT_MANAGEMENT: "Gestão do Projeto",
+  SOCIAL_PROJECT: "Projeto Social",
 };
 
 export const DELIVERY_GROUP_SHORT_LABELS: Record<DeliveryGroup, string> = {
@@ -21,6 +22,7 @@ export const DELIVERY_GROUP_SHORT_LABELS: Record<DeliveryGroup, string> = {
   PIT_DISPLAY: "Pit Display",
   MARKETING_SPONSOR: "Marketing",
   PROJECT_MANAGEMENT: "Gestão",
+  SOCIAL_PROJECT: "Projeto Social",
 };
 
 export const ACQUISITION_STRATEGY_LABELS: Record<AcquisitionStrategy, string> = {

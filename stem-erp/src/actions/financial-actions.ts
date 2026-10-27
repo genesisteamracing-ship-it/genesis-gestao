@@ -4,12 +4,14 @@ import { revalidatePath } from "next/cache";
 import { UserRole } from "@prisma/client";
 import {
   createBudgetResourceSchema,
+  createCategorySchema,
   createTransactionSchema,
   deleteBudgetResourceSchema,
   deleteTransactionSchema,
   updateBudgetResourceSchema,
   updateTransactionSchema,
   type CreateBudgetResourceInput,
+  type CreateCategoryInput,
   type CreateTransactionInput,
   type DeleteBudgetResourceInput,
   type DeleteTransactionInput,
@@ -19,6 +21,7 @@ import {
 import { requireAuthUser } from "@/services/auth-service";
 import {
   createBudgetResourceService,
+  createCategoryService,
   createTransactionService,
   deleteBudgetResourceService,
   deleteTransactionService,
@@ -27,7 +30,7 @@ import {
   updateBudgetResourceService,
   updateTransactionService,
 } from "@/services/financial-service";
-import type { DashboardMetricsDTO } from "@/types/financial";
+import type { CategoryDTO, DashboardMetricsDTO } from "@/types/financial";
 
 export interface ActionResponse<T = unknown> {
   success: boolean;
@@ -300,6 +303,55 @@ export async function deleteTransactionAction(
     console.error("[deleteTransactionAction] Erro:", error);
     const message =
       error instanceof Error ? error.message : "Erro ao excluir lançamento.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}
+
+export async function createCategoryAction(
+  rawData: CreateCategoryInput
+): Promise<ActionResponse<CategoryDTO>> {
+  const user = await requireAuthUser();
+
+  if (user.role === UserRole.AUDITOR) {
+    return {
+      success: false,
+      message: "Acesso negado: o perfil Auditor possui permissão somente de leitura.",
+    };
+  }
+
+  const parsed = createCategorySchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message:
+        parsed.error.issues[0]?.message ||
+        "Verifique o nome da nova categoria.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const { activeTeam } = await resolveActiveTeam(user);
+    const created = await createCategoryService(activeTeam.id, parsed.data);
+
+    revalidatePath("/dashboard");
+    revalidatePath("/planejamento");
+    revalidatePath("/lancamentos");
+
+    return {
+      success: true,
+      message: `Categoria "${created.name}" cadastrada com sucesso!`,
+      data: created,
+    };
+  } catch (error) {
+    console.error("[createCategoryAction] Erro:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Não foi possível cadastrar a categoria.";
     return {
       success: false,
       message,

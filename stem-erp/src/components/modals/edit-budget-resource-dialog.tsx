@@ -4,7 +4,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Check, Loader2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   ACQUISITION_STRATEGY_LABELS,
@@ -17,9 +17,16 @@ import {
   deliveryGroupValues,
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
-import { updateBudgetResourceAction } from "@/actions/financial-actions";
+import {
+  createCategoryAction,
+  updateBudgetResourceAction,
+} from "@/actions/financial-actions";
 import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
-import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
+import type {
+  BudgetResourceDTO,
+  CategoryDTO,
+  TeamMemberOptionDTO,
+} from "@/types/financial";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -47,6 +54,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const NEW_CATEGORY_SENTINEL = "__NEW_CATEGORY__";
+
 const budgetFormSchema = z.object({
   deliveryGroup: z.enum(deliveryGroupValues, {
     required_error: "Selecione um setor / grupo de entrega",
@@ -56,7 +65,7 @@ const budgetFormSchema = z.object({
   acquisitionStrategy: z.enum(acquisitionStrategyValues, {
     required_error: "Selecione uma estratégia de aquisição",
   }),
-  allocatedTo: z.string().min(2, "Informe o responsável pela alocação"),
+  allocatedTo: z.string().min(2, "Selecione o responsável pela alocação"),
   plannedMonth: z.coerce.number().int().min(1).max(6),
   utilizationForecast: z.coerce.number().int().min(1).max(100),
   plannedAmountReais: z
@@ -70,6 +79,7 @@ type BudgetFormValues = z.infer<typeof budgetFormSchema>;
 interface EditBudgetResourceDialogProps {
   resource: BudgetResourceDTO;
   categories: CategoryDTO[];
+  teamMembers?: TeamMemberOptionDTO[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -77,11 +87,39 @@ interface EditBudgetResourceDialogProps {
 export function EditBudgetResourceDialog({
   resource,
   categories,
+  teamMembers = [],
   open,
   onOpenChange,
 }: EditBudgetResourceDialogProps) {
   const [isPending, startTransition] = React.useTransition();
   const invalidateDashboard = useInvalidateDashboard();
+
+  const [localCategories, setLocalCategories] =
+    React.useState<CategoryDTO[]>(categories);
+  const [isCreatingCategory, setIsCreatingCategory] = React.useState(false);
+  const [newCategoryName, setNewCategoryName] = React.useState("");
+  const [isSavingCategory, startCategoryTransition] = React.useTransition();
+
+  React.useEffect(() => {
+    setLocalCategories(categories);
+  }, [categories]);
+
+  const memberOptions = React.useMemo(() => {
+    const map = new Map<string, { name: string; label: string }>();
+    for (const m of teamMembers) {
+      map.set(m.name, {
+        name: m.name,
+        label: m.jobTitle ? `${m.name} (${m.jobTitle})` : m.name,
+      });
+    }
+    if (resource.allocatedTo && !map.has(resource.allocatedTo)) {
+      map.set(resource.allocatedTo, {
+        name: resource.allocatedTo,
+        label: resource.allocatedTo,
+      });
+    }
+    return Array.from(map.values());
+  }, [teamMembers, resource.allocatedTo]);
 
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
@@ -109,6 +147,8 @@ export function EditBudgetResourceDialog({
         utilizationForecast: resource.utilizationForecast,
         plannedAmountReais: (resource.plannedAmountCents / 100).toFixed(2),
       });
+      setIsCreatingCategory(false);
+      setNewCategoryName("");
     }
   }, [open, resource, form]);
 
@@ -116,11 +156,39 @@ export function EditBudgetResourceDialog({
   const watchedReais = form.watch("plannedAmountReais");
 
   const filteredCategories = React.useMemo(() => {
-    const matching = categories.filter(
+    const matching = localCategories.filter(
       (cat) => cat.deliveryGroup === selectedDeliveryGroup
     );
-    return matching.length > 0 ? matching : categories;
-  }, [categories, selectedDeliveryGroup]);
+    return matching.length > 0 ? matching : localCategories;
+  }, [localCategories, selectedDeliveryGroup]);
+
+  function handleCreateCategory() {
+    const trimmed = newCategoryName.trim();
+    if (trimmed.length < 2) {
+      toast.error("Informe um nome válido para a nova categoria.");
+      return;
+    }
+
+    startCategoryTransition(async () => {
+      const res = await createCategoryAction({
+        name: trimmed,
+        deliveryGroup: selectedDeliveryGroup,
+      });
+
+      if (!res.success || !res.data) {
+        toast.error(res.message);
+        return;
+      }
+
+      const createdCat = res.data;
+      setLocalCategories((prev) => [...prev, createdCat]);
+      form.setValue("categoryId", createdCat.id, { shouldValidate: true });
+      setNewCategoryName("");
+      setIsCreatingCategory(false);
+      toast.success(res.message);
+      invalidateDashboard();
+    });
+  }
 
   function onSubmit(values: BudgetFormValues) {
     const plannedAmountCents = parseReaisToCents(values.plannedAmountReais);
@@ -209,21 +277,91 @@ export function EditBudgetResourceDialog({
                 name="categoryId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoria Contábil</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a categoria" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {filteredCategories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Categoria Orçamentária</FormLabel>
+                      <button
+                        type="button"
+                        onClick={() => setIsCreatingCategory((prev) => !prev)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer"
+                      >
+                        {isCreatingCategory ? (
+                          <>
+                            <X className="h-3 w-3" />
+                            <span>Cancelar</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-3 w-3" />
+                            <span>Nova categoria</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {isCreatingCategory ? (
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          placeholder="Nome da nova categoria..."
+                          className="h-10 text-xs"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleCreateCategory();
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleCreateCategory}
+                          disabled={
+                            isSavingCategory ||
+                            newCategoryName.trim().length < 2
+                          }
+                          className="h-10 px-3 shrink-0"
+                        >
+                          {isSavingCategory ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                          <span>Criar</span>
+                        </Button>
+                      </div>
+                    ) : (
+                      <Select
+                        onValueChange={(val) => {
+                          if (val === NEW_CATEGORY_SENTINEL) {
+                            setIsCreatingCategory(true);
+                            return;
+                          }
+                          field.onChange(val);
+                        }}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a categoria" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {filteredCategories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                          <SelectItem
+                            value={NEW_CATEGORY_SENTINEL}
+                            className="font-semibold text-primary focus:text-primary"
+                          >
+                            + Cadastrar nova categoria...
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        </SelectContent>
+                      </Select>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -261,13 +399,21 @@ export function EditBudgetResourceDialog({
                 name="allocatedTo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Responsável Direto</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ex: Mariana Santos (Líder CAD)"
-                        {...field}
-                      />
-                    </FormControl>
+                    <FormLabel>Responsável (Alocação)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o integrante da equipe" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {memberOptions.map((member) => (
+                          <SelectItem key={member.name} value={member.name}>
+                            {member.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

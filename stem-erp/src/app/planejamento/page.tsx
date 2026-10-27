@@ -19,6 +19,7 @@ export default async function PlanejamentoPage() {
       headerAction={
         <CreateBudgetResourceDialog
           categories={metrics.categories}
+          teamMembers={metrics.teamMembers}
           currentUser={metrics.currentUser}
           triggerLabel="+ Planejar Recurso"
         />
@@ -27,6 +28,7 @@ export default async function PlanejamentoPage() {
       <ResourcesDataTable
         resources={metrics.budgetResources}
         categories={metrics.categories}
+        teamMembers={metrics.teamMembers}
       />
     </DashboardShell>
   );

@@ -6,6 +6,7 @@ export const deliveryGroupValues = [
   "PIT_DISPLAY",
   "MARKETING_SPONSOR",
   "PROJECT_MANAGEMENT",
+  "SOCIAL_PROJECT",
 ] as const;
 
 export const acquisitionStrategyValues = [
@@ -87,6 +88,18 @@ export const deleteTransactionSchema = z.object({
   id: z.string().min(1, "ID da transação é obrigatório"),
 });
 
+export const createCategorySchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "O nome da categoria deve ter ao menos 2 caracteres")
+    .max(80, "Nome muito longo"),
+  deliveryGroup: z.enum(deliveryGroupValues, {
+    required_error: "Selecione um setor / grupo de entrega",
+  }),
+});
+
+export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type CreateBudgetResourceInput = z.infer<typeof createBudgetResourceSchema>;
 export type UpdateBudgetResourceInput = z.infer<typeof updateBudgetResourceSchema>;
 export type DeleteBudgetResourceInput = z.infer<typeof deleteBudgetResourceSchema>;

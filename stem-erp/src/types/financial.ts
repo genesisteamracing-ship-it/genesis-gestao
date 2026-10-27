@@ -19,6 +19,14 @@ export interface CategoryDTO {
   deliveryGroup: DeliveryGroup;
 }
 
+export interface TeamMemberOptionDTO {
+  id: string;
+  name: string;
+  email: string;
+  jobTitle: string | null;
+  deliveryGroup: DeliveryGroup | null;
+}
+
 export interface BudgetResourceDTO {
   id: string;
   code: string;
@@ -109,6 +117,7 @@ export interface DashboardMetricsDTO {
   cashFlow: CashFlowSummaryDTO;
   schedule: DeliveryGroupScheduleRow[];
   categories: CategoryDTO[];
+  teamMembers: TeamMemberOptionDTO[];
   budgetResources: BudgetResourceDTO[];
   transactions: TransactionDTO[];
 }

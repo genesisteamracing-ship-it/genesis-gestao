@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { DELIVERY_GROUP_LABELS, PROJECT_MONTHS, PROJECT_MONTH_LABELS } from "@/lib/constants";
 import type {
   CreateBudgetResourceInput,
+  CreateCategoryInput,
   CreateTransactionInput,
   DeleteBudgetResourceInput,
   DeleteTransactionInput,
@@ -20,6 +21,7 @@ import type {
   DashboardMetricsDTO,
   DeliveryGroupScheduleRow,
   ScheduleAlertStatus,
+  TeamMemberOptionDTO,
   TransactionDTO,
 } from "@/types/financial";
 
@@ -29,6 +31,7 @@ const ALL_DELIVERY_GROUPS: DeliveryGroup[] = [
   DeliveryGroup.PIT_DISPLAY,
   DeliveryGroup.MARKETING_SPONSOR,
   DeliveryGroup.PROJECT_MANAGEMENT,
+  DeliveryGroup.SOCIAL_PROJECT,
 ];
 
 /**
@@ -470,6 +473,41 @@ export async function deleteTransactionService(
   });
 }
 
+export async function createCategoryService(
+  teamId: string,
+  input: CreateCategoryInput
+): Promise<CategoryDTO> {
+  const cleanName = input.name.trim();
+
+  const existing = await prisma.category.findFirst({
+    where: {
+      teamId,
+      name: {
+        equals: cleanName,
+        mode: "insensitive",
+      },
+    },
+  });
+
+  if (existing) {
+    throw new Error("Já existe uma categoria com este nome na equipe.");
+  }
+
+  const created = await prisma.category.create({
+    data: {
+      teamId,
+      name: cleanName,
+      deliveryGroup: input.deliveryGroup,
+    },
+  });
+
+  return {
+    id: created.id,
+    name: created.name,
+    deliveryGroup: created.deliveryGroup,
+  };
+}
+
 const FALLBACK_SYSTEM_USER: AuthenticatedUserDTO = {
   id: "system",
   sessionId: "system",
@@ -492,7 +530,7 @@ export async function getDashboardMetricsService(
   // Dentro da equipe, todos os 5 setores (Engenharia, Manufatura, Pit Display, Marketing, Gestão) se veem.
   const whereTeam = { teamId: activeTeam.id };
 
-  const [rawCategories, rawBudgetResources, rawTransactions] = await Promise.all([
+  const [rawCategories, rawBudgetResources, rawTransactions, rawMembers] = await Promise.all([
     prisma.category.findMany({
       where: whereTeam,
       orderBy: [{ deliveryGroup: "asc" }, { name: "asc" }],
@@ -522,12 +560,34 @@ export async function getDashboardMetricsService(
       },
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     }),
+    prisma.user.findMany({
+      where: {
+        isActive: true,
+        OR: [{ teamId: activeTeam.id }, { role: UserRole.SUPER_ADMIN }],
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        jobTitle: true,
+        deliveryGroup: true,
+      },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   const categories: CategoryDTO[] = rawCategories.map((c) => ({
     id: c.id,
     name: c.name,
     deliveryGroup: c.deliveryGroup,
+  }));
+
+  const teamMembers: TeamMemberOptionDTO[] = rawMembers.map((m) => ({
+    id: m.id,
+    name: m.name,
+    email: m.email,
+    jobTitle: m.jobTitle,
+    deliveryGroup: m.deliveryGroup,
   }));
 
   const budgetResources: BudgetResourceDTO[] = rawBudgetResources.map((b) => {
@@ -601,6 +661,7 @@ export async function getDashboardMetricsService(
     cashFlow,
     schedule,
     categories,
+    teamMembers,
     budgetResources,
     transactions,
   };

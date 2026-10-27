@@ -2,7 +2,11 @@
 
 import * as React from "react";
 import { Pencil, Settings, Trash2 } from "lucide-react";
-import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
+import type {
+  BudgetResourceDTO,
+  CategoryDTO,
+  TeamMemberOptionDTO,
+} from "@/types/financial";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,11 +21,13 @@ import { DeleteBudgetResourceDialog } from "@/components/modals/delete-budget-re
 interface ResourceRowActionsProps {
   resource: BudgetResourceDTO;
   categories: CategoryDTO[];
+  teamMembers?: TeamMemberOptionDTO[];
 }
 
 export function ResourceRowActions({
   resource,
   categories,
+  teamMembers = [],
 }: ResourceRowActionsProps) {
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
@@ -64,6 +70,7 @@ export function ResourceRowActions({
       <EditBudgetResourceDialog
         resource={resource}
         categories={categories}
+        teamMembers={teamMembers}
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
       />

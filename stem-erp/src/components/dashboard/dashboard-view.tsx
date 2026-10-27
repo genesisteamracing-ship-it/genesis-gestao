@@ -30,6 +30,7 @@ export function DashboardView({ initialMetrics }: DashboardViewProps) {
         <div className="flex flex-wrap items-center gap-2.5">
           <CreateBudgetResourceDialog
             categories={data.categories}
+            teamMembers={data.teamMembers}
             currentUser={data.currentUser}
             triggerLabel="+ Planejar Recurso"
           />

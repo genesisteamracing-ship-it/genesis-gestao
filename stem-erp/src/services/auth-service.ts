@@ -52,6 +52,8 @@ const DEFAULT_SECTOR_CATEGORIES: Array<{
   { name: "Brindes & Press Kit", deliveryGroup: DeliveryGroup.MARKETING_SPONSOR },
   { name: "Taxas de Inscrição & Logística", deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT },
   { name: "Impressão de Portfólios Técnicos", deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT },
+  { name: "Oficinas & Ações Comunitárias", deliveryGroup: DeliveryGroup.SOCIAL_PROJECT },
+  { name: "Materiais Didáticos STEM", deliveryGroup: DeliveryGroup.SOCIAL_PROJECT },
 ];
 
 function slugifyTeamName(name: string): string {
