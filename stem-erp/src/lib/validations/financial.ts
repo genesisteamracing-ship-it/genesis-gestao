@@ -35,7 +35,11 @@ export const createBudgetResourceSchema = z.object({
     required_error: "Selecione uma estratégia de aquisição",
   }),
   allocatedTo: z.string().min(2, "Informe o responsável"),
-  plannedMonth: z.coerce.number().int().min(1, "Mês mínimo é 1").max(6, "Mês máximo é 6"),
+  plannedMonth: z.coerce
+    .number()
+    .int()
+    .min(1, "Selecione o mês planejado")
+    .max(24, "Mês fora da temporada"),
   utilizationForecast: z.coerce
     .number()
     .int()
@@ -52,7 +56,6 @@ export const createTransactionSchema = z.object({
     required_error: "Informe a data do fato gerador",
     invalid_type_error: "Data inválida",
   }),
-  referenceMonth: z.coerce.number().int().min(1, "Mês mínimo é 1").max(6, "Mês máximo é 6"),
   type: z.enum(transactionTypeValues, {
     required_error: "Selecione o tipo de lançamento",
   }),

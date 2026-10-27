@@ -16,6 +16,7 @@ export default async function LancamentosPage() {
       availableTeams={metrics.availableTeams}
       categories={metrics.categories}
       budgetResources={metrics.budgetResources}
+      seasonMonths={metrics.seasonMonths}
       headerAction={
         <CreateTransactionDialog
           categories={metrics.categories}

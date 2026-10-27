@@ -16,6 +16,7 @@ export default async function PlanejamentoPage() {
       availableTeams={metrics.availableTeams}
       categories={metrics.categories}
       budgetResources={metrics.budgetResources}
+      seasonMonths={metrics.seasonMonths}
       headerAction={
         <CreateBudgetResourceDialog
           categories={metrics.categories}

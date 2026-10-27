@@ -13,8 +13,6 @@ import {
 import { toast } from "sonner";
 import {
   DELIVERY_GROUP_LABELS,
-  PROJECT_MONTHS,
-  PROJECT_MONTH_LABELS,
   TRACKING_METHOD_LABELS,
 } from "@/lib/constants";
 import {
@@ -25,6 +23,7 @@ import {
 import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
 import { createTransactionAction } from "@/actions/financial-actions";
 import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
+import { useSeasonMonths } from "@/providers/season-provider";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { BudgetResourceDTO, CategoryDTO } from "@/types/financial";
 import { Button } from "@/components/ui/button";
@@ -58,7 +57,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const transactionFormSchema = z.object({
   date: z.string().min(1, "Informe a data do fato gerador"),
-  referenceMonth: z.coerce.number().int().min(1).max(6),
   type: z.enum(transactionTypeValues),
   deliveryGroup: z.enum(deliveryGroupValues),
   categoryId: z.string().min(1, "Selecione uma categoria"),
@@ -103,7 +101,6 @@ export function CreateTransactionDialog({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
       date: todayISO,
-      referenceMonth: 1,
       type: "APPLICATION",
       deliveryGroup: defaultGroup,
       categoryId: "",
@@ -116,6 +113,12 @@ export function CreateTransactionDialog({
     },
   });
 
+  const seasonMonths = useSeasonMonths();
+  const watchedDate = form.watch("date");
+  const derivedMonthLabel = React.useMemo(
+    () => seasonMonths.find((m) => m.key === watchedDate?.slice(0, 7))?.label ?? null,
+    [seasonMonths, watchedDate]
+  );
   const watchedType = form.watch("type");
   const watchedDeliveryGroup = form.watch("deliveryGroup");
   const watchedReais = form.watch("amountReais");
@@ -146,7 +149,6 @@ export function CreateTransactionDialog({
       if (found) {
         form.setValue("deliveryGroup", found.deliveryGroup);
         form.setValue("categoryId", found.categoryId);
-        form.setValue("referenceMonth", found.plannedMonth);
         if (found.acquisitionStrategy === "BARTER_PARTNERSHIP") {
           form.setValue("isBarterCounterpart", true);
           form.setValue("trackingMethod", "SPONSOR_CONTRACT");
@@ -161,7 +163,6 @@ export function CreateTransactionDialog({
     startTransition(async () => {
       const result = await createTransactionAction({
         date: new Date(`${values.date}T12:00:00Z`),
-        referenceMonth: values.referenceMonth,
         type: values.type,
         deliveryGroup: values.deliveryGroup,
         categoryId: values.categoryId,
@@ -183,7 +184,6 @@ export function CreateTransactionDialog({
       invalidateDashboard();
       form.reset({
         date: todayISO,
-        referenceMonth: 1,
         type: "APPLICATION",
         deliveryGroup: defaultGroup,
         categoryId: filteredCategories[0]?.id ?? "",
@@ -356,7 +356,7 @@ export function CreateTransactionDialog({
               )}
             />
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="date"
@@ -366,34 +366,13 @@ export function CreateTransactionDialog({
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="referenceMonth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mês de Referência (1-6)</FormLabel>
-                    <Select
-                      onValueChange={(v) => field.onChange(Number(v))}
-                      value={String(field.value)}
+                    <FormDescription
+                      className={derivedMonthLabel ? undefined : "text-destructive"}
                     >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Mês" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {PROJECT_MONTHS.map((m) => (
-                          <SelectItem key={m} value={String(m)}>
-                            {PROJECT_MONTH_LABELS[m]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {derivedMonthLabel
+                        ? `Mês do fluxo de caixa: ${derivedMonthLabel}`
+                        : "Data fora da temporada da equipe"}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

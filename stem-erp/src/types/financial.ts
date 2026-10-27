@@ -6,11 +6,24 @@ import type {
 } from "@prisma/client";
 import type { AuthenticatedUserDTO } from "./auth";
 
+export interface SeasonMonthDTO {
+  index: number;
+  key: string;
+  label: string;
+}
+
+export interface SeasonDTO {
+  label: string;
+  startDate: string;
+  endDate: string;
+}
+
 export interface ActiveTeamSummaryDTO {
   id: string;
   name: string;
   slug: string;
   schoolOrOrg: string | null;
+  season: SeasonDTO;
 }
 
 export interface CategoryDTO {
@@ -118,6 +131,7 @@ export interface DashboardMetricsDTO {
   schedule: DeliveryGroupScheduleRow[];
   categories: CategoryDTO[];
   teamMembers: TeamMemberOptionDTO[];
+  seasonMonths: SeasonMonthDTO[];
   budgetResources: BudgetResourceDTO[];
   transactions: TransactionDTO[];
 }

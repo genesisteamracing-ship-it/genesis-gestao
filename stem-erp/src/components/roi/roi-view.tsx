@@ -82,6 +82,7 @@ export function RoiView({ initialMetrics }: RoiViewProps) {
       availableTeams={data.availableTeams}
       categories={data.categories}
       budgetResources={data.budgetResources}
+      seasonMonths={data.seasonMonths}
     >
       {/* 1. 4 KPIs de ROI da Escuderia */}
       <section

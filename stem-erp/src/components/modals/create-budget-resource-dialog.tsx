@@ -9,8 +9,6 @@ import { toast } from "sonner";
 import {
   ACQUISITION_STRATEGY_LABELS,
   DELIVERY_GROUP_LABELS,
-  PROJECT_MONTHS,
-  PROJECT_MONTH_LABELS,
 } from "@/lib/constants";
 import {
   acquisitionStrategyValues,
@@ -22,6 +20,7 @@ import {
   createCategoryAction,
 } from "@/actions/financial-actions";
 import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
+import { useSeasonMonths } from "@/providers/season-provider";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { CategoryDTO, TeamMemberOptionDTO } from "@/types/financial";
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,7 @@ const budgetFormSchema = z.object({
     required_error: "Selecione uma estratégia de aquisição",
   }),
   allocatedTo: z.string().min(2, "Selecione o responsável pela alocação"),
-  plannedMonth: z.coerce.number().int().min(1).max(6),
+  plannedMonth: z.coerce.number().int().min(1).max(24),
   utilizationForecast: z.coerce.number().int().min(1).max(100),
   plannedAmountReais: z
     .string()
@@ -89,6 +88,7 @@ export function CreateBudgetResourceDialog({
   const [open, setOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
   const invalidateDashboard = useInvalidateDashboard();
+  const seasonMonths = useSeasonMonths();
 
   const [localCategories, setLocalCategories] =
     React.useState<CategoryDTO[]>(categories);
@@ -438,7 +438,7 @@ export function CreateBudgetResourceDialog({
                 name="plannedMonth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mês Planejado (1 a 6)</FormLabel>
+                    <FormLabel>Mês Planejado (Temporada)</FormLabel>
                     <Select
                       onValueChange={(v) => field.onChange(Number(v))}
                       value={String(field.value)}
@@ -449,9 +449,9 @@ export function CreateBudgetResourceDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {PROJECT_MONTHS.map((m) => (
-                          <SelectItem key={m} value={String(m)}>
-                            {PROJECT_MONTH_LABELS[m]}
+                        {seasonMonths.map((m) => (
+                          <SelectItem key={m.index} value={String(m.index)}>
+                            {m.label} (Mês {m.index})
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -1,6 +1,8 @@
+"use client";
+
 import * as React from "react";
-import { PROJECT_MONTHS, PROJECT_MONTH_LABELS } from "@/lib/constants";
 import { formatCurrencyFromCents } from "@/lib/utils";
+import { useSeasonMonths } from "@/providers/season-provider";
 import type { DeliveryGroupScheduleRow } from "@/types/financial";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -27,6 +29,8 @@ interface PhysicalFinancialScheduleProps {
 export function PhysicalFinancialSchedule({
   schedule,
 }: PhysicalFinancialScheduleProps) {
+  const seasonMonths = useSeasonMonths();
+
   return (
     <Card
       id="cronograma"
@@ -57,12 +61,12 @@ export function PhysicalFinancialSchedule({
                 <TableHead className="w-[100px] py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-foreground">
                   Visão
                 </TableHead>
-                {PROJECT_MONTHS.map((m) => (
+                {seasonMonths.map((m) => (
                   <TableHead
-                    key={m}
+                    key={m.index}
                     className="py-3.5 px-3 text-right text-xs font-bold uppercase tracking-wider text-foreground"
                   >
-                    {PROJECT_MONTH_LABELS[m]}
+                    {m.label}
                   </TableHead>
                 ))}
                 <TableHead className="py-3.5 px-4 text-right text-xs font-bold uppercase tracking-wider text-foreground">

@@ -1,6 +1,12 @@
 import { DeliveryGroup, TransactionType, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { DELIVERY_GROUP_LABELS, PROJECT_MONTHS, PROJECT_MONTH_LABELS } from "@/lib/constants";
+import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
+import {
+  buildLegacySeason,
+  buildSeasonMonths,
+  formatSeasonDateBR,
+  getSeasonMonthIndex,
+} from "@/lib/season";
 import type {
   CreateBudgetResourceInput,
   CreateCategoryInput,
@@ -21,6 +27,7 @@ import type {
   DashboardMetricsDTO,
   DeliveryGroupScheduleRow,
   ScheduleAlertStatus,
+  SeasonMonthDTO,
   TeamMemberOptionDTO,
   TransactionDTO,
 } from "@/types/financial";
@@ -40,13 +47,74 @@ const ALL_DELIVERY_GROUPS: DeliveryGroup[] = [
  *   Dentro da sua equipe, todos os 5 setores (Engenharia, Manufatura, Pit Display, Marketing, Gestão) se veem!
  * - SUPER_ADMIN: vê a equipe ativa selecionada ou a primeira equipe ativa do banco.
  */
+/** Resolve a temporada da equipe, com fallback legado (spec §6) */
+function resolveTeamSeasonRange(t: {
+  season: string | null;
+  seasonStartDate: Date | null;
+  seasonEndDate: Date | null;
+  createdAt: Date;
+}): { label: string; start: Date; end: Date } {
+  if (t.season && t.seasonStartDate && t.seasonEndDate) {
+    return { label: t.season, start: t.seasonStartDate, end: t.seasonEndDate };
+  }
+  const legacy = buildLegacySeason(t.createdAt);
+  return { label: "Temporada atual", start: legacy.start, end: legacy.end };
+}
+
+async function loadTeamSeasonRange(teamId: string) {
+  const team = await prisma.team.findUnique({
+    where: { id: teamId },
+    select: {
+      season: true,
+      seasonStartDate: true,
+      seasonEndDate: true,
+      createdAt: true,
+    },
+  });
+
+  if (!team) {
+    throw new Error("Equipe não encontrada.");
+  }
+
+  return resolveTeamSeasonRange(team);
+}
+
+/** RN5/RN6: deriva o mês do fluxo de caixa a partir da data; rejeita datas fora da temporada */
+async function deriveReferenceMonthFromDate(
+  teamId: string,
+  date: Date
+): Promise<number> {
+  const { start, end } = await loadTeamSeasonRange(teamId);
+  const index = getSeasonMonthIndex(start, end, date);
+
+  if (index === null) {
+    throw new Error(
+      `A data deve estar dentro da temporada (${formatSeasonDateBR(start)} a ${formatSeasonDateBR(end)}).`
+    );
+  }
+
+  return index;
+}
+
+/** RN7: o mês planejado deve existir na temporada */
+async function assertPlannedMonthInSeason(teamId: string, plannedMonth: number) {
+  const { start, end } = await loadTeamSeasonRange(teamId);
+  const total = buildSeasonMonths(start, end).length;
+
+  if (plannedMonth < 1 || plannedMonth > total) {
+    throw new Error(
+      `O mês planejado deve estar dentro da temporada (1 a ${total}).`
+    );
+  }
+}
+
 export async function resolveActiveTeam(
   user?: AuthenticatedUserDTO | null
 ): Promise<{
   activeTeam: ActiveTeamSummaryDTO;
   availableTeams: ActiveTeamSummaryDTO[];
 }> {
-  const allTeams = await prisma.team.findMany({
+  const rawTeams = await prisma.team.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
     select: {
@@ -54,12 +122,32 @@ export async function resolveActiveTeam(
       name: true,
       slug: true,
       schoolOrOrg: true,
+      season: true,
+      seasonStartDate: true,
+      seasonEndDate: true,
+      createdAt: true,
     },
   });
 
-  if (allTeams.length === 0) {
+  if (rawTeams.length === 0) {
     throw new Error("Nenhuma equipe ativa encontrada no banco de dados.");
   }
+
+  const allTeams: ActiveTeamSummaryDTO[] = rawTeams.map((t) => {
+    const { label, start, end } = resolveTeamSeasonRange(t);
+
+    return {
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      schoolOrOrg: t.schoolOrOrg,
+      season: {
+        label,
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+      },
+    };
+  });
 
   const matchedTeam =
     allTeams.find((t) => t.id === user?.teamId) ?? allTeams[0];
@@ -73,17 +161,28 @@ export async function resolveActiveTeam(
   };
 }
 
+/** Meses da temporada (derivados do intervalo início → fim) */
+export function getSeasonMonthsFromTeam(
+  team: Pick<ActiveTeamSummaryDTO, "season">
+): SeasonMonthDTO[] {
+  return buildSeasonMonths(
+    new Date(team.season.startDate),
+    new Date(team.season.endDate)
+  );
+}
+
 /**
- * Função utilitária pura: Cálculo do Fluxo de Caixa na Linha do Tempo (Meses 1 a 6)
+ * Função utilitária pura: Cálculo do Fluxo de Caixa na Linha do Tempo (meses da temporada)
  */
 export function calculateCashFlowTimeline(
-  transactions: Pick<TransactionDTO, "referenceMonth" | "type" | "amountCents">[]
+  transactions: Pick<TransactionDTO, "referenceMonth" | "type" | "amountCents">[],
+  seasonMonths: SeasonMonthDTO[]
 ): CashFlowSummaryDTO {
   let accumulatedBalanceCents = 0;
   let totalOriginsCents = 0;
   let totalApplicationsCents = 0;
 
-  const months: CashFlowMonthPoint[] = PROJECT_MONTHS.map((month) => {
+  const months: CashFlowMonthPoint[] = seasonMonths.map(({ index: month, label }) => {
     const originsCents = transactions
       .filter((tx) => tx.referenceMonth === month && tx.type === TransactionType.ORIGIN)
       .reduce((acc, tx) => acc + tx.amountCents, 0);
@@ -100,7 +199,7 @@ export function calculateCashFlowTimeline(
 
     return {
       month,
-      monthLabel: PROJECT_MONTH_LABELS[month] ?? `Mês ${month}`,
+      monthLabel: label,
       originsCents,
       applicationsCents,
       netBalanceCents,
@@ -118,7 +217,7 @@ export function calculateCashFlowTimeline(
 }
 
 /**
- * Função utilitária pura: Cálculo do Cronograma Físico-Financeiro pelos 5 Setores Internos da Equipe
+ * Função utilitária pura: Cálculo do Cronograma Físico-Financeiro pelos Setores Internos da Equipe
  */
 export function calculatePhysicalFinancialSchedule(
   budgetResources: Pick<
@@ -128,10 +227,11 @@ export function calculatePhysicalFinancialSchedule(
   transactions: Pick<
     TransactionDTO,
     "deliveryGroup" | "referenceMonth" | "type" | "amountCents"
-  >[]
+  >[],
+  seasonMonths: SeasonMonthDTO[]
 ): DeliveryGroupScheduleRow[] {
   return ALL_DELIVERY_GROUPS.map((deliveryGroup) => {
-    const months = PROJECT_MONTHS.map((month) => {
+    const months = seasonMonths.map(({ index: month }) => {
       const plannedCents = budgetResources
         .filter(
           (item) => item.deliveryGroup === deliveryGroup && item.plannedMonth === month
@@ -230,7 +330,7 @@ export async function createBudgetResourceService(
   }
 
   const code = await generateNextBudgetCode(teamId);
-
+  await assertPlannedMonthInSeason(teamId, input.plannedMonth);
   return prisma.budgetResource.create({
     data: {
       teamId,
@@ -284,13 +384,15 @@ export async function createTransactionService(
       ? input.documentRef.trim()
       : null;
 
+  const referenceMonth = await deriveReferenceMonthFromDate(teamId, input.date);
+
   if (input.isBarterCounterpart) {
     return prisma.$transaction(async (tx) => {
       const originEntry = await tx.transaction.create({
         data: {
           teamId,
           date: input.date,
-          referenceMonth: input.referenceMonth,
+          referenceMonth,
           type: TransactionType.ORIGIN,
           deliveryGroup: input.deliveryGroup,
           categoryId: input.categoryId,
@@ -306,7 +408,7 @@ export async function createTransactionService(
         data: {
           teamId,
           date: input.date,
-          referenceMonth: input.referenceMonth,
+          referenceMonth,
           type: TransactionType.APPLICATION,
           deliveryGroup: input.deliveryGroup,
           categoryId: input.categoryId,
@@ -326,7 +428,7 @@ export async function createTransactionService(
     data: {
       teamId,
       date: input.date,
-      referenceMonth: input.referenceMonth,
+      referenceMonth,
       type: input.type,
       deliveryGroup: input.deliveryGroup,
       categoryId: input.categoryId,
@@ -360,6 +462,8 @@ export async function updateBudgetResourceService(
   if (!category) {
     throw new Error("A categoria selecionada não pertence à sua equipe.");
   }
+
+  await assertPlannedMonthInSeason(teamId, input.plannedMonth);
 
   return prisma.budgetResource.update({
     where: { id: input.id },
@@ -439,11 +543,13 @@ export async function updateTransactionService(
       ? input.documentRef.trim()
       : null;
 
+  const referenceMonth = await deriveReferenceMonthFromDate(teamId, input.date);
+
   return prisma.transaction.update({
     where: { id: input.id },
     data: {
       date: input.date,
-      referenceMonth: input.referenceMonth,
+      referenceMonth,
       type: input.type,
       deliveryGroup: input.deliveryGroup,
       categoryId: input.categoryId,
@@ -629,10 +735,12 @@ export async function getDashboardMetricsService(
     createdAt: t.createdAt.toISOString(),
   }));
 
-  const cashFlow = calculateCashFlowTimeline(transactions);
+  const seasonMonths = getSeasonMonthsFromTeam(activeTeam);
+  const cashFlow = calculateCashFlowTimeline(transactions, seasonMonths);
   const schedule = calculatePhysicalFinancialSchedule(
     budgetResources,
-    transactions
+    transactions,
+    seasonMonths
   );
 
   const totalPlannedBudgetCents = budgetResources.reduce(
@@ -662,6 +770,7 @@ export async function getDashboardMetricsService(
     schedule,
     categories,
     teamMembers,
+    seasonMonths,
     budgetResources,
     transactions,
   };

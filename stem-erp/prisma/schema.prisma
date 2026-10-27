@@ -60,6 +60,9 @@ model Team {
   name            String           @unique // Ex: Equipe Gênesis, Equipe Alpha
   slug            String           @unique // Ex: equipe-genesis, equipe-alpha
   schoolOrOrg     String?          // Ex: SENAI / Escuderia Gênesis
+  season          String?          // Temporada: "2025/2026"
+  seasonStartDate DateTime?        // Início da temporada (gera os meses do fluxo de caixa)
+  seasonEndDate   DateTime?        // Fim da temporada
   isActive        Boolean          @default(true)
   users           User[]
   categories      Category[]

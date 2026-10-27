@@ -31,6 +31,7 @@ export default async function EquipePage() {
       availableTeams={financialMetrics.availableTeams}
       categories={financialMetrics.categories}
       budgetResources={financialMetrics.budgetResources}
+      seasonMonths={financialMetrics.seasonMonths}
       headerAction={
         <div className="flex flex-wrap items-center gap-3">
           <CreateTeamDialog />

@@ -4,7 +4,9 @@ import type {
   ActiveTeamSummaryDTO,
   BudgetResourceDTO,
   CategoryDTO,
+  SeasonMonthDTO,
 } from "@/types/financial";
+import { SeasonProvider } from "@/providers/season-provider";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
 
@@ -14,6 +16,7 @@ interface DashboardShellProps {
   availableTeams?: ActiveTeamSummaryDTO[];
   categories: CategoryDTO[];
   budgetResources: BudgetResourceDTO[];
+  seasonMonths?: SeasonMonthDTO[];
   title: string;
   subtitle?: string;
   headerAction?: React.ReactNode;
@@ -26,40 +29,43 @@ export function DashboardShell({
   availableTeams,
   categories,
   budgetResources,
+  seasonMonths,
   title,
   subtitle,
   headerAction,
   children,
 }: DashboardShellProps) {
   return (
-    <div className="flex min-h-screen bg-background text-foreground transition-colors">
-      <AppSidebar currentUser={currentUser} />
+    <SeasonProvider seasonMonths={seasonMonths}>
+      <div className="flex min-h-screen bg-background text-foreground transition-colors">
+        <AppSidebar currentUser={currentUser} />
 
-      <div className="flex flex-1 flex-col min-w-0">
-        <AppHeader
-          currentUser={currentUser}
-          activeTeam={activeTeam}
-          availableTeams={availableTeams}
-          categories={categories}
-          budgetResources={budgetResources}
-        />
+        <div className="flex flex-1 flex-col min-w-0">
+          <AppHeader
+            currentUser={currentUser}
+            activeTeam={activeTeam}
+            availableTeams={availableTeams}
+            categories={categories}
+            budgetResources={budgetResources}
+          />
 
-        <main className="flex-1 p-6 lg:p-8 space-y-7 max-w-[1600px] w-full mx-auto page-fluid-enter">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-[28px] font-bold tracking-tight text-foreground">
-                {title}
-              </h1>
-              {subtitle && (
-                <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
-              )}
+          <main className="flex-1 p-6 lg:p-8 space-y-7 max-w-[1600px] w-full mx-auto page-fluid-enter">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-[28px] font-bold tracking-tight text-foreground">
+                  {title}
+                </h1>
+                {subtitle && (
+                  <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
+                )}
+              </div>
+              {headerAction && <div>{headerAction}</div>}
             </div>
-            {headerAction && <div>{headerAction}</div>}
-          </div>
 
-          {children}
-        </main>
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </SeasonProvider>
   );
 }

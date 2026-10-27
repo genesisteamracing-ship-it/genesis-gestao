@@ -8,8 +8,6 @@ import { ArrowDownCircle, ArrowUpCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   DELIVERY_GROUP_LABELS,
-  PROJECT_MONTHS,
-  PROJECT_MONTH_LABELS,
   TRACKING_METHOD_LABELS,
 } from "@/lib/constants";
 import {
@@ -20,6 +18,7 @@ import {
 import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
 import { updateTransactionAction } from "@/actions/financial-actions";
 import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
+import { useSeasonMonths } from "@/providers/season-provider";
 import type {
   BudgetResourceDTO,
   CategoryDTO,
@@ -55,7 +54,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const editTransactionFormSchema = z.object({
   date: z.string().min(1, "Informe a data do fato gerador"),
-  referenceMonth: z.coerce.number().int().min(1).max(6),
   type: z.enum(transactionTypeValues),
   deliveryGroup: z.enum(deliveryGroupValues),
   categoryId: z.string().min(1, "Selecione uma categoria"),
@@ -101,7 +99,6 @@ export function EditTransactionDialog({
     resolver: zodResolver(editTransactionFormSchema),
     defaultValues: {
       date: getISODate(transaction.date),
-      referenceMonth: transaction.referenceMonth,
       type: transaction.type,
       deliveryGroup: transaction.deliveryGroup,
       categoryId: transaction.categoryId,
@@ -117,7 +114,6 @@ export function EditTransactionDialog({
     if (open) {
       form.reset({
         date: getISODate(transaction.date),
-        referenceMonth: transaction.referenceMonth,
         type: transaction.type,
         deliveryGroup: transaction.deliveryGroup,
         categoryId: transaction.categoryId,
@@ -130,6 +126,12 @@ export function EditTransactionDialog({
     }
   }, [open, transaction, form]);
 
+  const seasonMonths = useSeasonMonths();
+  const watchedDate = form.watch("date");
+  const derivedMonthLabel = React.useMemo(
+    () => seasonMonths.find((m) => m.key === watchedDate?.slice(0, 7))?.label ?? null,
+    [seasonMonths, watchedDate]
+  );
   const watchedType = form.watch("type");
   const watchedDeliveryGroup = form.watch("deliveryGroup");
   const watchedReais = form.watch("amountReais");
@@ -148,7 +150,6 @@ export function EditTransactionDialog({
       const result = await updateTransactionAction({
         id: transaction.id,
         date: new Date(`${values.date}T12:00:00Z`),
-        referenceMonth: values.referenceMonth,
         type: values.type,
         deliveryGroup: values.deliveryGroup,
         categoryId: values.categoryId,
@@ -220,7 +221,7 @@ export function EditTransactionDialog({
               )}
             />
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="amountReais"
@@ -249,34 +250,13 @@ export function EditTransactionDialog({
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="referenceMonth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mês de Referência</FormLabel>
-                    <Select
-                      onValueChange={(val) => field.onChange(Number(val))}
-                      value={String(field.value)}
+                    <FormDescription
+                      className={derivedMonthLabel ? "text-xs" : "text-xs text-destructive"}
                     >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {PROJECT_MONTHS.map((m) => (
-                          <SelectItem key={m} value={String(m)}>
-                            {PROJECT_MONTH_LABELS[m]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {derivedMonthLabel
+                        ? `Mês do fluxo de caixa: ${derivedMonthLabel}`
+                        : "Data fora da temporada da equipe"}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

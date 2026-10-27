@@ -13,8 +13,6 @@ import {
 } from "lucide-react";
 import {
   DELIVERY_GROUP_LABELS,
-  PROJECT_MONTHS,
-  PROJECT_MONTH_LABELS,
   TRACKING_METHOD_LABELS,
 } from "@/lib/constants";
 import {
@@ -22,6 +20,10 @@ import {
   trackingMethodValues,
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents, formatDateBR } from "@/lib/utils";
+import {
+  useSeasonMonthLabel,
+  useSeasonMonths,
+} from "@/providers/season-provider";
 import type {
   BudgetResourceDTO,
   CategoryDTO,
@@ -79,6 +81,9 @@ export function TransactionsDataTable({
   budgetResources = [],
   isLoading = false,
 }: TransactionsDataTableProps) {
+  const seasonMonths = useSeasonMonths();
+  const getMonthLabel = useSeasonMonthLabel();
+
   const columns = React.useMemo<ColumnDef<TransactionDTO>[]>(
     () => [
       {
@@ -137,8 +142,7 @@ export function TransactionsDataTable({
               {formatDateBR(row.original.date)}
             </div>
             <div className="text-xs text-muted-foreground">
-              {PROJECT_MONTH_LABELS[row.original.referenceMonth] ??
-                `Mês ${row.original.referenceMonth}`}
+              {getMonthLabel(row.original.referenceMonth)}
             </div>
           </div>
         ),
@@ -191,7 +195,7 @@ export function TransactionsDataTable({
         ),
       },
     ],
-    [categories, budgetResources]
+    [categories, budgetResources, getMonthLabel]
   );
 
   const {
@@ -270,9 +274,9 @@ export function TransactionsDataTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Data / Mês</SelectItem>
-              {PROJECT_MONTHS.map((m) => (
-                <SelectItem key={m} value={String(m)}>
-                  {PROJECT_MONTH_LABELS[m]}
+              {seasonMonths.map((m) => (
+                <SelectItem key={m.index} value={String(m.index)}>
+                  {m.label}
                 </SelectItem>
               ))}
             </SelectContent>

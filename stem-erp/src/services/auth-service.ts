@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { AuthEventType, DeliveryGroup, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { parseSeasonDate } from "@/lib/season";
 import {
   ACTIVE_TEAM_COOKIE_NAME,
   SESSION_COOKIE_NAME,
@@ -399,12 +400,21 @@ export async function createTeamService(
 
   const { ipAddress, userAgent } = await getRequestMetadata();
 
+  const seasonStart = parseSeasonDate(input.seasonStartDate);
+  const seasonEnd = parseSeasonDate(input.seasonEndDate);
+  if (!seasonStart || !seasonEnd) {
+    throw new Error("Datas da temporada inválidas.");
+  }
+
   return prisma.$transaction(async (tx) => {
     const createdTeam = await tx.team.create({
       data: {
         name: trimmedName,
         slug: baseSlug,
         schoolOrOrg: input.schoolOrOrg.trim(),
+        season: input.season,
+        seasonStartDate: seasonStart,
+        seasonEndDate: seasonEnd,
         isActive: true,
       },
     });

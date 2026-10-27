@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  isValidSeasonLabel,
+  parseSeasonDate,
+  validateSeasonRange,
+} from "@/lib/season";
 import { deliveryGroupValues } from "./financial";
 
 export const userRoleValues = [
@@ -20,16 +25,42 @@ export const loginSchema = z.object({
     .max(128, "Senha excede o limite permitido"),
 });
 
-export const createTeamSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(3, "O nome da equipe deve ter no mínimo 3 caracteres"),
-  schoolOrOrg: z
-    .string()
-    .trim()
-    .min(2, "Informe a escola, instituição ou organização da equipe"),
-});
+export const createTeamSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(3, "O nome da equipe deve ter no mínimo 3 caracteres"),
+    schoolOrOrg: z
+      .string()
+      .trim()
+      .min(2, "Informe a escola, instituição ou organização da equipe"),
+    season: z
+      .string()
+      .refine(isValidSeasonLabel, "Selecione a temporada (ex: 2025/2026)"),
+    seasonStartDate: z
+      .string()
+      .min(1, "Informe a data de início da temporada")
+      .refine((v) => parseSeasonDate(v) !== null, "Data de início inválida"),
+    seasonEndDate: z
+      .string()
+      .min(1, "Informe a data de fim da temporada")
+      .refine((v) => parseSeasonDate(v) !== null, "Data de fim inválida"),
+  })
+  .superRefine((data, ctx) => {
+    const start = parseSeasonDate(data.seasonStartDate);
+    const end = parseSeasonDate(data.seasonEndDate);
+    if (!start || !end) return;
+
+    const error = validateSeasonRange(start, end);
+    if (error) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["seasonEndDate"],
+        message: error,
+      });
+    }
+  });
 
 export const createMemberSchema = z.object({
   name: z.string().trim().min(3, "O nome deve ter no mínimo 3 caracteres"),

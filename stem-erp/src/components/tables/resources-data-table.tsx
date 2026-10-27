@@ -14,14 +14,16 @@ import {
 import {
   ACQUISITION_STRATEGY_LABELS,
   DELIVERY_GROUP_LABELS,
-  PROJECT_MONTHS,
-  PROJECT_MONTH_LABELS,
 } from "@/lib/constants";
 import {
   acquisitionStrategyValues,
   deliveryGroupValues,
 } from "@/lib/validations/financial";
 import { formatCurrencyFromCents } from "@/lib/utils";
+import {
+  useSeasonMonthLabel,
+  useSeasonMonths,
+} from "@/providers/season-provider";
 import type {
   BudgetResourceDTO,
   CategoryDTO,
@@ -79,6 +81,9 @@ export function ResourcesDataTable({
   teamMembers = [],
   isLoading = false,
 }: ResourcesDataTableProps) {
+  const seasonMonths = useSeasonMonths();
+  const getMonthLabel = useSeasonMonthLabel();
+
   const columns = React.useMemo<ColumnDef<BudgetResourceDTO>[]>(
     () => [
       {
@@ -126,8 +131,7 @@ export function ResourcesDataTable({
         filterFn: "equalsString",
         cell: ({ row }) => (
           <div className="text-sm text-foreground">
-            {PROJECT_MONTH_LABELS[row.original.plannedMonth] ??
-              `Mês ${row.original.plannedMonth}`}{" "}
+            {getMonthLabel(row.original.plannedMonth)}{" "}
             <span className="text-xs text-muted-foreground">
               ({row.original.utilizationForecast}% uso)
             </span>
@@ -189,7 +193,7 @@ export function ResourcesDataTable({
         ),
       },
     ],
-    [categories, teamMembers]
+    [categories, teamMembers, getMonthLabel]
   );
 
   const {
@@ -268,9 +272,9 @@ export function ResourcesDataTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Todos os Meses</SelectItem>
-              {PROJECT_MONTHS.map((m) => (
-                <SelectItem key={m} value={String(m)}>
-                  {PROJECT_MONTH_LABELS[m]}
+              {seasonMonths.map((m) => (
+                <SelectItem key={m.index} value={String(m.index)}>
+                  {m.label}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -12,7 +12,6 @@ import {
 import {
   ACQUISITION_STRATEGY_LABELS,
   DELIVERY_GROUP_LABELS,
-  PROJECT_MONTH_LABELS,
 } from "@/lib/constants";
 import { downloadCsvFile, triggerPortfolioPdfPrint } from "@/lib/export-utils";
 import { formatCurrencyFromCents } from "@/lib/utils";
