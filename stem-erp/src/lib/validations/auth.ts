@@ -73,8 +73,13 @@ export const deleteTeamSchema = z.object({
     }),
 });
 
+export const deleteMemberSchema = z.object({
+  userId: z.string().min(1, "ID do integrante é obrigatório"),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type UpdateMemberAccessInput = z.infer<typeof updateMemberAccessSchema>;
 export type DeleteTeamInput = z.infer<typeof deleteTeamSchema>;
+export type DeleteMemberInput = z.infer<typeof deleteMemberSchema>;

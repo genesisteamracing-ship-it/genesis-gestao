@@ -14,6 +14,7 @@ import {
 import type {
   CreateMemberInput,
   CreateTeamInput,
+  DeleteMemberInput,
   DeleteTeamInput,
   LoginInput,
   UpdateMemberAccessInput,
@@ -801,4 +802,47 @@ export async function deleteTeamService(
   }
 
   return team;
+}
+
+export async function deleteTeamMemberService(
+  superAdmin: AuthenticatedUserDTO,
+  input: DeleteMemberInput
+) {
+  if (superAdmin.role !== "SUPER_ADMIN") {
+    throw new Error("Apenas o SuperAdmin pode excluir integrantes.");
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: { id: true, name: true, email: true, role: true },
+  });
+
+  if (!targetUser) {
+    throw new Error("Integrante não encontrado ou já foi excluído.");
+  }
+
+  if (targetUser.id === superAdmin.id) {
+    throw new Error("Você não pode excluir sua própria conta de SuperAdmin.");
+  }
+
+  const { ipAddress, userAgent } = await getRequestMetadata();
+
+  return prisma.$transaction(async (tx) => {
+    await tx.user.delete({
+      where: { id: targetUser.id },
+    });
+
+    await tx.authAuditLog.create({
+      data: {
+        userId: superAdmin.id,
+        emailAttempt: targetUser.email,
+        event: AuthEventType.USER_ROLE_UPDATED,
+        ipAddress,
+        userAgent,
+        details: `Integrante "${targetUser.name}" (${targetUser.email}) foi excluído da plataforma pelo SuperAdmin.`,
+      },
+    });
+
+    return targetUser;
+  });
 }

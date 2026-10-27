@@ -44,10 +44,29 @@ import {
 interface EditMemberDialogProps {
   member: TeamMemberDTO;
   teams: TeamDTO[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
 }
 
-export function EditMemberDialog({ member, teams }: EditMemberDialogProps) {
-  const [open, setOpen] = React.useState(false);
+export function EditMemberDialog({
+  member,
+  teams,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  trigger,
+}: EditMemberDialogProps) {
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (isControlled) {
+      controlledOnOpenChange?.(next);
+    } else {
+      setInternalOpen(next);
+    }
+  };
+
   const [isPending, startTransition] = React.useTransition();
 
   const form = useForm<UpdateMemberAccessInput>({
@@ -61,6 +80,19 @@ export function EditMemberDialog({ member, teams }: EditMemberDialogProps) {
       isActive: member.isActive,
     },
   });
+
+  React.useEffect(() => {
+    if (open) {
+      form.reset({
+        userId: member.id,
+        teamId: member.teamId ?? teams[0]?.id ?? "",
+        role: member.role,
+        deliveryGroup: member.deliveryGroup ?? "PROJECT_MANAGEMENT",
+        jobTitle: member.jobTitle ?? "Integrante",
+        isActive: member.isActive,
+      });
+    }
+  }, [open, member, teams, form]);
 
   function onSubmit(values: UpdateMemberAccessInput) {
     startTransition(async () => {
@@ -78,20 +110,13 @@ export function EditMemberDialog({ member, teams }: EditMemberDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-          <Settings2 className="h-3.5 w-3.5 text-primary" />
-          <span>Editar Equipe/Setor</span>
-        </Button>
-      </DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Editar Acesso: {member.name}</DialogTitle>
-          <DialogDescription>
-            Altere a <strong>Equipe</strong>, o <strong>Setor Interno</strong> ou a
-            permissão de {member.email}. Sessões ativas serão revalidadas
-            automaticamente.
+          <DialogDescription className="sr-only">
+            Editar permissões e dados de acesso de {member.name}
           </DialogDescription>
         </DialogHeader>
 

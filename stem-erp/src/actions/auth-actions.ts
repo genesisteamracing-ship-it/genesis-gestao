@@ -11,11 +11,13 @@ import { prisma } from "@/lib/prisma";
 import {
   createMemberSchema,
   createTeamSchema,
+  deleteMemberSchema,
   deleteTeamSchema,
   loginSchema,
   updateMemberAccessSchema,
   type CreateMemberInput,
   type CreateTeamInput,
+  type DeleteMemberInput,
   type DeleteTeamInput,
   type LoginInput,
   type UpdateMemberAccessInput,
@@ -24,6 +26,7 @@ import {
   authenticateUserService,
   createTeamMemberService,
   createTeamService,
+  deleteTeamMemberService,
   deleteTeamService,
   getTeamManagementMetricsService,
   logoutUserService,
@@ -281,6 +284,39 @@ export async function deleteTeamAction(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Erro ao excluir equipe.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}
+
+export async function deleteTeamMemberAction(
+  rawData: DeleteMemberInput
+): Promise<ActionResponse> {
+  const superAdmin = await requireSuperAdmin();
+
+  const parsed = deleteMemberSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Dados inválidos para remoção do integrante.",
+    };
+  }
+
+  try {
+    const deleted = await deleteTeamMemberService(superAdmin, parsed.data);
+
+    revalidatePath("/equipe");
+    revalidatePath("/dashboard");
+
+    return {
+      success: true,
+      message: `Integrante "${deleted.name}" excluído com sucesso!`,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Erro ao excluir integrante.";
     return {
       success: false,
       message,

@@ -34,7 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StateView } from "@/components/ui/state-view";
-import { EditMemberDialog } from "@/components/modals/edit-member-dialog";
+import { MemberRowActions } from "@/components/tables/member-row-actions";
 import { useTeamMembersTable } from "@/components/tables/use-team-members-table";
 
 interface TeamMembersDataTableProps {
@@ -176,7 +176,7 @@ export function TeamMembersDataTable({
         header: "AÇÕES DO SUPERADMIN",
         cell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-2">
-            <EditMemberDialog member={row.original} teams={teams} />
+            <MemberRowActions member={row.original} teams={teams} />
             {(row.original.isLocked || row.original.failedLoginAttempts > 0) && (
               <Button
                 variant="outline"
