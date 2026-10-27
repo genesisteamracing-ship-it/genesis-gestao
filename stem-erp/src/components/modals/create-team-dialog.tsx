@@ -61,8 +61,8 @@ export function CreateTeamDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-[#D5D5D5] font-semibold">
-          <Flag className="h-4 w-4 text-[#4880FF]" />
+        <Button variant="outline" className="border-border font-semibold">
+          <Flag className="h-4 w-4 text-primary" />
           <span>+ Nova Equipe</span>
         </Button>
       </DialogTrigger>

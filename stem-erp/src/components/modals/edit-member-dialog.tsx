@@ -80,7 +80,7 @@ export function EditMemberDialog({ member, teams }: EditMemberDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-          <Settings2 className="h-3.5 w-3.5 text-[#4880FF]" />
+          <Settings2 className="h-3.5 w-3.5 text-primary" />
           <span>Editar Equipe/Setor</span>
         </Button>
       </DialogTrigger>
@@ -190,12 +190,12 @@ export function EditMemberDialog({ member, teams }: EditMemberDialogProps) {
               control={form.control}
               name="isActive"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-xl border border-[#E8E8E8] bg-[#FAFBFD] p-3.5">
+                <FormItem className="flex items-center justify-between rounded-xl border border-border bg-card p-3.5">
                   <div className="space-y-0.5">
                     <FormLabel className="cursor-pointer">
                       Conta Ativa para Login
                     </FormLabel>
-                    <p className="text-xs text-[#606060]">
+                    <p className="text-xs text-muted-foreground">
                       Desmarque para revogar o acesso do integrante imediatamente.
                     </p>
                   </div>
@@ -204,7 +204,7 @@ export function EditMemberDialog({ member, teams }: EditMemberDialogProps) {
                       type="checkbox"
                       checked={field.value}
                       onChange={(e) => field.onChange(e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 text-[#4880FF] cursor-pointer"
+                      className="h-4 w-4 rounded border-border text-primary cursor-pointer"
                     />
                   </FormControl>
                 </FormItem>

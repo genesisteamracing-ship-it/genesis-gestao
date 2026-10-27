@@ -39,95 +39,95 @@ export default async function EquipePage() {
     >
       {/* 4 KPI Cards de Governança Multi-Equipe no padrão DashStack */}
       <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
+        <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
           <CardContent className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-[#202224]/70">
+                <p className="text-sm font-medium text-muted-foreground">
                   Equipes Cadastradas
                 </p>
-                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-[#202224]">
+                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-foreground">
                   {teamMetrics.stats.totalTeams}
                 </p>
               </div>
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-[#8280FF]/18 text-[#8280FF]">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-chart-4/15 text-chart-4">
                 <Flag className="h-7 w-7" />
               </div>
             </div>
-            <p className="mt-5 text-sm text-[#606060]">
+            <p className="mt-5 text-sm text-muted-foreground">
               Cada equipe isolada com 5 setores
             </p>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
+        <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
           <CardContent className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-[#202224]/70">
+                <p className="text-sm font-medium text-muted-foreground">
                   Integrantes Cadastrados
                 </p>
-                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-[#00B69B]">
+                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-success">
                   {teamMetrics.stats.totalMembers}
                 </p>
               </div>
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-[#4AD991]/20 text-[#00B69B]">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-chart-2/20 text-success">
                 <Users className="h-7 w-7" />
               </div>
             </div>
-            <p className="mt-5 text-sm text-[#606060]">
+            <p className="mt-5 text-sm text-muted-foreground">
               {teamMetrics.stats.activeMembers} contas ativas e liberadas
             </p>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
+        <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
           <CardContent className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-[#202224]/70">
+                <p className="text-sm font-medium text-muted-foreground">
                   Sessões httpOnly Ativas
                 </p>
-                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-[#4880FF]">
+                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-primary">
                   {teamMetrics.stats.activeSessions}
                 </p>
               </div>
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-[#FEC53D]/22 text-[#E5A400]">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-warning/20 text-warning">
                 <KeyRound className="h-7 w-7" />
               </div>
             </div>
-            <p className="mt-5 text-sm text-[#606060]">
+            <p className="mt-5 text-sm text-muted-foreground">
               Protegidas contra XSS e CSRF
             </p>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
+        <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
           <CardContent className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-[#202224]/70">
+                <p className="text-sm font-medium text-muted-foreground">
                   Tentativas de Invasão / Falhas
                 </p>
-                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-[#EF3826]">
+                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-destructive">
                   {teamMetrics.stats.blockedInvasionAttempts}
                 </p>
               </div>
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-[#FF9066]/20 text-[#FF9066]">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-peach/20 text-peach">
                 <ShieldAlert className="h-7 w-7" />
               </div>
             </div>
-            <p className="mt-5 text-sm text-[#606060]">
+            <p className="mt-5 text-sm text-muted-foreground">
               Bloqueio automático após 5 falhas
             </p>
           </CardContent>
         </Card>
       </section>
 
-      {/* Painel das Equipes Competidoras (Isolamento Multi-Tenant) */}
+      {/* Painel das Equipes Competidoras */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[#202224]">
+          <h2 className="text-lg font-bold text-foreground">
             Equipes Cadastradas
           </h2>
         </div>
@@ -136,39 +136,39 @@ export default async function EquipePage() {
           {teamMetrics.teams.map((team) => (
             <Card
               key={team.id}
-              className="rounded-2xl border border-[#D5D5D5]/70 bg-white shadow-[0_4px_16px_-4px_rgba(16,24,40,0.03)]"
+              className="rounded-2xl border border-border bg-card shadow-[0_4px_16px_-4px_rgba(16,24,40,0.03)]"
             >
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h3 className="text-base font-bold text-[#202224]">
+                    <h3 className="text-base font-bold text-foreground">
                       {team.name}
                     </h3>
-                    <p className="text-xs text-[#606060]">
+                    <p className="text-xs text-muted-foreground">
                       {team.schoolOrOrg || "Escuderia STEM Racing"}
                     </p>
                   </div>
                   <Badge variant="success">Isolamento Ativo</Badge>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 rounded-xl bg-[#F5F6FA] p-3 text-center">
+                <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted p-3 text-center">
                   <div>
-                    <div className="text-sm font-bold text-[#202224]">
+                    <div className="text-sm font-bold text-foreground">
                       {team.membersCount}
                     </div>
-                    <div className="text-[11px] text-[#606060]">Integrantes</div>
+                    <div className="text-[11px] text-muted-foreground">Integrantes</div>
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-[#4880FF]">
+                    <div className="text-sm font-bold text-primary">
                       {team.resourcesCount}
                     </div>
-                    <div className="text-[11px] text-[#606060]">Recursos</div>
+                    <div className="text-[11px] text-muted-foreground">Recursos</div>
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-[#00B69B]">
+                    <div className="text-sm font-bold text-success">
                       {team.transactionsCount}
                     </div>
-                    <div className="text-[11px] text-[#606060]">Lançamentos</div>
+                    <div className="text-[11px] text-muted-foreground">Lançamentos</div>
                   </div>
                 </div>
               </CardContent>
@@ -177,7 +177,7 @@ export default async function EquipePage() {
         </div>
       </section>
 
-      {/* Tabela de Integrantes estilo tabela.png */}
+      {/* Tabela de Integrantes */}
       <TeamMembersDataTable
         teams={teamMetrics.teams}
         members={teamMetrics.members}

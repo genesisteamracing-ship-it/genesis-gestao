@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { cn, formatCurrencyFromCents } from "@/lib/utils";
+import { formatCurrencyFromCents } from "@/lib/utils";
 import type { CashFlowSummaryDTO } from "@/types/financial";
 import {
   Card,
@@ -49,31 +49,31 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
   return (
     <Card
       id="fluxo-caixa"
-      className="rounded-2xl border-0 bg-white dark:bg-[#1B1D21] shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none"
+      className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none"
     >
       <CardHeader className="p-7 pb-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle className="text-xl font-bold text-[#202224] dark:text-[#F5F6FA]">
+            <CardTitle className="text-xl font-bold text-foreground">
               Fluxo de Caixa na Linha do Tempo
             </CardTitle>
-            <CardDescription className="mt-1 text-xs text-[#606060] dark:text-[#9CA3AF]">
+            <CardDescription className="mt-1 text-xs text-muted-foreground">
               Origens (Verde) vs. Aplicações (Vermelho) e evolução do Saldo Acumulado
               (Linha Azul DashStack)
             </CardDescription>
           </div>
 
-          <div className="inline-flex items-center gap-4 rounded-lg border border-[#D5D5D5]/80 dark:border-[#2E3138] bg-[#FCFDFD] dark:bg-[#202226] px-4 py-2 text-xs font-semibold text-[#202224]/80 dark:text-[#F5F6FA]/80">
+          <div className="inline-flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#00B69B]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-success" />
               (+) Origens
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#F93C65]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-destructive" />
               (-) Aplicações
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#4880FF]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-primary" />
               (=) Saldo Acumulado
             </span>
           </div>
@@ -81,7 +81,7 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
       </CardHeader>
 
       <CardContent className="space-y-7 p-7 pt-3">
-        {/* Gráfico Recharts ComposedChart */}
+        {/* Gráfico Recharts ComposedChart com Tokens CSS */}
         <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
@@ -90,20 +90,20 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
             >
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#EAEAEA"
+                stroke="var(--border)"
                 vertical={false}
               />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 12, fill: "#202224", opacity: 0.65 }}
-                axisLine={{ stroke: "#EAEAEA" }}
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                axisLine={{ stroke: "var(--border)" }}
                 tickLine={false}
               />
               <YAxis
                 tickFormatter={(val: number) =>
                   `R$ ${val.toLocaleString("pt-BR")}`
                 }
-                tick={{ fontSize: 12, fill: "#202224", opacity: 0.65 }}
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -115,7 +115,9 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
                 }}
                 contentStyle={{
                   borderRadius: "0.75rem",
-                  borderColor: "#E8E8E8",
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--card)",
+                  color: "var(--foreground)",
                   boxShadow: "0 10px 25px -5px rgba(0,0,0,0.08)",
                   fontSize: "0.75rem",
                   fontWeight: 600,
@@ -125,14 +127,14 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
               <Bar
                 dataKey="Origens"
                 name="(+) Origens"
-                fill="#00B69B"
+                fill="var(--success)"
                 radius={[6, 6, 0, 0]}
                 maxBarSize={36}
               />
               <Bar
                 dataKey="Aplicacoes"
                 name="(-) Aplicações"
-                fill="#F93C65"
+                fill="var(--destructive)"
                 radius={[6, 6, 0, 0]}
                 maxBarSize={36}
               />
@@ -140,126 +142,122 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
                 type="monotone"
                 dataKey="SaldoAcumulado"
                 name="(=) Saldo Acumulado"
-                stroke="#4880FF"
+                stroke="var(--primary)"
                 strokeWidth={3}
-                dot={{ r: 5, fill: "#4880FF", strokeWidth: 2, stroke: "#fff" }}
-                activeDot={{ r: 7, fill: "#4880FF" }}
+                dot={{ r: 5, fill: "var(--primary)", strokeWidth: 2, stroke: "var(--card)" }}
+                activeDot={{ r: 7, fill: "var(--primary)" }}
               />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Tabela Matricial estilo Deals Details */}
-        <div className="overflow-hidden rounded-xl border border-[#E8E8E8]/80 dark:border-[#2E3138]">
+        {/* Tabela Matricial */}
+        <div className="overflow-hidden rounded-xl border border-border">
           <Table>
-            <TableHeader className="bg-[#F1F4F9] dark:bg-[#202226] [&_tr]:border-0">
-              <TableRow className="hover:bg-[#F1F4F9] dark:hover:bg-[#202226]">
-                <TableHead className="min-w-[180px] py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-[#202224] dark:text-[#F5F6FA]">
+            <TableHeader className="bg-muted [&_tr]:border-0">
+              <TableRow className="hover:bg-muted">
+                <TableHead className="min-w-[180px] py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
                   Estrutura do Fluxo
                 </TableHead>
                 {cashFlow.months.map((m) => (
                   <TableHead
                     key={m.month}
-                    className="py-3.5 px-4 text-right text-xs font-bold uppercase tracking-wider text-[#202224] dark:text-[#F5F6FA]"
+                    className="py-3.5 px-4 text-right text-xs font-bold uppercase tracking-wider text-foreground"
                   >
                     {m.monthLabel}
                   </TableHead>
                 ))}
-                <TableHead className="py-3.5 px-5 text-right text-xs font-bold uppercase tracking-wider text-[#202224] dark:text-[#F5F6FA]">
+                <TableHead className="py-3.5 px-5 text-right text-xs font-bold uppercase tracking-wider text-foreground">
                   Total / Final
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {/* (+) Origens */}
-              <TableRow className="border-b border-[#E8E8E8]/70 dark:border-[#2E3138]">
-                <TableCell className="py-4 px-5 font-semibold text-[#00B69B]">
+              <TableRow className="border-b border-border">
+                <TableCell className="py-4 px-5 font-semibold text-success">
                   (+) Origens
                 </TableCell>
                 {cashFlow.months.map((m) => (
                   <TableCell
                     key={m.month}
-                    className="py-4 px-4 text-right font-mono text-xs font-medium text-[#00B69B]"
+                    className="py-4 px-4 text-right font-mono text-xs font-medium text-success"
                   >
                     {formatCurrencyFromCents(m.originsCents)}
                   </TableCell>
                 ))}
-                <TableCell className="bg-[#00B69B]/5 py-4 px-5 text-right font-mono text-xs font-bold text-[#00B69B]">
+                <TableCell className="bg-success/5 py-4 px-5 text-right font-mono text-xs font-bold text-success">
                   {formatCurrencyFromCents(cashFlow.totalOriginsCents)}
                 </TableCell>
               </TableRow>
 
               {/* (-) Aplicações */}
-              <TableRow className="border-b border-[#E8E8E8]/70 dark:border-[#2E3138]">
-                <TableCell className="py-4 px-5 font-semibold text-[#F93C65]">
+              <TableRow className="border-b border-border">
+                <TableCell className="py-4 px-5 font-semibold text-destructive">
                   (-) Aplicações
                 </TableCell>
                 {cashFlow.months.map((m) => (
                   <TableCell
                     key={m.month}
-                    className="py-4 px-4 text-right font-mono text-xs font-medium text-[#F93C65]"
+                    className="py-4 px-4 text-right font-mono text-xs font-medium text-destructive"
                   >
                     {formatCurrencyFromCents(m.applicationsCents)}
                   </TableCell>
                 ))}
-                <TableCell className="bg-[#F93C65]/5 py-4 px-5 text-right font-mono text-xs font-bold text-[#F93C65]">
+                <TableCell className="bg-destructive/5 py-4 px-5 text-right font-mono text-xs font-bold text-destructive">
                   {formatCurrencyFromCents(cashFlow.totalApplicationsCents)}
                 </TableCell>
               </TableRow>
 
               {/* (=) Saldo Mensal */}
-              <TableRow className="border-b border-[#E8E8E8]/70 dark:border-[#2E3138] bg-[#FAFBFD] dark:bg-[#202226]">
-                <TableCell className="py-4 px-5 font-semibold text-[#202224] dark:text-[#F5F6FA]">
+              <TableRow className="border-b border-border bg-card">
+                <TableCell className="py-4 px-5 font-semibold text-foreground">
                   (=) Saldo Mensal
                 </TableCell>
                 {cashFlow.months.map((m) => (
                   <TableCell
                     key={m.month}
-                    className={cn(
-                      "py-4 px-4 text-right font-mono text-xs font-medium",
-                      m.netBalanceCents >= 0 ? "text-[#202224] dark:text-[#F5F6FA]" : "text-[#F93C65]"
-                    )}
+                    className={`py-4 px-4 text-right font-mono text-xs font-medium ${
+                      m.netBalanceCents >= 0 ? "text-foreground" : "text-destructive"
+                    }`}
                   >
                     {formatCurrencyFromCents(m.netBalanceCents)}
                   </TableCell>
                 ))}
                 <TableCell
-                  className={cn(
-                    "py-4 px-5 text-right font-mono text-xs font-bold",
+                  className={`py-4 px-5 text-right font-mono text-xs font-bold ${
                     cashFlow.totalNetBalanceCents >= 0
-                      ? "text-[#00B69B]"
-                      : "text-[#F93C65]"
-                  )}
+                      ? "text-success"
+                      : "text-destructive"
+                  }`}
                 >
                   {formatCurrencyFromCents(cashFlow.totalNetBalanceCents)}
                 </TableCell>
               </TableRow>
 
               {/* (=) Saldo Acumulado */}
-              <TableRow className="bg-[#4880FF]/5">
-                <TableCell className="py-4 px-5 font-bold text-[#4880FF]">
+              <TableRow className="bg-primary/5">
+                <TableCell className="py-4 px-5 font-bold text-primary">
                   (=) Saldo Acumulado
                 </TableCell>
                 {cashFlow.months.map((m) => (
                   <TableCell
                     key={m.month}
-                    className={cn(
-                      "py-4 px-4 text-right font-mono text-xs font-bold",
+                    className={`py-4 px-4 text-right font-mono text-xs font-bold ${
                       m.accumulatedBalanceCents >= 0
-                        ? "text-[#4880FF]"
-                        : "text-[#F93C65]"
-                    )}
+                        ? "text-primary"
+                        : "text-destructive"
+                    }`}
                   >
                     {formatCurrencyFromCents(m.accumulatedBalanceCents)}
                   </TableCell>
                 ))}
                 <TableCell
-                  className={cn(
-                    "bg-[#4880FF]/10 py-4 px-5 text-right font-mono text-xs font-extrabold",
+                  className={`bg-primary/10 py-4 px-5 text-right font-mono text-xs font-extrabold ${
                     cashFlow.finalAccumulatedBalanceCents >= 0
-                      ? "text-[#4880FF]"
-                      : "text-[#F93C65]"
-                  )}
+                      ? "text-primary"
+                      : "text-destructive"
+                  }`}
                 >
                   {formatCurrencyFromCents(cashFlow.finalAccumulatedBalanceCents)}
                 </TableCell>

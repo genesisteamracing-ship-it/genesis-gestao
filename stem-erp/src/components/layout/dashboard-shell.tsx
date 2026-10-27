@@ -32,7 +32,7 @@ export function DashboardShell({
   children,
 }: DashboardShellProps) {
   return (
-    <div className="flex min-h-screen bg-[#F5F6FA] dark:bg-[#121316] text-[#202224] dark:text-[#F5F6FA] transition-colors">
+    <div className="flex min-h-screen bg-background text-foreground transition-colors">
       <AppSidebar currentUser={currentUser} />
 
       <div className="flex flex-1 flex-col min-w-0">
@@ -47,11 +47,11 @@ export function DashboardShell({
         <main className="flex-1 p-6 lg:p-8 space-y-7 max-w-[1600px] w-full mx-auto page-fluid-enter">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-[28px] font-bold tracking-tight text-[#202224] dark:text-[#F5F6FA]">
+              <h1 className="text-[28px] font-bold tracking-tight text-foreground">
                 {title}
               </h1>
               {subtitle && (
-                <p className="mt-0.5 text-sm text-[#606060] dark:text-[#9CA3AF]">{subtitle}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
               )}
             </div>
             {headerAction && <div>{headerAction}</div>}

@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { StateView } from "@/components/ui/state-view";
 
 interface SecurityAuditTableProps {
   logs: AuthAuditLogDTO[];
@@ -41,35 +42,35 @@ function getAuditBadgeVariant(
 
 export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
   return (
-    <Card className="rounded-2xl border-0 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
+    <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
       <CardHeader className="p-7 pb-4">
-        <CardTitle className="text-xl font-bold text-[#202224]">
+        <CardTitle className="text-xl font-bold text-foreground">
           Trilha de Auditoria Anti-Invasão (AuthAuditLog)
         </CardTitle>
-        <CardDescription className="text-xs text-[#606060]">
+        <CardDescription className="text-xs text-muted-foreground">
           Monitoramento em tempo real de sessões httpOnly, falhas de autenticação,
           bloqueios automáticos por força bruta e alterações de permissão.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="p-7 pt-2">
-        <div className="overflow-hidden rounded-xl border border-[#E8E8E8]">
+        <div className="overflow-hidden rounded-xl border border-border">
           <Table>
-            <TableHeader className="bg-[#F1F4F9] [&_tr]:border-0">
-              <TableRow className="hover:bg-[#F1F4F9]">
-                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-[#202224]">
+            <TableHeader className="bg-muted [&_tr]:border-0">
+              <TableRow className="hover:bg-muted">
+                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
                   DATA / HORA
                 </TableHead>
-                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-[#202224]">
+                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
                   EVENTO DE SEGURANÇA
                 </TableHead>
-                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-[#202224]">
+                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
                   E-MAIL ALVO / INTEGRANTE
                 </TableHead>
-                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-[#202224]">
+                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
                   IP ORIGEM
                 </TableHead>
-                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-[#202224]">
+                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
                   DETALHAMENTO
                 </TableHead>
               </TableRow>
@@ -79,9 +80,9 @@ export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
                 logs.map((log) => (
                   <TableRow
                     key={log.id}
-                    className="border-b border-[#E8E8E8]/60 hover:bg-[#F9F9FB]"
+                    className="border-b border-border/60 hover:bg-muted/40"
                   >
-                    <TableCell className="py-3.5 px-5 font-mono text-xs text-[#606060]">
+                    <TableCell className="py-3.5 px-5 font-mono text-xs text-muted-foreground">
                       {new Intl.DateTimeFormat("pt-BR", {
                         dateStyle: "short",
                         timeStyle: "medium",
@@ -93,19 +94,19 @@ export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="py-3.5 px-5">
-                      <div className="font-semibold text-[#202224]">
+                      <div className="font-semibold text-foreground">
                         {log.emailAttempt}
                       </div>
                       {log.userName && (
-                        <div className="text-xs text-[#606060]">
+                        <div className="text-xs text-muted-foreground">
                           {log.userName}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="py-3.5 px-5 font-mono text-xs text-[#202224]">
+                    <TableCell className="py-3.5 px-5 font-mono text-xs text-foreground">
                       {log.ipAddress ?? "127.0.0.1"}
                     </TableCell>
-                    <TableCell className="py-3.5 px-5 text-xs text-[#606060]">
+                    <TableCell className="py-3.5 px-5 text-xs text-muted-foreground">
                       {log.details ?? "-"}
                     </TableCell>
                   </TableRow>
@@ -114,9 +115,13 @@ export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
                 <TableRow>
                   <TableCell
                     colSpan={5}
-                    className="h-24 text-center text-sm text-[#606060]"
+                    className="p-8 text-center"
                   >
-                    Nenhum evento de segurança registrado até o momento.
+                    <StateView
+                      state="empty"
+                      title="Nenhum evento registrado"
+                      description="Nenhum evento de segurança registrado até o momento."
+                    />
                   </TableCell>
                 </TableRow>
               )}

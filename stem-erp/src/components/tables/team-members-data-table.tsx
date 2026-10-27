@@ -1,15 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  useReactTable,
-  type ColumnDef,
-  type ColumnFiltersState,
-} from "@tanstack/react-table";
+import { flexRender, type ColumnDef } from "@tanstack/react-table";
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,8 +10,6 @@ import {
   Search,
   Unlock,
 } from "lucide-react";
-import { toast } from "sonner";
-import { unlockUserAccountAction } from "@/actions/auth-actions";
 import { DELIVERY_GROUP_LABELS, USER_ROLE_LABELS } from "@/lib/constants";
 import { userRoleValues } from "@/lib/validations/auth";
 import { deliveryGroupValues } from "@/lib/validations/financial";
@@ -43,11 +33,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { StateView } from "@/components/ui/state-view";
 import { EditMemberDialog } from "@/components/modals/edit-member-dialog";
+import { useTeamMembersTable } from "@/components/tables/use-team-members-table";
 
 interface TeamMembersDataTableProps {
   teams: TeamDTO[];
   members: TeamMemberDTO[];
+  isLoading?: boolean;
 }
 
 function getRoleBadgeVariant(role: TeamMemberDTO["role"]): BadgeProps["variant"] {
@@ -68,21 +61,9 @@ function getRoleBadgeVariant(role: TeamMemberDTO["role"]): BadgeProps["variant"]
 export function TeamMembersDataTable({
   teams,
   members,
+  isLoading = false,
 }: TeamMembersDataTableProps) {
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState("");
-  const [isPendingUnlock, startTransition] = React.useTransition();
-
-  const handleUnlock = React.useCallback((userId: string) => {
-    startTransition(async () => {
-      const res = await unlockUserAccountAction(userId);
-      if (!res.success) {
-        toast.error(res.message);
-        return;
-      }
-      toast.success(res.message);
-    });
-  }, []);
+  const [targetUserId, setTargetUserId] = React.useState<string | null>(null);
 
   const columns = React.useMemo<ColumnDef<TeamMemberDTO>[]>(
     () => [
@@ -90,7 +71,7 @@ export function TeamMembersDataTable({
         accessorKey: "id",
         header: "ID",
         cell: ({ row }) => (
-          <span className="font-mono text-xs font-semibold text-[#202224]">
+          <span className="font-mono text-xs font-semibold text-foreground">
             USR-{String(row.index + 1).padStart(3, "0")}
           </span>
         ),
@@ -100,8 +81,8 @@ export function TeamMembersDataTable({
         header: "INTEGRANTE & E-MAIL",
         cell: ({ row }) => (
           <div className="space-y-0.5">
-            <div className="font-semibold text-[#202224]">{row.original.name}</div>
-            <div className="font-mono text-xs text-[#606060]">
+            <div className="font-semibold text-foreground">{row.original.name}</div>
+            <div className="font-mono text-xs text-muted-foreground">
               {row.original.email}
             </div>
           </div>
@@ -131,12 +112,12 @@ export function TeamMembersDataTable({
         filterFn: "equalsString",
         cell: ({ row }) => (
           <div className="space-y-0.5">
-            <div className="font-semibold text-[#202224]">
+            <div className="font-semibold text-foreground">
               {row.original.deliveryGroup
                 ? DELIVERY_GROUP_LABELS[row.original.deliveryGroup]
                 : "Todos os Setores"}
             </div>
-            <div className="text-xs text-[#606060]">
+            <div className="text-xs text-muted-foreground">
               {row.original.jobTitle || "Integrante"}
             </div>
           </div>
@@ -157,10 +138,10 @@ export function TeamMembersDataTable({
         header: "SEGURANÇA / SESSÕES",
         cell: ({ row }) => (
           <div className="space-y-0.5 text-xs">
-            <div className="font-medium text-[#202224]">
+            <div className="font-medium text-foreground">
               {row.original.activeSessionsCount} sessão(ões) httpOnly
             </div>
-            <div className="text-[#606060]">
+            <div className="text-muted-foreground">
               {row.original.lastLoginAt
                 ? `Último login: ${formatDateBR(row.original.lastLoginAt)}`
                 : "Sem login recente"}
@@ -200,9 +181,9 @@ export function TeamMembersDataTable({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={isPendingUnlock}
-                onClick={() => handleUnlock(row.original.id)}
-                className="h-8 gap-1 border-[#00B69B] text-xs text-[#00B69B] hover:bg-[#00B69B]/10"
+                disabled={targetUserId === row.original.id}
+                onClick={() => setTargetUserId(row.original.id)}
+                className="h-8 gap-1 border-success text-xs text-success hover:bg-success/10"
               >
                 <Unlock className="h-3.5 w-3.5" />
                 <span>Desbloquear</span>
@@ -212,70 +193,59 @@ export function TeamMembersDataTable({
         ),
       },
     ],
-    [handleUnlock, isPendingUnlock, teams]
+    [targetUserId, teams]
   );
 
-  const table = useReactTable({
-    data: members,
-    columns,
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: 9,
-      },
-    },
-    state: {
-      columnFilters,
-      globalFilter,
-    },
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
+  const {
+    table,
+    globalFilter,
+    setGlobalFilter,
+    selectedTeamId,
+    selectedDeliveryGroup,
+    selectedRole,
+    selectedStatus,
+    totalFiltered,
+    startRow,
+    formattedEndRow,
+    handleUnlock,
+    resetFilters,
+  } = useTeamMembersTable(members, columns);
 
-  const selectedTeamId =
-    (table.getColumn("teamId")?.getFilterValue() as string) ?? "ALL";
-  const selectedDeliveryGroup =
-    (table.getColumn("deliveryGroup")?.getFilterValue() as string) ?? "ALL";
-  const selectedRole =
-    (table.getColumn("role")?.getFilterValue() as string) ?? "ALL";
-  const selectedStatus =
-    (table.getColumn("accountStatus")?.getFilterValue() as string) ?? "ALL";
+  React.useEffect(() => {
+    if (targetUserId) {
+      handleUnlock(targetUserId);
+      setTargetUserId(null);
+    }
+  }, [targetUserId, handleUnlock]);
 
-  const totalFiltered = table.getFilteredRowModel().rows.length;
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
-  const startRow = totalFiltered === 0 ? 0 : pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, totalFiltered);
-  const formattedEndRow =
-    endRow > 0 && endRow < 10 ? `0${endRow}` : String(endRow);
+  if (isLoading) {
+    return <StateView state="loading" />;
+  }
 
   return (
     <div className="space-y-4">
-      {/* 1. Busca rápida ocupando 100% da largura no topo */}
+      {/* 1. Busca rápida */}
       <div className="relative w-full">
-        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#202224]/40" />
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
         <Input
           placeholder="Buscar integrante por nome, e-mail ou cargo..."
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
-          className="h-11 w-full rounded-xl border-[#D5D5D5] bg-white pl-10 text-sm"
+          className="h-11 w-full rounded-xl border-input bg-card pl-10 text-sm"
         />
       </div>
 
-      {/* 2. Barra de Filtros Segmentada ocupando 100% da largura */}
-      <div className="flex w-full flex-wrap items-stretch overflow-hidden rounded-xl border border-[#D5D5D5] bg-[#F9F9FB] shadow-2xs">
-        <div className="flex items-center justify-center border-r border-[#D5D5D5] bg-white px-5 py-3 shrink-0">
-          <Filter className="h-4 w-4 text-[#202224]" />
+      {/* 2. Barra de Filtros Segmentada */}
+      <div className="flex w-full flex-wrap items-stretch overflow-hidden rounded-xl border border-border bg-muted/30 shadow-2xs">
+        <div className="flex items-center justify-center border-r border-border bg-card px-5 py-3 shrink-0">
+          <Filter className="h-4 w-4 text-foreground" />
         </div>
 
-        <div className="flex items-center border-r border-[#D5D5D5] bg-white px-5 py-3 text-sm font-bold text-[#202224] shrink-0">
+        <div className="flex items-center border-r border-border bg-card px-5 py-3 text-sm font-bold text-foreground shrink-0">
           Filtrar Por
         </div>
 
-        <div className="flex flex-1 min-w-[150px] items-center border-r border-[#D5D5D5] bg-white">
+        <div className="flex flex-1 min-w-[150px] items-center border-r border-border bg-card">
           <Select
             value={selectedTeamId}
             onValueChange={(val) =>
@@ -284,7 +254,7 @@ export function TeamMembersDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Equipe" />
             </SelectTrigger>
             <SelectContent>
@@ -298,7 +268,7 @@ export function TeamMembersDataTable({
           </Select>
         </div>
 
-        <div className="flex flex-1 min-w-[160px] items-center border-r border-[#D5D5D5] bg-white">
+        <div className="flex flex-1 min-w-[160px] items-center border-r border-border bg-card">
           <Select
             value={selectedDeliveryGroup}
             onValueChange={(val) =>
@@ -307,7 +277,7 @@ export function TeamMembersDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Setor" />
             </SelectTrigger>
             <SelectContent>
@@ -321,7 +291,7 @@ export function TeamMembersDataTable({
           </Select>
         </div>
 
-        <div className="flex flex-1 min-w-[150px] items-center border-r border-[#D5D5D5] bg-white">
+        <div className="flex flex-1 min-w-[150px] items-center border-r border-border bg-card">
           <Select
             value={selectedRole}
             onValueChange={(val) =>
@@ -330,7 +300,7 @@ export function TeamMembersDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Permissão" />
             </SelectTrigger>
             <SelectContent>
@@ -344,7 +314,7 @@ export function TeamMembersDataTable({
           </Select>
         </div>
 
-        <div className="flex flex-1 min-w-[140px] items-center border-r border-[#D5D5D5] bg-white">
+        <div className="flex flex-1 min-w-[140px] items-center border-r border-border bg-card">
           <Select
             value={selectedStatus}
             onValueChange={(val) =>
@@ -353,7 +323,7 @@ export function TeamMembersDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-white px-4 py-3 text-sm font-bold text-[#202224] shadow-none focus:ring-0">
+            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -367,27 +337,24 @@ export function TeamMembersDataTable({
 
         <button
           type="button"
-          onClick={() => {
-            setColumnFilters([]);
-            setGlobalFilter("");
-          }}
-          className="flex items-center gap-2 bg-white px-5 py-3 text-sm font-semibold text-[#EA0234] transition-colors hover:bg-red-50/60 cursor-pointer shrink-0"
+          onClick={resetFilters}
+          className="flex items-center gap-2 bg-card px-5 py-3 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 cursor-pointer shrink-0"
         >
           <RotateCcw className="h-4 w-4" />
           <span>Resetar Filtro</span>
         </button>
       </div>
 
-      {/* Card da Tabela */}
-      <div className="overflow-hidden rounded-2xl border border-[#D5D5D5]/70 bg-white shadow-[0_6px_24px_-4px_rgba(16,24,40,0.03)]">
+      {/* 3. Card da Tabela */}
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.03)]">
         <Table>
-          <TableHeader className="bg-[#FCFDFD] border-b border-[#D5D5D5]/70">
+          <TableHeader className="bg-muted/40 border-b border-border">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-[#FCFDFD]">
+              <TableRow key={headerGroup.id} className="hover:bg-muted/40">
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="h-12 px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-[#202224]"
+                    className="h-12 px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-foreground"
                   >
                     {header.isPlaceholder
                       ? null
@@ -405,12 +372,12 @@ export function TeamMembersDataTable({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="border-b border-[#D5D5D5]/50 hover:bg-[#F9F9FB]"
+                  className="border-b border-border/50 hover:bg-muted/30"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className="px-6 py-4 text-sm text-[#202224]"
+                      className="px-6 py-4 text-sm text-foreground"
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
@@ -424,9 +391,13 @@ export function TeamMembersDataTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-28 text-center text-sm text-[#606060]"
+                  className="p-8 text-center"
                 >
-                  Nenhum integrante encontrado para os filtros aplicados.
+                  <StateView
+                    state="empty"
+                    title="Nenhum integrante encontrado"
+                    description="Não há integrantes cadastrados para os filtros aplicados."
+                  />
                 </TableCell>
               </TableRow>
             )}
@@ -434,19 +405,19 @@ export function TeamMembersDataTable({
         </Table>
       </div>
 
-      {/* Paginação estilo tabela.png */}
+      {/* 4. Paginação */}
       <div className="flex items-center justify-between px-1 pt-1">
-        <p className="text-sm font-medium text-[#202224]/60">
+        <p className="text-sm font-medium text-muted-foreground">
           Mostrando {startRow}-{formattedEndRow} de {totalFiltered}
         </p>
 
-        <div className="inline-flex items-center overflow-hidden rounded-lg border border-[#D5D5D5] bg-[#FAFBFD] shadow-2xs">
+        <div className="inline-flex items-center overflow-hidden rounded-lg border border-border bg-card shadow-2xs">
           <button
             type="button"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
             aria-label="Página anterior"
-            className="flex h-8 w-10 items-center justify-center border-r border-[#D5D5D5] text-[#202224] transition-colors hover:bg-white disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="flex h-8 w-10 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -455,7 +426,7 @@ export function TeamMembersDataTable({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
             aria-label="Próxima página"
-            className="flex h-8 w-10 items-center justify-center text-[#202224] transition-colors hover:bg-white disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="flex h-8 w-10 items-center justify-center text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

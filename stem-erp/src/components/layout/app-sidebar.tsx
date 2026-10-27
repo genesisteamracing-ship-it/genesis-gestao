@@ -8,8 +8,21 @@ import {
   ListOrdered,
   Users,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { tv } from "tailwind-variants";
 import type { AuthenticatedUserDTO } from "@/types/auth";
+
+export const sidebarItemStyles = tv({
+  base: "flex items-center gap-3.5 rounded-lg px-4 py-3 text-sm font-semibold transition-all",
+  variants: {
+    isActive: {
+      true: "bg-primary text-primary-foreground shadow-xs",
+      false: "text-foreground hover:bg-muted",
+    },
+  },
+  defaultVariants: {
+    isActive: false,
+  },
+});
 
 interface AppSidebarProps {
   currentUser: AuthenticatedUserDTO;
@@ -49,13 +62,13 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
   return (
     <aside
       aria-label="Menu Lateral"
-      className="hidden w-60 shrink-0 flex-col border-r border-[#E8E8E8] dark:border-[#2E3138] bg-white dark:bg-[#1B1D21] lg:flex select-none h-screen sticky top-0 transition-colors"
+      className="hidden w-60 shrink-0 flex-col border-r border-border bg-card lg:flex select-none h-screen sticky top-0 transition-colors"
     >
       {/* Logo Topo */}
-      <div className="flex h-[70px] shrink-0 items-center justify-center px-6 border-b border-[#E8E8E8] dark:border-[#2E3138]">
+      <div className="flex h-[70px] shrink-0 items-center justify-center px-6 border-b border-border">
         <Link href="/dashboard" className="text-xl font-extrabold tracking-tight">
-          <span className="text-[#4880FF]">Genesis</span>
-          <span className="text-[#202224] dark:text-[#F5F6FA]">Gestão</span>
+          <span className="text-primary">Genesis</span>
+          <span className="text-foreground">Gestão</span>
         </Link>
       </div>
 
@@ -72,17 +85,12 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
                 {isActive && (
                   <span
                     aria-hidden="true"
-                    className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-[#4880FF]"
+                    className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
                   />
                 )}
                 <Link
                   href={item.href}
-                  className={cn(
-                    "flex items-center gap-3.5 rounded-lg px-4 py-3 text-sm font-semibold transition-all",
-                    isActive
-                      ? "bg-[#4880FF] text-white shadow-xs"
-                      : "text-[#202224] dark:text-[#D1D5DB] hover:bg-[#F5F6FA] dark:hover:bg-[#23262B] dark:hover:text-[#FFFFFF]"
-                  )}
+                  className={sidebarItemStyles({ isActive })}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>

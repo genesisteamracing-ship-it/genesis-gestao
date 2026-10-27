@@ -1,15 +1,29 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { tv, type VariantProps } from "tailwind-variants";
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+export const inputStyles = tv({
+  base: "flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm text-foreground shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+  variants: {
+    inputSize: {
+      default: "h-9",
+      lg: "h-11 text-base",
+    },
+  },
+  defaultVariants: {
+    inputSize: "default",
+  },
+});
+
+export interface InputProps
+  extends Omit<React.ComponentProps<"input">, "size">,
+    VariantProps<typeof inputStyles> {}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, inputSize, ...props }, ref) => {
     return (
       <input
         type={type}
-        className={cn(
-          "flex h-9 w-full rounded-lg border border-slate-200 dark:border-[#2E3138] bg-white dark:bg-[#1B1D21] px-3 py-1 text-sm text-slate-900 dark:text-[#F5F6FA] shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4880FF] disabled:cursor-not-allowed disabled:opacity-50",
-          className
-        )}
+        className={inputStyles({ inputSize, className })}
         ref={ref}
         {...props}
       />

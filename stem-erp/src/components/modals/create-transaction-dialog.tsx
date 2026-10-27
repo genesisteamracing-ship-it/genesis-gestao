@@ -231,16 +231,16 @@ export function CreateTransactionDialog({
                       <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger
                           value="APPLICATION"
-                          className="gap-2 data-[state=active]:bg-red-50 data-[state=active]:text-red-700"
+                          className="gap-2 data-[state=active]:bg-destructive/10 data-[state=active]:text-destructive"
                         >
-                          <ArrowDownCircle className="h-4 w-4 text-red-600" />
+                          <ArrowDownCircle className="h-4 w-4 text-destructive" />
                           <span>🔴 Despesa (Aplicação)</span>
                         </TabsTrigger>
                         <TabsTrigger
                           value="ORIGIN"
-                          className="gap-2 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700"
+                          className="gap-2 data-[state=active]:bg-success/10 data-[state=active]:text-success"
                         >
-                          <ArrowUpCircle className="h-4 w-4 text-emerald-600" />
+                          <ArrowUpCircle className="h-4 w-4 text-success" />
                           <span>🟢 Receita (Origem)</span>
                         </TabsTrigger>
                       </TabsList>
@@ -472,22 +472,22 @@ export function CreateTransactionDialog({
               control={form.control}
               name="isBarterCounterpart"
               render={({ field }) => (
-                <FormItem className="rounded-lg border border-indigo-200 bg-indigo-50/60 p-3.5">
+                <FormItem className="rounded-lg border border-purple/30 bg-purple/10 p-3.5">
                   <div className="flex items-start gap-3">
                     <FormControl>
                       <input
                         type="checkbox"
                         checked={field.value}
                         onChange={(e) => field.onChange(e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                        className="mt-0.5 h-4 w-4 rounded border-border text-purple focus:ring-ring cursor-pointer"
                       />
                     </FormControl>
                     <div className="space-y-1">
-                      <FormLabel className="flex items-center gap-1.5 text-xs font-semibold text-indigo-950 cursor-pointer">
-                        <Repeat className="h-3.5 w-3.5 text-indigo-600" />
+                      <FormLabel className="flex items-center gap-1.5 text-xs font-semibold text-foreground cursor-pointer">
+                        <Repeat className="h-3.5 w-3.5 text-purple" />
                         <span>Lançar contrapartida de permuta? (BARTER_PARTNERSHIP)</span>
                       </FormLabel>
-                      <p className="text-xs text-indigo-800/90 leading-relaxed">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
                         Gera automaticamente em transação atômica 1{" "}
                         <strong>ORIGIN</strong> (Patrocínio In-loco) e 1{" "}
                         <strong>APPLICATION</strong> (Custo do Recurso) de mesmo valor,

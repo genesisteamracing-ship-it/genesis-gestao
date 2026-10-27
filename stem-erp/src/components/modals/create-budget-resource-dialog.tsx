@@ -160,8 +160,8 @@ export function CreateBudgetResourceDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-[#D5D5D5] font-semibold">
-          <CalendarPlus className="h-4 w-4 text-[#4880FF]" />
+        <Button variant="outline" className="border-border font-semibold">
+          <CalendarPlus className="h-4 w-4 text-primary" />
           <span>{triggerLabel}</span>
         </Button>
       </DialogTrigger>

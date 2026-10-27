@@ -1,37 +1,34 @@
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+import { tv, type VariantProps } from "tailwind-variants";
 
-const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-md px-3 py-1 text-xs font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2",
-  {
-    variants: {
-      variant: {
-        default:
-          "border-transparent bg-[#4880FF] text-white shadow-2xs hover:bg-[#3b6ee6]",
-        secondary:
-          "border-transparent bg-[#6226EF]/15 text-[#6226EF]",
-        destructive:
-          "border-transparent bg-[#EF3826]/15 text-[#EF3826]",
-        outline:
-          "border border-[#D5D5D5] text-[#202224] bg-white",
-        success:
-          "border-transparent bg-[#00B69B]/15 text-[#00B69B]",
-        warning:
-          "border-transparent bg-[#FFA756]/18 text-[#FFA756]",
-        purple:
-          "border-transparent bg-[#6226EF]/15 text-[#6226EF]",
-        magenta:
-          "border-transparent bg-[#BA29FF]/15 text-[#BA29FF]",
-        emeraldSolid:
-          "border-transparent bg-[#00B69B] text-white rounded-full px-3.5",
-      },
+export const badgeVariants = tv({
+  base: "inline-flex items-center justify-center rounded-md px-3 py-1 text-xs font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  variants: {
+    variant: {
+      default:
+        "border-transparent bg-primary text-primary-foreground shadow-2xs hover:bg-primary/90",
+      secondary:
+        "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+      destructive:
+        "border-transparent bg-destructive/15 text-destructive",
+      outline:
+        "border border-border text-foreground bg-card",
+      success:
+        "border-transparent bg-success/15 text-success",
+      warning:
+        "border-transparent bg-warning/18 text-warning",
+      purple:
+        "border-transparent bg-purple/15 text-purple",
+      magenta:
+        "border-transparent bg-magenta/15 text-magenta",
+      emeraldSolid:
+        "border-transparent bg-success text-success-foreground rounded-full px-3.5",
     },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
@@ -39,8 +36,8 @@ export interface BadgeProps
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div className={badgeVariants({ variant, className })} {...props} />
   );
 }
 
-export { Badge, badgeVariants };
+export { Badge };
