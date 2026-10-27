@@ -86,13 +86,13 @@ export function DeleteMemberDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 pt-2">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
           <Button
             type="button"
             variant="ghost"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
-            className="text-xs"
+            className="w-full sm:w-auto text-xs"
           >
             Cancelar
           </Button>
@@ -102,7 +102,7 @@ export function DeleteMemberDialog({
               variant="destructive"
               onClick={handleDelete}
               disabled={isPending}
-              className="text-xs gap-1.5"
+              className="w-full sm:w-auto text-xs gap-1.5"
             >
               {isPending ? (
                 <>

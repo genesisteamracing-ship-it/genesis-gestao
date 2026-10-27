@@ -100,12 +100,13 @@ export function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogProps) {
           />
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2">
           <Button
             type="button"
             variant="ghost"
             onClick={() => setOpen(false)}
             disabled={isPending}
+            className="w-full sm:w-auto"
           >
             Cancelar
           </Button>
@@ -114,7 +115,7 @@ export function DeleteTeamDialog({ teamId, teamName }: DeleteTeamDialogProps) {
             variant="destructive"
             onClick={handleDelete}
             disabled={!isConfirmed || isPending}
-            className="gap-2"
+            className="w-full sm:w-auto gap-2"
           >
             {isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

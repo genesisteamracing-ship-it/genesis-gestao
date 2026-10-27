@@ -28,7 +28,7 @@ export function DashboardView({ initialMetrics }: DashboardViewProps) {
       budgetResources={data.budgetResources}
       seasonMonths={data.seasonMonths}
       headerAction={
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           <CreateBudgetResourceDialog
             categories={data.categories}
             teamMembers={data.teamMembers}

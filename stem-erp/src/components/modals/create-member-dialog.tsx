@@ -97,7 +97,7 @@ export function CreateMemberDialog({ teams }: CreateMemberDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="font-semibold">
+        <Button className="w-full sm:w-auto font-semibold">
           <UserPlus className="h-4 w-4" />
           <span>+ Cadastrar Integrante</span>
         </Button>
@@ -266,16 +266,17 @@ export function CreateMemberDialog({ teams }: CreateMemberDialogProps) {
               />
             </div>
 
-            <DialogFooter className="pt-2">
+            <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => setOpen(false)}
                 disabled={isPending}
+                className="w-full sm:w-auto"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
                 {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 <span>Cadastrar Integrante</span>
               </Button>

@@ -235,17 +235,17 @@ export function TeamMembersDataTable({
         />
       </div>
 
-      {/* 2. Barra de Filtros Segmentada */}
-      <div className="flex w-full flex-wrap items-stretch overflow-hidden rounded-xl border border-border bg-muted/30 shadow-2xs">
-        <div className="flex items-center justify-center border-r border-border bg-card px-5 py-3 shrink-0">
+      {/* 2. Barra de Filtros Responsiva */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex w-full gap-2 lg:gap-0 bg-muted/40 p-2 lg:p-0 rounded-xl border border-border shadow-2xs">
+        <div className="hidden lg:flex items-center justify-center border-r border-border bg-card px-4 py-3 shrink-0 rounded-l-xl">
           <Filter className="h-4 w-4 text-foreground" />
         </div>
 
-        <div className="flex items-center border-r border-border bg-card px-5 py-3 text-sm font-bold text-foreground shrink-0">
+        <div className="hidden lg:flex items-center border-r border-border bg-card px-4 py-3 text-sm font-bold text-foreground shrink-0">
           Filtrar Por
         </div>
 
-        <div className="flex flex-1 min-w-[150px] items-center border-r border-border bg-card">
+        <div className="flex flex-1 min-w-0 lg:min-w-[150px] items-center rounded-lg lg:rounded-none lg:border-r border-border bg-card">
           <Select
             value={selectedTeamId}
             onValueChange={(val) =>
@@ -254,7 +254,7 @@ export function TeamMembersDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
+            <SelectTrigger className="h-11 w-full rounded-lg lg:rounded-none border-0 bg-card px-3 sm:px-4 py-2.5 text-sm font-semibold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Equipe" />
             </SelectTrigger>
             <SelectContent>
@@ -268,7 +268,7 @@ export function TeamMembersDataTable({
           </Select>
         </div>
 
-        <div className="flex flex-1 min-w-[160px] items-center border-r border-border bg-card">
+        <div className="flex flex-1 min-w-0 lg:min-w-[160px] items-center rounded-lg lg:rounded-none lg:border-r border-border bg-card">
           <Select
             value={selectedDeliveryGroup}
             onValueChange={(val) =>
@@ -277,7 +277,7 @@ export function TeamMembersDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
+            <SelectTrigger className="h-11 w-full rounded-lg lg:rounded-none border-0 bg-card px-3 sm:px-4 py-2.5 text-sm font-semibold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Setor" />
             </SelectTrigger>
             <SelectContent>
@@ -291,7 +291,7 @@ export function TeamMembersDataTable({
           </Select>
         </div>
 
-        <div className="flex flex-1 min-w-[150px] items-center border-r border-border bg-card">
+        <div className="flex flex-1 min-w-0 lg:min-w-[150px] items-center rounded-lg lg:rounded-none lg:border-r border-border bg-card">
           <Select
             value={selectedRole}
             onValueChange={(val) =>
@@ -300,7 +300,7 @@ export function TeamMembersDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
+            <SelectTrigger className="h-11 w-full rounded-lg lg:rounded-none border-0 bg-card px-3 sm:px-4 py-2.5 text-sm font-semibold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Permissão" />
             </SelectTrigger>
             <SelectContent>
@@ -314,7 +314,7 @@ export function TeamMembersDataTable({
           </Select>
         </div>
 
-        <div className="flex flex-1 min-w-[140px] items-center border-r border-border bg-card">
+        <div className="flex flex-1 min-w-0 lg:min-w-[140px] items-center rounded-lg lg:rounded-none lg:border-r border-border bg-card">
           <Select
             value={selectedStatus}
             onValueChange={(val) =>
@@ -323,7 +323,7 @@ export function TeamMembersDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
+            <SelectTrigger className="h-11 w-full rounded-lg lg:rounded-none border-0 bg-card px-3 sm:px-4 py-2.5 text-sm font-semibold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -338,15 +338,15 @@ export function TeamMembersDataTable({
         <button
           type="button"
           onClick={resetFilters}
-          className="flex items-center gap-2 bg-card px-5 py-3 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 cursor-pointer shrink-0"
+          className="col-span-1 sm:col-span-2 lg:col-span-1 flex h-11 items-center justify-center gap-2 rounded-lg lg:rounded-none lg:rounded-r-xl bg-card px-4 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 cursor-pointer shrink-0"
         >
           <RotateCcw className="h-4 w-4" />
           <span>Resetar Filtro</span>
         </button>
       </div>
 
-      {/* 3. Card da Tabela */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.03)]">
+      {/* 3. Card da Tabela com Scroll Suave */}
+      <div className="relative w-full overflow-x-auto rounded-2xl border border-border bg-card shadow-2xs">
         <Table>
           <TableHeader className="bg-muted/40 border-b border-border">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -354,7 +354,7 @@ export function TeamMembersDataTable({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="h-12 px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-foreground"
+                    className="h-11 px-4 py-3 sm:px-6 sm:py-3.5 text-xs font-extrabold uppercase tracking-wider text-foreground whitespace-nowrap"
                   >
                     {header.isPlaceholder
                       ? null
@@ -377,7 +377,7 @@ export function TeamMembersDataTable({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className="px-6 py-4 text-sm text-foreground"
+                      className="px-4 py-3 sm:px-6 sm:py-4 text-sm text-foreground whitespace-nowrap"
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
@@ -406,8 +406,8 @@ export function TeamMembersDataTable({
       </div>
 
       {/* 4. Paginação */}
-      <div className="flex items-center justify-between px-1 pt-1">
-        <p className="text-sm font-medium text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 pt-1">
+        <p className="text-xs sm:text-sm font-medium text-muted-foreground text-center sm:text-left">
           Mostrando {startRow}-{formattedEndRow} de {totalFiltered}
         </p>
 
@@ -417,7 +417,7 @@ export function TeamMembersDataTable({
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
             aria-label="Página anterior"
-            className="flex h-8 w-10 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="flex h-9 w-11 sm:h-8 sm:w-10 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -426,7 +426,7 @@ export function TeamMembersDataTable({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
             aria-label="Próxima página"
-            className="flex h-8 w-10 items-center justify-center text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="flex h-9 w-11 sm:h-8 sm:w-10 items-center justify-center text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

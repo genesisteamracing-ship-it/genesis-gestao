@@ -57,12 +57,12 @@ export function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-[1040px] overflow-hidden rounded-[32px] border border-border bg-card shadow-[0_20px_60px_-15px_rgba(0,0,0,0.07)] dark:shadow-none">
+    <div className="w-full max-w-[1040px] overflow-hidden rounded-2xl sm:rounded-[32px] border border-border bg-card shadow-[0_20px_60px_-15px_rgba(0,0,0,0.07)] dark:shadow-none">
       <div className="grid grid-cols-1 md:grid-cols-12 min-h-[580px]">
         {/* Coluna da Esquerda (Branding + Pista de Asfalto com Carro F1) */}
-        <div className="relative flex flex-col justify-between overflow-hidden bg-[#F6F7FC] dark:bg-[#16181D] p-8 lg:p-12 md:col-span-5 border-b md:border-b-0 md:border-r border-border/70">
+        <div className="relative flex flex-col justify-between overflow-hidden bg-muted/40 p-6 sm:p-8 lg:p-12 md:col-span-5 border-b md:border-b-0 md:border-r border-border/70">
           {/* Topo: Logo & Identidade */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                 <Flag className="h-5 w-5" />
@@ -72,7 +72,7 @@ export function LoginForm() {
               </span>
             </div>
 
-            <h1 className="text-2xl lg:text-[27px] font-extrabold leading-snug tracking-tight text-foreground">
+            <h1 className="text-xl sm:text-2xl lg:text-[27px] font-extrabold leading-snug tracking-tight text-foreground">
               Acelere a alta performance da sua equipe STEM!
             </h1>
           </div>
@@ -89,7 +89,7 @@ export function LoginForm() {
         </div>
 
         {/* Coluna da Direita (Formulário de Acesso Limpo) */}
-        <div className="flex flex-col justify-between p-8 lg:p-12 md:col-span-7 bg-card">
+        <div className="flex flex-col justify-between p-6 sm:p-8 lg:p-12 md:col-span-7 bg-card">
           <div className="hidden md:block h-6" />
 
           {/* Bloco Central do Formulário */}
@@ -127,7 +127,7 @@ export function LoginForm() {
                             type="email"
                             autoComplete="email"
                             placeholder="E-mail de acesso"
-                            className="h-12 rounded-xl border-border bg-[#F5F6FA] dark:bg-[#202226] pl-10 text-sm focus:bg-card"
+                            className="h-12 rounded-xl border-border bg-muted/30 pl-10 text-sm focus:bg-card"
                             {...field}
                           />
                         </div>
@@ -149,7 +149,7 @@ export function LoginForm() {
                             type="password"
                             autoComplete="current-password"
                             placeholder="Senha"
-                            className="h-12 rounded-xl border-border bg-[#F5F6FA] dark:bg-[#202226] pl-10 text-sm focus:bg-card"
+                            className="h-12 rounded-xl border-border bg-muted/30 pl-10 text-sm focus:bg-card"
                             {...field}
                           />
                         </div>
@@ -166,17 +166,17 @@ export function LoginForm() {
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-ring cursor-pointer accent-[#00B69B]"
+                      className="h-4 w-4 rounded border-border text-primary focus:ring-ring cursor-pointer accent-success"
                     />
                     <span>Lembrar de mim</span>
                   </label>
                 </div>
 
-                {/* Botão de Submit no tom verde vibrante e moderno da imagem */}
+                {/* Botão de Submit com tokens semânticos */}
                 <Button
                   type="submit"
                   disabled={isPending}
-                  className="h-12 w-full rounded-xl bg-[#00B69B] hover:bg-[#009e86] text-white text-sm font-bold shadow-md shadow-[#00B69B]/20 transition-all cursor-pointer"
+                  className="h-12 w-full rounded-xl bg-success hover:bg-success/90 text-success-foreground text-sm font-bold shadow-md shadow-success/20 transition-all cursor-pointer"
                 >
                   {isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

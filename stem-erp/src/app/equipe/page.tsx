@@ -33,93 +33,93 @@ export default async function EquipePage() {
       budgetResources={financialMetrics.budgetResources}
       seasonMonths={financialMetrics.seasonMonths}
       headerAction={
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <CreateTeamDialog />
           <CreateMemberDialog teams={teamMetrics.teams} />
         </div>
       }
     >
       {/* 4 KPI Cards de Governança Multi-Equipe no padrão DashStack */}
-      <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start justify-between gap-3 sm:gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
                   Equipes Cadastradas
                 </p>
-                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-foreground">
+                <p className="mt-2 text-xl sm:text-2xl lg:text-[28px] font-bold tracking-tight text-foreground truncate">
                   {teamMetrics.stats.totalTeams}
                 </p>
               </div>
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-chart-4/15 text-chart-4">
-                <Flag className="h-7 w-7" />
+              <div className="flex h-11 w-11 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl sm:rounded-[22px] bg-chart-4/15 text-chart-4">
+                <Flag className="h-5 w-5 sm:h-7 sm:w-7" />
               </div>
             </div>
-            <p className="mt-5 text-sm text-muted-foreground">
+            <p className="mt-4 sm:mt-5 text-xs sm:text-sm text-muted-foreground">
               Cada equipe isolada com 5 setores
             </p>
           </CardContent>
         </Card>
 
         <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start justify-between gap-3 sm:gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
                   Integrantes Cadastrados
                 </p>
-                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-success">
+                <p className="mt-2 text-xl sm:text-2xl lg:text-[28px] font-bold tracking-tight text-success truncate">
                   {teamMetrics.stats.totalMembers}
                 </p>
               </div>
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-chart-2/20 text-success">
-                <Users className="h-7 w-7" />
+              <div className="flex h-11 w-11 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl sm:rounded-[22px] bg-chart-2/20 text-success">
+                <Users className="h-5 w-5 sm:h-7 sm:w-7" />
               </div>
             </div>
-            <p className="mt-5 text-sm text-muted-foreground">
+            <p className="mt-4 sm:mt-5 text-xs sm:text-sm text-muted-foreground">
               {teamMetrics.stats.activeMembers} contas ativas e liberadas
             </p>
           </CardContent>
         </Card>
 
         <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start justify-between gap-3 sm:gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
                   Sessões httpOnly Ativas
                 </p>
-                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-primary">
+                <p className="mt-2 text-xl sm:text-2xl lg:text-[28px] font-bold tracking-tight text-primary truncate">
                   {teamMetrics.stats.activeSessions}
                 </p>
               </div>
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-warning/20 text-warning">
-                <KeyRound className="h-7 w-7" />
+              <div className="flex h-11 w-11 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl sm:rounded-[22px] bg-warning/20 text-warning">
+                <KeyRound className="h-5 w-5 sm:h-7 sm:w-7" />
               </div>
             </div>
-            <p className="mt-5 text-sm text-muted-foreground">
+            <p className="mt-4 sm:mt-5 text-xs sm:text-sm text-muted-foreground">
               Protegidas contra XSS e CSRF
             </p>
           </CardContent>
         </Card>
 
         <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start justify-between gap-3 sm:gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
                   Tentativas de Invasão / Falhas
                 </p>
-                <p className="mt-2.5 text-[28px] font-bold tracking-tight text-destructive">
+                <p className="mt-2 text-xl sm:text-2xl lg:text-[28px] font-bold tracking-tight text-destructive truncate">
                   {teamMetrics.stats.blockedInvasionAttempts}
                 </p>
               </div>
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-peach/20 text-peach">
-                <ShieldAlert className="h-7 w-7" />
+              <div className="flex h-11 w-11 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl sm:rounded-[22px] bg-peach/20 text-peach">
+                <ShieldAlert className="h-5 w-5 sm:h-7 sm:w-7" />
               </div>
             </div>
-            <p className="mt-5 text-sm text-muted-foreground">
+            <p className="mt-4 sm:mt-5 text-xs sm:text-sm text-muted-foreground">
               Bloqueio automático após 5 falhas
             </p>
           </CardContent>

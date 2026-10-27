@@ -138,9 +138,9 @@ export function RoiView({ initialMetrics }: RoiViewProps) {
       budgetResources={data.budgetResources}
       seasonMonths={data.seasonMonths}
       headerAction={
-        <div className="flex items-center gap-2.5">
-          <Link href="/roi/acoes">
-            <Button variant="outline" className="gap-2 font-semibold border-border">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+          <Link href="/roi/acoes" className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto gap-2 font-semibold border-border">
               <Megaphone className="h-4 w-4 text-primary" />
               <span>Ações de Retorno</span>
             </Button>
@@ -267,19 +267,19 @@ export function RoiView({ initialMetrics }: RoiViewProps) {
               </CardDescription>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="relative w-48 sm:w-60">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+              <div className="relative w-full sm:w-60">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Filtrar empresa..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-9 pl-8 text-xs"
+                  className="h-9 w-full pl-8 text-xs"
                 />
               </div>
 
               <Select value={tierFilter} onValueChange={setTierFilter}>
-                <SelectTrigger className="h-9 w-36 text-xs">
+                <SelectTrigger className="h-9 w-full sm:w-36 text-xs">
                   <SelectValue placeholder="Cota" />
                 </SelectTrigger>
                 <SelectContent>
@@ -296,7 +296,7 @@ export function RoiView({ initialMetrics }: RoiViewProps) {
 
         <CardContent className="p-0">
           {filteredSponsors.length === 0 ? (
-            <div className="p-8">
+            <div className="p-6 sm:p-8">
               <StateView
                 state="empty"
                 title="Nenhuma empresa patrocinadora encontrada"
@@ -308,19 +308,19 @@ export function RoiView({ initialMetrics }: RoiViewProps) {
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="relative w-full overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead>EMPRESA</TableHead>
-                    <TableHead>COTA</TableHead>
-                    <TableHead>CONTATO</TableHead>
-                    <TableHead className="text-center">LANÇAMENTOS</TableHead>
-                    <TableHead className="text-right">INVESTIMENTO (R$)</TableHead>
-                    <TableHead className="text-center">AÇÕES RETORNO</TableHead>
-                    <TableHead className="text-right">RETORNO (R$)</TableHead>
-                    <TableHead className="text-right">ROI ENTREGUE</TableHead>
-                    <TableHead className="w-[60px] text-center">AÇÕES</TableHead>
+                    <TableHead className="whitespace-nowrap">EMPRESA</TableHead>
+                    <TableHead className="whitespace-nowrap">COTA</TableHead>
+                    <TableHead className="whitespace-nowrap">CONTATO</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">LANÇAMENTOS</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">INVESTIMENTO (R$)</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">AÇÕES RETORNO</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">RETORNO (R$)</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">ROI ENTREGUE</TableHead>
+                    <TableHead className="w-[60px] text-center whitespace-nowrap">AÇÕES</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

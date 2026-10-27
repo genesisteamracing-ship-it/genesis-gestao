@@ -82,8 +82,8 @@ export function RoiCharts({ sponsors }: RoiChartsProps) {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       {/* Gráfico 1: Comparativo Investimento vs Retorno por Empresa */}
       <Card className="rounded-2xl border-border bg-card shadow-2xs lg:col-span-7">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-bold">
+        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
+          <CardTitle className="text-sm sm:text-base font-bold">
             Investimento vs. Retorno por Patrocinador
           </CardTitle>
           <CardDescription className="text-xs">
@@ -91,12 +91,12 @@ export function RoiCharts({ sponsors }: RoiChartsProps) {
             retorno entregue pela equipe (ações)
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="h-[280px] w-full">
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="h-64 sm:h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={companyChartData}
-                margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
+                margin={{ top: 10, right: 10, left: -10, bottom: 20 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -124,8 +124,8 @@ export function RoiCharts({ sponsors }: RoiChartsProps) {
                     color: "var(--foreground)",
                     fontSize: "12px",
                   }}
-                  formatter={(val: any) => [
-                    formatCurrencyFromCents(Math.round(Number(val) * 100)),
+                  formatter={(val: unknown) => [
+                    formatCurrencyFromCents(Math.round(Number(val ?? 0) * 100)),
                   ]}
                 />
                 <Legend
@@ -151,8 +151,8 @@ export function RoiCharts({ sponsors }: RoiChartsProps) {
 
       {/* Gráfico 2: Desempenho por Cota de Patrocínio */}
       <Card className="rounded-2xl border-border bg-card shadow-2xs lg:col-span-5">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-bold">
+        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
+          <CardTitle className="text-sm sm:text-base font-bold">
             Distribuição por Cota de Patrocínio
           </CardTitle>
           <CardDescription className="text-xs">
@@ -160,13 +160,13 @@ export function RoiCharts({ sponsors }: RoiChartsProps) {
             Diamante
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="h-[280px] w-full">
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="h-64 sm:h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={tierChartData}
                 layout="vertical"
-                margin={{ top: 10, right: 10, left: 20, bottom: 20 }}
+                margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -196,8 +196,8 @@ export function RoiCharts({ sponsors }: RoiChartsProps) {
                     color: "var(--foreground)",
                     fontSize: "12px",
                   }}
-                  formatter={(val: any) => [
-                    formatCurrencyFromCents(Math.round(Number(val) * 100)),
+                  formatter={(val: unknown) => [
+                    formatCurrencyFromCents(Math.round(Number(val ?? 0) * 100)),
                   ]}
                 />
                 <Legend

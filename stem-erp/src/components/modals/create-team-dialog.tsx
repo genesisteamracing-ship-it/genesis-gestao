@@ -102,7 +102,7 @@ export function CreateTeamDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-border font-semibold">
+        <Button variant="outline" className="w-full sm:w-auto border-border font-semibold">
           <Flag className="h-4 w-4 text-primary" />
           <span>+ Nova Equipe</span>
         </Button>
@@ -235,16 +235,17 @@ export function CreateTeamDialog() {
               </div>
             </div>
 
-            <DialogFooter className="pt-2">
+            <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => setOpen(false)}
                 disabled={isPending}
+                className="w-full sm:w-auto"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
                 {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 <span>Criar Equipe + 5 Setores</span>
               </Button>

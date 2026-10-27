@@ -43,8 +43,8 @@ function getAuditBadgeVariant(
 export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
   return (
     <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)]">
-      <CardHeader className="p-7 pb-4">
-        <CardTitle className="text-xl font-bold text-foreground">
+      <CardHeader className="p-4 sm:p-6 lg:p-7 pb-4">
+        <CardTitle className="text-lg sm:text-xl font-bold text-foreground">
           Trilha de Auditoria Anti-Invasão (AuthAuditLog)
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground">
@@ -53,24 +53,24 @@ export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="p-7 pt-2">
-        <div className="overflow-hidden rounded-xl border border-border">
+      <CardContent className="p-4 sm:p-6 lg:p-7 pt-2">
+        <div className="relative w-full overflow-x-auto rounded-xl border border-border">
           <Table>
             <TableHeader className="bg-muted [&_tr]:border-0">
               <TableRow className="hover:bg-muted">
-                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
+                <TableHead className="py-3.5 px-4 sm:px-5 text-xs font-bold uppercase tracking-wider text-foreground whitespace-nowrap">
                   DATA / HORA
                 </TableHead>
-                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
+                <TableHead className="py-3.5 px-4 sm:px-5 text-xs font-bold uppercase tracking-wider text-foreground whitespace-nowrap">
                   EVENTO DE SEGURANÇA
                 </TableHead>
-                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
+                <TableHead className="py-3.5 px-4 sm:px-5 text-xs font-bold uppercase tracking-wider text-foreground whitespace-nowrap">
                   E-MAIL ALVO / INTEGRANTE
                 </TableHead>
-                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
+                <TableHead className="py-3.5 px-4 sm:px-5 text-xs font-bold uppercase tracking-wider text-foreground whitespace-nowrap">
                   IP ORIGEM
                 </TableHead>
-                <TableHead className="py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
+                <TableHead className="py-3.5 px-4 sm:px-5 text-xs font-bold uppercase tracking-wider text-foreground whitespace-nowrap">
                   DETALHAMENTO
                 </TableHead>
               </TableRow>
@@ -82,18 +82,18 @@ export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
                     key={log.id}
                     className="border-b border-border/60 hover:bg-muted/40"
                   >
-                    <TableCell className="py-3.5 px-5 font-mono text-xs text-muted-foreground">
+                    <TableCell className="py-3.5 px-4 sm:px-5 font-mono text-xs text-muted-foreground whitespace-nowrap">
                       {new Intl.DateTimeFormat("pt-BR", {
                         dateStyle: "short",
                         timeStyle: "medium",
                       }).format(new Date(log.createdAt))}
                     </TableCell>
-                    <TableCell className="py-3.5 px-5">
+                    <TableCell className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
                       <Badge variant={getAuditBadgeVariant(log.event)}>
                         {AUTH_EVENT_LABELS[log.event]}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-3.5 px-5">
+                    <TableCell className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
                       <div className="font-semibold text-foreground">
                         {log.emailAttempt}
                       </div>
@@ -103,10 +103,10 @@ export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="py-3.5 px-5 font-mono text-xs text-foreground">
+                    <TableCell className="py-3.5 px-4 sm:px-5 font-mono text-xs text-foreground whitespace-nowrap">
                       {log.ipAddress ?? "127.0.0.1"}
                     </TableCell>
-                    <TableCell className="py-3.5 px-5 text-xs text-muted-foreground">
+                    <TableCell className="py-3.5 px-4 sm:px-5 text-xs text-muted-foreground whitespace-nowrap">
                       {log.details ?? "-"}
                     </TableCell>
                   </TableRow>

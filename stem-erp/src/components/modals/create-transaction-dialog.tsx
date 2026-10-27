@@ -233,7 +233,7 @@ export function CreateTransactionDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="font-semibold">
+        <Button className="w-full sm:w-auto font-semibold">
           <PlusCircle className="h-4 w-4" />
           <span>{triggerLabel}</span>
         </Button>
@@ -511,12 +511,13 @@ export function CreateTransactionDialog({
               />
             )}
 
-            <DialogFooter className="pt-2">
+            <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => setOpen(false)}
                 disabled={isPending}
+                className="w-full sm:w-auto"
               >
                 Cancelar
               </Button>
@@ -524,6 +525,7 @@ export function CreateTransactionDialog({
                 type="submit"
                 variant={watchedType === "ORIGIN" ? "emerald" : "default"}
                 disabled={isPending}
+                className="w-full sm:w-auto"
               >
                 {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 <span>

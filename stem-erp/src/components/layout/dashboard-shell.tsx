@@ -49,17 +49,23 @@ export function DashboardShell({
             budgetResources={budgetResources}
           />
 
-          <main className="flex-1 p-6 lg:p-8 space-y-7 max-w-[1600px] w-full mx-auto page-fluid-enter">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-7 max-w-[1600px] w-full mx-auto page-fluid-enter min-w-0">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-[28px] font-bold tracking-tight text-foreground">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl lg:text-[28px] font-bold tracking-tight text-foreground truncate">
                   {title}
                 </h1>
                 {subtitle && (
-                  <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
+                  <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground line-clamp-2 sm:line-clamp-none">
+                    {subtitle}
+                  </p>
                 )}
               </div>
-              {headerAction && <div>{headerAction}</div>}
+              {headerAction && (
+                <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                  {headerAction}
+                </div>
+              )}
             </div>
 
             {children}

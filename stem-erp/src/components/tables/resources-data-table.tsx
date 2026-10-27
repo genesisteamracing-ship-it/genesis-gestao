@@ -228,11 +228,11 @@ export function ResourcesDataTable({
             className="h-11 w-full rounded-xl border-input bg-card pl-10 text-sm"
           />
         </div>
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 shrink-0">
           <Button
             variant="outline"
             onClick={handleExportCsv}
-            className="h-11 rounded-xl border-border bg-card font-semibold text-foreground hover:bg-muted px-4"
+            className="h-10 sm:h-11 w-full sm:w-auto rounded-xl border-border bg-card font-semibold text-foreground hover:bg-muted px-4"
           >
             <Download className="h-4 w-4" />
             <span>Exportar CSV</span>
@@ -240,7 +240,7 @@ export function ResourcesDataTable({
           <Button
             variant="outline"
             onClick={triggerPdf}
-            className="h-11 rounded-xl border-border bg-card font-semibold text-foreground hover:bg-muted px-4"
+            className="h-10 sm:h-11 w-full sm:w-auto rounded-xl border-border bg-card font-semibold text-foreground hover:bg-muted px-4"
           >
             <FileText className="h-4 w-4" />
             <span>Relatório PDF</span>
@@ -248,17 +248,17 @@ export function ResourcesDataTable({
         </div>
       </div>
 
-      {/* 2. Barra de Filtros Segmentada */}
-      <div className="flex w-full flex-wrap items-stretch overflow-hidden rounded-xl border border-border bg-muted/30 shadow-2xs">
-        <div className="flex items-center justify-center border-r border-border bg-card px-5 py-3 shrink-0">
+      {/* 2. Barra de Filtros Responsiva */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-center w-full gap-2 lg:gap-0 overflow-hidden rounded-xl border border-border bg-muted/40 p-2 lg:p-0 shadow-2xs">
+        <div className="hidden lg:flex items-center justify-center border-r border-border bg-card px-4 py-3 shrink-0">
           <Filter className="h-4 w-4 text-foreground" />
         </div>
 
-        <div className="flex items-center border-r border-border bg-card px-5 py-3 text-sm font-bold text-foreground shrink-0">
-          Filtrar Por
+        <div className="hidden lg:flex items-center border-r border-border bg-card px-4 py-3 text-xs font-bold text-foreground uppercase tracking-wider shrink-0">
+          Filtros
         </div>
 
-        <div className="flex flex-1 min-w-[140px] items-center border-r border-border bg-card">
+        <div className="flex-1 min-w-[130px] rounded-lg lg:rounded-none border lg:border-0 lg:border-r border-border bg-card">
           <Select
             value={selectedMonth}
             onValueChange={(val) =>
@@ -267,7 +267,7 @@ export function ResourcesDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
+            <SelectTrigger className="h-10 lg:h-full w-full rounded-none border-0 bg-transparent px-3 py-2 text-xs font-bold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Mês" />
             </SelectTrigger>
             <SelectContent>
@@ -281,7 +281,7 @@ export function ResourcesDataTable({
           </Select>
         </div>
 
-        <div className="flex flex-1 min-w-[170px] items-center border-r border-border bg-card">
+        <div className="flex-1 min-w-[160px] rounded-lg lg:rounded-none border lg:border-0 lg:border-r border-border bg-card">
           <Select
             value={selectedDeliveryGroup}
             onValueChange={(val) =>
@@ -290,7 +290,7 @@ export function ResourcesDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
+            <SelectTrigger className="h-10 lg:h-full w-full rounded-none border-0 bg-transparent px-3 py-2 text-xs font-bold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Grupo de Entrega" />
             </SelectTrigger>
             <SelectContent>
@@ -304,7 +304,7 @@ export function ResourcesDataTable({
           </Select>
         </div>
 
-        <div className="flex flex-1 min-w-[170px] items-center border-r border-border bg-card">
+        <div className="flex-1 min-w-[160px] rounded-lg lg:rounded-none border lg:border-0 lg:border-r border-border bg-card sm:col-span-2 lg:col-span-1">
           <Select
             value={selectedStrategy}
             onValueChange={(val) =>
@@ -313,7 +313,7 @@ export function ResourcesDataTable({
                 ?.setFilterValue(val === "ALL" ? undefined : val)
             }
           >
-            <SelectTrigger className="h-full w-full rounded-none border-0 bg-card px-4 py-3 text-sm font-bold text-foreground shadow-none focus:ring-0">
+            <SelectTrigger className="h-10 lg:h-full w-full rounded-none border-0 bg-transparent px-3 py-2 text-xs font-bold text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="Tipo de Aquisição" />
             </SelectTrigger>
             <SelectContent>
@@ -330,15 +330,15 @@ export function ResourcesDataTable({
         <button
           type="button"
           onClick={resetFilters}
-          className="flex items-center gap-2 bg-card px-5 py-3 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 cursor-pointer shrink-0"
+          className="flex items-center justify-center gap-2 rounded-lg lg:rounded-none bg-card px-4 py-2.5 lg:py-3 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10 cursor-pointer shrink-0 border lg:border-0 border-border sm:col-span-2 lg:col-span-1"
         >
-          <RotateCcw className="h-4 w-4" />
-          <span>Resetar Filtro</span>
+          <RotateCcw className="h-3.5 w-3.5" />
+          <span>Resetar Filtros</span>
         </button>
       </div>
 
-      {/* 3. Tabela */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.03)]">
+      {/* 3. Tabela com Rolagem Suave */}
+      <div className="relative w-full overflow-x-auto rounded-2xl border border-border bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.03)]">
         <Table>
           <TableHeader className="bg-muted/40 border-b border-border">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -394,9 +394,9 @@ export function ResourcesDataTable({
         </Table>
       </div>
 
-      {/* 4. Paginação */}
-      <div className="flex items-center justify-between px-1 pt-1">
-        <p className="text-sm font-medium text-muted-foreground">
+      {/* 4. Paginação Responsiva */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 pt-1">
+        <p className="text-xs sm:text-sm font-medium text-muted-foreground text-center sm:text-left">
           Mostrando {startRow}-{formattedEndRow} de {totalFiltered}
         </p>
 
@@ -406,7 +406,7 @@ export function ResourcesDataTable({
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
             aria-label="Página anterior"
-            className="flex h-8 w-10 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="flex h-9 w-11 sm:h-8 sm:w-10 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -415,7 +415,7 @@ export function ResourcesDataTable({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
             aria-label="Próxima página"
-            className="flex h-8 w-10 items-center justify-center text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="flex h-9 w-11 sm:h-8 sm:w-10 items-center justify-center text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

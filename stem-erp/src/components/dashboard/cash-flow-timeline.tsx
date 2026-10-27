@@ -51,10 +51,10 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
       id="fluxo-caixa"
       className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none"
     >
-      <CardHeader className="p-7 pb-3">
+      <CardHeader className="p-4 sm:p-6 lg:p-7 pb-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle className="text-xl font-bold text-foreground">
+            <CardTitle className="text-lg sm:text-xl font-bold text-foreground">
               Fluxo de Caixa na Linha do Tempo
             </CardTitle>
             <CardDescription className="mt-1 text-xs text-muted-foreground">
@@ -63,7 +63,7 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
             </CardDescription>
           </div>
 
-          <div className="inline-flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 rounded-lg border border-border bg-card p-2 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-semibold text-muted-foreground w-full sm:w-auto">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-success" />
               (+) Origens
@@ -80,9 +80,9 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-7 p-7 pt-3">
+      <CardContent className="space-y-6 sm:space-y-7 p-4 sm:p-6 lg:p-7 pt-3">
         {/* Gráfico Recharts ComposedChart com Tokens CSS */}
-        <div className="h-80 w-full">
+        <div className="h-64 sm:h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={chartData}
@@ -151,23 +151,23 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
           </ResponsiveContainer>
         </div>
 
-        {/* Tabela Matricial */}
-        <div className="overflow-hidden rounded-xl border border-border">
+        {/* Tabela Matricial com Scroll Horizontal Suave */}
+        <div className="relative w-full overflow-x-auto rounded-xl border border-border">
           <Table>
             <TableHeader className="bg-muted [&_tr]:border-0">
               <TableRow className="hover:bg-muted">
-                <TableHead className="min-w-[180px] py-3.5 px-5 text-xs font-bold uppercase tracking-wider text-foreground">
+                <TableHead className="min-w-[180px] py-3.5 px-4 sm:px-5 text-xs font-bold uppercase tracking-wider text-foreground whitespace-nowrap">
                   Estrutura do Fluxo
                 </TableHead>
                 {cashFlow.months.map((m) => (
                   <TableHead
                     key={m.month}
-                    className="py-3.5 px-4 text-right text-xs font-bold uppercase tracking-wider text-foreground"
+                    className="py-3.5 px-3 sm:px-4 text-right text-xs font-bold uppercase tracking-wider text-foreground whitespace-nowrap"
                   >
                     {m.monthLabel}
                   </TableHead>
                 ))}
-                <TableHead className="py-3.5 px-5 text-right text-xs font-bold uppercase tracking-wider text-foreground">
+                <TableHead className="py-3.5 px-4 sm:px-5 text-right text-xs font-bold uppercase tracking-wider text-foreground whitespace-nowrap">
                   Total / Final
                 </TableHead>
               </TableRow>
@@ -175,49 +175,49 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
             <TableBody>
               {/* (+) Origens */}
               <TableRow className="border-b border-border">
-                <TableCell className="py-4 px-5 font-semibold text-success">
+                <TableCell className="py-3.5 sm:py-4 px-4 sm:px-5 font-semibold text-success whitespace-nowrap">
                   (+) Origens
                 </TableCell>
                 {cashFlow.months.map((m) => (
                   <TableCell
                     key={m.month}
-                    className="py-4 px-4 text-right font-mono text-xs font-medium text-success"
+                    className="py-3.5 sm:py-4 px-3 sm:px-4 text-right font-mono text-xs font-medium text-success whitespace-nowrap"
                   >
                     {formatCurrencyFromCents(m.originsCents)}
                   </TableCell>
                 ))}
-                <TableCell className="bg-success/5 py-4 px-5 text-right font-mono text-xs font-bold text-success">
+                <TableCell className="bg-success/5 py-3.5 sm:py-4 px-4 sm:px-5 text-right font-mono text-xs font-bold text-success whitespace-nowrap">
                   {formatCurrencyFromCents(cashFlow.totalOriginsCents)}
                 </TableCell>
               </TableRow>
 
               {/* (-) Aplicações */}
               <TableRow className="border-b border-border">
-                <TableCell className="py-4 px-5 font-semibold text-destructive">
+                <TableCell className="py-3.5 sm:py-4 px-4 sm:px-5 font-semibold text-destructive whitespace-nowrap">
                   (-) Aplicações
                 </TableCell>
                 {cashFlow.months.map((m) => (
                   <TableCell
                     key={m.month}
-                    className="py-4 px-4 text-right font-mono text-xs font-medium text-destructive"
+                    className="py-3.5 sm:py-4 px-3 sm:px-4 text-right font-mono text-xs font-medium text-destructive whitespace-nowrap"
                   >
                     {formatCurrencyFromCents(m.applicationsCents)}
                   </TableCell>
                 ))}
-                <TableCell className="bg-destructive/5 py-4 px-5 text-right font-mono text-xs font-bold text-destructive">
+                <TableCell className="bg-destructive/5 py-3.5 sm:py-4 px-4 sm:px-5 text-right font-mono text-xs font-bold text-destructive whitespace-nowrap">
                   {formatCurrencyFromCents(cashFlow.totalApplicationsCents)}
                 </TableCell>
               </TableRow>
 
               {/* (=) Saldo Mensal */}
               <TableRow className="border-b border-border bg-card">
-                <TableCell className="py-4 px-5 font-semibold text-foreground">
+                <TableCell className="py-3.5 sm:py-4 px-4 sm:px-5 font-semibold text-foreground whitespace-nowrap">
                   (=) Saldo Mensal
                 </TableCell>
                 {cashFlow.months.map((m) => (
                   <TableCell
                     key={m.month}
-                    className={`py-4 px-4 text-right font-mono text-xs font-medium ${
+                    className={`py-3.5 sm:py-4 px-3 sm:px-4 text-right font-mono text-xs font-medium whitespace-nowrap ${
                       m.netBalanceCents >= 0 ? "text-foreground" : "text-destructive"
                     }`}
                   >
@@ -225,7 +225,7 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
                   </TableCell>
                 ))}
                 <TableCell
-                  className={`py-4 px-5 text-right font-mono text-xs font-bold ${
+                  className={`py-3.5 sm:py-4 px-4 sm:px-5 text-right font-mono text-xs font-bold whitespace-nowrap ${
                     cashFlow.totalNetBalanceCents >= 0
                       ? "text-success"
                       : "text-destructive"
@@ -237,13 +237,13 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
 
               {/* (=) Saldo Acumulado */}
               <TableRow className="bg-primary/5">
-                <TableCell className="py-4 px-5 font-bold text-primary">
+                <TableCell className="py-3.5 sm:py-4 px-4 sm:px-5 font-bold text-primary whitespace-nowrap">
                   (=) Saldo Acumulado
                 </TableCell>
                 {cashFlow.months.map((m) => (
                   <TableCell
                     key={m.month}
-                    className={`py-4 px-4 text-right font-mono text-xs font-bold ${
+                    className={`py-3.5 sm:py-4 px-3 sm:px-4 text-right font-mono text-xs font-bold whitespace-nowrap ${
                       m.accumulatedBalanceCents >= 0
                         ? "text-primary"
                         : "text-destructive"
@@ -253,7 +253,7 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
                   </TableCell>
                 ))}
                 <TableCell
-                  className={`bg-primary/10 py-4 px-5 text-right font-mono text-xs font-extrabold ${
+                  className={`bg-primary/10 py-3.5 sm:py-4 px-4 sm:px-5 text-right font-mono text-xs font-extrabold whitespace-nowrap ${
                     cashFlow.finalAccumulatedBalanceCents >= 0
                       ? "text-primary"
                       : "text-destructive"

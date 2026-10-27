@@ -221,23 +221,23 @@ export function ReturnActionsView({ initialMetrics }: ReturnActionsViewProps) {
       {/* 2. Barra de Filtros e Busca */}
       <Card className="border-border bg-card shadow-2xs">
         <CardContent className="p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative flex-1 w-full lg:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por título, empresa ou evidência..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="w-full pl-9"
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
               <Select
                 value={selectedSponsorId}
                 onValueChange={setSelectedSponsorId}
               >
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder="Empresa Patrocinadora" />
                 </SelectTrigger>
                 <SelectContent>
@@ -254,7 +254,7 @@ export function ReturnActionsView({ initialMetrics }: ReturnActionsViewProps) {
                 value={selectedCategory}
                 onValueChange={setSelectedCategory}
               >
-                <SelectTrigger className="w-[220px]">
+                <SelectTrigger className="w-full sm:w-[220px]">
                   <SelectValue placeholder="Tipo de Ativação" />
                 </SelectTrigger>
                 <SelectContent>
@@ -278,7 +278,7 @@ export function ReturnActionsView({ initialMetrics }: ReturnActionsViewProps) {
                     setSelectedSponsorId("ALL");
                     setSelectedCategory("ALL");
                   }}
-                  className="text-xs text-muted-foreground hover:text-foreground"
+                  className="w-full sm:w-auto text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   Limpar
                 </Button>
@@ -302,7 +302,7 @@ export function ReturnActionsView({ initialMetrics }: ReturnActionsViewProps) {
 
         <CardContent className="p-0">
           {filteredActions.length === 0 ? (
-            <div className="p-8">
+            <div className="p-6 sm:p-8">
               <StateView
                 state="empty"
                 title="Nenhuma ação de retorno encontrada"
@@ -314,18 +314,18 @@ export function ReturnActionsView({ initialMetrics }: ReturnActionsViewProps) {
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="relative w-full overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead>DATA</TableHead>
-                    <TableHead>EMPRESA PATROCINADORA</TableHead>
-                    <TableHead>COTA</TableHead>
-                    <TableHead>AÇÃO / ATIVAÇÃO</TableHead>
-                    <TableHead>TIPO</TableHead>
-                    <TableHead>ALCANCE</TableHead>
-                    <TableHead className="text-right">RETORNO GERADO</TableHead>
-                    <TableHead className="w-[60px] text-center">AÇÕES</TableHead>
+                    <TableHead className="whitespace-nowrap">DATA</TableHead>
+                    <TableHead className="whitespace-nowrap">EMPRESA PATROCINADORA</TableHead>
+                    <TableHead className="whitespace-nowrap">COTA</TableHead>
+                    <TableHead className="whitespace-nowrap">AÇÃO / ATIVAÇÃO</TableHead>
+                    <TableHead className="whitespace-nowrap">TIPO</TableHead>
+                    <TableHead className="whitespace-nowrap">ALCANCE</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">RETORNO GERADO</TableHead>
+                    <TableHead className="w-[60px] text-center whitespace-nowrap">AÇÕES</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
