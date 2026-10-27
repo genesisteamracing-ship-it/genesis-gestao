@@ -66,9 +66,13 @@ export async function loginAction(
   }
 }
 
-export async function logoutAction(): Promise<void> {
+export async function logoutAction(): Promise<ActionResponse> {
   await logoutUserService();
-  redirect("/login");
+  revalidatePath("/", "layout");
+  return {
+    success: true,
+    message: "Sessão finalizada com sucesso.",
+  };
 }
 
 export async function createTeamAction(

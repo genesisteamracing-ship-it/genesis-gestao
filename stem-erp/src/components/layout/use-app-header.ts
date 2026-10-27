@@ -3,12 +3,13 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { switchSuperAdminTeamAction } from "@/actions/auth-actions";
+import { logoutAction, switchSuperAdminTeamAction } from "@/actions/auth-actions";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 
 export function useAppHeader(currentUser: AuthenticatedUserDTO) {
   const router = useRouter();
   const [isSwitchingTeam, startTransition] = React.useTransition();
+  const [isLoggingOut, startLogoutTransition] = React.useTransition();
 
   const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
   const initials = React.useMemo(
@@ -37,10 +38,24 @@ export function useAppHeader(currentUser: AuthenticatedUserDTO) {
     [router]
   );
 
+  const handleLogout = React.useCallback(() => {
+    startLogoutTransition(async () => {
+      try {
+        await logoutAction();
+      } catch (err) {
+        console.error("Erro ao deslogar:", err);
+      } finally {
+        window.location.href = "/login";
+      }
+    });
+  }, []);
+
   return {
     isSuperAdmin,
     initials,
     isSwitchingTeam,
+    isLoggingOut,
     handleTeamChange,
+    handleLogout,
   };
 }
