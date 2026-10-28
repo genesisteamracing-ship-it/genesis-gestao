@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import type { DashboardKPIsDTO } from "@/types/financial";
-import { formatCurrencyFromCents } from "@/lib/utils";
+import type { DashboardKPIsDTO } from "../../../types/financial";
+import { formatCurrencyFromCents } from "../../../lib/utils";
 
 describe("KPI Cards & Dashboard Metrics", () => {
   const mockKpis: DashboardKPIsDTO = {
