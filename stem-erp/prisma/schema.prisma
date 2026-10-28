@@ -86,6 +86,9 @@ model Team {
   transactions    Transaction[]
   sponsors        Sponsor[]
   returnActions   ReturnAction[]
+  stakeholders    Stakeholder[]
+  communicationPlans CommunicationPlan[]
+  communicationLogs  CommunicationLog[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -218,6 +221,7 @@ model Sponsor {
   notes         String?        // Contrapartidas e observações
   transactions  Transaction[]  // Lançamentos vinculados (investimento da empresa)
   returnActions ReturnAction[] // Ações executadas pela equipe para entrega de retorno
+  stakeholders  Stakeholder[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -242,4 +246,149 @@ model ReturnAction {
   updatedAt   DateTime             @updatedAt
 
   @@index([teamId, sponsorId, date])
+}
+
+// ==========================================
+// MÓDULO: COMUNICAÇÃO & ENGAJAMENTO DE STAKEHOLDERS
+// ==========================================
+
+enum StakeholderGroup {
+  SPONSORS              // Patrocinadores e Parceiros Corporativos
+  SCHOOL_LEADERSHIP     // Direção Escolar, Coordenação e Professores
+  PARENTS_GUARDIANS     // Pais e Responsáveis dos Integrantes
+  TECHNICAL_MENTORS     // Mentores Técnicos, Ex-Alunos e Especialistas
+  COMMUNITY_FANS        // Comunidade, Alunos e Apoiadores
+  COMPETITION_OFFICIALS // Organizadores da Competição e Jurados
+}
+
+enum StakeholderPower {
+  LOW
+  HIGH
+}
+
+enum StakeholderInterest {
+  LOW
+  HIGH
+}
+
+enum EngagementLevel {
+  UNAWARE    // Desinformado sobre o projeto
+  RESISTANT  // Resistente ou cético
+  NEUTRAL    // Neutro / Ciente sem apoio ativo
+  SUPPORTIVE // Apoiador ativo
+  LEADING    // Líder / Defensor engajado do time
+}
+
+enum CommunicationChannel {
+  WHATSAPP
+  EMAIL
+  MEETING
+  REPORT_PDF
+}
+
+enum CommunicationFrequency {
+  WEEKLY          // Semanal
+  BIWEEKLY        // Quinzenal
+  MONTHLY         // Mensal
+  BIMONTHLY       // Bimestral
+  QUARTERLY       // Trimestral
+  MILESTONE_EVENT // Pós-Marco / Evento Crítico
+}
+
+enum FeedbackSentiment {
+  POSITIVE               // Positivo / Elogio
+  NEUTRAL                // Neutro / Informativo
+  CONSTRUCTIVE_CRITICISM // Crítica Construtiva / Ponto de Atenção
+}
+
+// 9. Partes Interessadas / Stakeholders
+model Stakeholder {
+  id                   String                 @id @default(cuid())
+  teamId               String
+  team                 Team                   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  sponsorId            String?                // Vínculo opcional se for patrocinador já cadastrado
+  sponsor              Sponsor?               @relation(fields: [sponsorId], references: [id], onDelete: SetNull)
+  name                 String                 // Nome da pessoa ou entidade
+  organization         String?                // Ex: Colégio Alfa, Empresa Bosch
+  roleOrJobTitle       String?                // Ex: Diretor Pedagógico, Gerente de Marketing
+  group                StakeholderGroup       // Grupo de Stakeholder
+  email                String?
+  phone                String?                // WhatsApp no formato (DD) 9XXXX-XXXX
+  power                StakeholderPower       @default(LOW)
+  interest             StakeholderInterest    @default(LOW)
+  currentEngagement    EngagementLevel        @default(NEUTRAL)
+  targetEngagement     EngagementLevel        @default(SUPPORTIVE)
+  preferredChannel     CommunicationChannel   @default(WHATSAPP)
+  preferredFrequency   CommunicationFrequency @default(MONTHLY)
+  notes                String?                // Abordagem personalizada / requisitos especiais
+  plans                CommunicationPlan[]
+  communications       CommunicationLog[]
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  @@index([teamId, group])
+  @@index([teamId, power, interest])
+}
+
+// 10. Planos / Régua de Comunicação por Stakeholder
+model CommunicationPlan {
+  id                    String                 @id @default(cuid())
+  teamId                String
+  team                  Team                   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  stakeholderId         String
+  stakeholder           Stakeholder            @relation(fields: [stakeholderId], references: [id], onDelete: Cascade)
+  title                 String                 // Ex: Relatório Quinzenal de Metas e Finanças
+  channel               CommunicationChannel   // WHATSAPP, EMAIL, etc.
+  frequency             CommunicationFrequency // WEEKLY, BIWEEKLY, MONTHLY...
+  customApproach        String?                // Tom de voz e abordagem personalizada
+  keyInformation        String?                // Conteúdos obrigatórios (ROI, Caixa, Protótipo)
+  responsibleMemberId   String?                // Integrante da equipe responsável
+  responsibleMemberName String?
+  isActive              Boolean                @default(true)
+  lastDispatchedAt      DateTime?
+  nextDispatchDate      DateTime?
+  communications        CommunicationLog[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([teamId, stakeholderId])
+}
+
+// 11. Registro / Log de Comunicações Realizadas
+model CommunicationLog {
+  id                 String                  @id @default(cuid())
+  teamId             String
+  team               Team                    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  stakeholderId      String
+  stakeholder        Stakeholder             @relation(fields: [stakeholderId], references: [id], onDelete: Cascade)
+  planId             String?
+  plan               CommunicationPlan?      @relation(fields: [planId], references: [id], onDelete: SetNull)
+  subject            String                  // Assunto / Título do envio
+  channel            CommunicationChannel
+  sentAt             DateTime                @default(now())
+  dispatchedByName   String                  // Nome do integrante que realizou o disparo
+  contentSummary     String                  // Conteúdo da mensagem enviada
+  reportTypeIncluded String?                 // "FINANCIAL", "ROI", "COMBINED" ou "CUSTOM"
+  evidenceLink       String?                 // Link do anexo / screenshot da conversa / ata
+  feedbacks          CommunicationFeedback[]
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  @@index([teamId, stakeholderId, sentAt])
+}
+
+// 12. Ciclos de Feedback & Melhoria Contínua
+model CommunicationFeedback {
+  id                          String            @id @default(cuid())
+  communicationLogId          String
+  communicationLog            CommunicationLog  @relation(fields: [communicationLogId], references: [id], onDelete: Cascade)
+  receivedAt                  DateTime          @default(now())
+  sentiment                   FeedbackSentiment
+  stakeholderResponse         String            // Resumo do retorno do stakeholder
+  continuousImprovementAction String?           // Ação de melhoria implementada pelo time com base no retorno
+  isAddressed                 Boolean           @default(false)
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @updatedAt
+
+  @@index([communicationLogId])
 }

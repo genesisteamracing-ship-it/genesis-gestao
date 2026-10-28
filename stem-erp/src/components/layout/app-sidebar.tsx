@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   ListOrdered,
   Megaphone,
+  MessageSquareText,
   TrendingUp,
   Users,
   Wallet,
@@ -87,6 +88,9 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
 
   const isEquipeActive =
     pathname === "/equipe" || pathname.startsWith("/equipe/");
+
+  const isComunicacaoActive =
+    pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
 
   return (
     <aside
@@ -210,6 +214,23 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
                 })}
               </div>
             )}
+          </div>
+
+          {/* Módulo: Comunicação */}
+          <div className="relative px-5">
+            {isComunicacaoActive && (
+              <span
+                aria-hidden="true"
+                className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
+              />
+            )}
+            <Link
+              href="/comunicacao"
+              className={sidebarItemStyles({ isActive: isComunicacaoActive })}
+            >
+              <MessageSquareText className="h-4 w-4 shrink-0 text-primary" />
+              <span>Comunicação</span>
+            </Link>
           </div>
 
           {/* Módulo SuperAdmin: Equipe & Acessos */}

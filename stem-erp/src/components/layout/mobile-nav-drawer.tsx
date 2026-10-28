@@ -11,6 +11,7 @@ import {
   LogOut,
   Megaphone,
   Menu,
+  MessageSquareText,
   Moon,
   Sun,
   TrendingUp,
@@ -93,6 +94,9 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
 
   const isEquipeActive =
     pathname === "/equipe" || pathname.startsWith("/equipe/");
+
+  const isComunicacaoActive =
+    pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -216,6 +220,16 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
               </div>
             )}
           </div>
+
+          {/* Grupo: Comunicação */}
+          <Link
+            href="/comunicacao"
+            onClick={() => setOpen(false)}
+            className={sidebarItemStyles({ isActive: isComunicacaoActive })}
+          >
+            <MessageSquareText className="h-4 w-4 shrink-0 text-primary" />
+            <span>Comunicação</span>
+          </Link>
 
           {/* Grupo: Equipe & Acessos (SuperAdmin) */}
           {isSuperAdmin && (
