@@ -5,11 +5,11 @@ import { useTheme } from "next-themes";
 
 export function useThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   const isDark = resolvedTheme === "dark";
 

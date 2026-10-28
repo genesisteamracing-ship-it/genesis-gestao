@@ -71,7 +71,7 @@ export function DeleteTransactionDialog({
           <p>
             Tem certeza que deseja excluir o lançamento{" "}
             <strong className="text-foreground">
-              "{transaction.description}"
+              &quot;{transaction.description}&quot;
             </strong>{" "}
             realizado em {formatDateBR(transaction.date)} no valor de{" "}
             <strong

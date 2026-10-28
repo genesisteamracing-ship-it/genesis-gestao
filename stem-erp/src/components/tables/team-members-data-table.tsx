@@ -63,7 +63,22 @@ export function TeamMembersDataTable({
   members,
   isLoading = false,
 }: TeamMembersDataTableProps) {
-  const [targetUserId, setTargetUserId] = React.useState<string | null>(null);
+  const [unlockingId, setUnlockingId] = React.useState<string | null>(null);
+
+  const {
+    table,
+    globalFilter,
+    setGlobalFilter,
+    selectedTeamId,
+    selectedDeliveryGroup,
+    selectedRole,
+    selectedStatus,
+    totalFiltered,
+    startRow,
+    formattedEndRow,
+    handleUnlock,
+    resetFilters,
+  } = useTeamMembersTable(members, []);
 
   const columns = React.useMemo<ColumnDef<TeamMemberDTO>[]>(
     () => [
@@ -181,8 +196,15 @@ export function TeamMembersDataTable({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={targetUserId === row.original.id}
-                onClick={() => setTargetUserId(row.original.id)}
+                disabled={unlockingId === row.original.id}
+                onClick={async () => {
+                  setUnlockingId(row.original.id);
+                  try {
+                    await handleUnlock(row.original.id);
+                  } finally {
+                    setUnlockingId(null);
+                  }
+                }}
                 className="h-8 gap-1 border-success text-xs text-success hover:bg-success/10"
               >
                 <Unlock className="h-3.5 w-3.5" />
@@ -193,30 +215,15 @@ export function TeamMembersDataTable({
         ),
       },
     ],
-    [targetUserId, teams]
+    [unlockingId, teams, handleUnlock]
   );
 
-  const {
-    table,
-    globalFilter,
-    setGlobalFilter,
-    selectedTeamId,
-    selectedDeliveryGroup,
-    selectedRole,
-    selectedStatus,
-    totalFiltered,
-    startRow,
-    formattedEndRow,
-    handleUnlock,
-    resetFilters,
-  } = useTeamMembersTable(members, columns);
-
   React.useEffect(() => {
-    if (targetUserId) {
-      handleUnlock(targetUserId);
-      setTargetUserId(null);
-    }
-  }, [targetUserId, handleUnlock]);
+    table.setOptions((prev) => ({
+      ...prev,
+      columns,
+    }));
+  }, [table, columns]);
 
   if (isLoading) {
     return <StateView state="loading" />;

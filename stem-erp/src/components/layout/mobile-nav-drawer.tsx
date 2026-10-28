@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
   Layers,
@@ -67,6 +67,7 @@ interface MobileNavDrawerProps {
 
 export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
   const [open, setOpen] = React.useState(false);
+  const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
@@ -75,9 +76,10 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
     try {
       await logoutAction();
     } finally {
-      window.location.href = "/login";
+      router.push("/login");
+      router.refresh();
     }
-  }, []);
+  }, [router]);
 
   const isFinanceRouteActive = FINANCE_SUB_ITEMS.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
@@ -91,11 +93,6 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
 
   const isEquipeActive =
     pathname === "/equipe" || pathname.startsWith("/equipe/");
-
-  // Fecha o drawer sempre que a rota mudar
-  React.useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

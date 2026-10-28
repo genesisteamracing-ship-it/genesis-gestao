@@ -76,26 +76,14 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
   const isFinanceRouteActive = FINANCE_SUB_ITEMS.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
-
-  const [isFinanceOpen, setIsFinanceOpen] = React.useState<boolean>(true);
-
-  React.useEffect(() => {
-    if (isFinanceRouteActive) {
-      setIsFinanceOpen(true);
-    }
-  }, [isFinanceRouteActive]);
+  const [financeCollapsed, setFinanceCollapsed] = React.useState<boolean>(false);
+  const isFinanceOpen = isFinanceRouteActive || !financeCollapsed;
 
   const isRoiRouteActive = ROI_SUB_ITEMS.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
-
-  const [isRoiOpen, setIsRoiOpen] = React.useState<boolean>(true);
-
-  React.useEffect(() => {
-    if (isRoiRouteActive) {
-      setIsRoiOpen(true);
-    }
-  }, [isRoiRouteActive]);
+  const [roiCollapsed, setRoiCollapsed] = React.useState<boolean>(false);
+  const isRoiOpen = isRoiRouteActive || !roiCollapsed;
 
   const isEquipeActive =
     pathname === "/equipe" || pathname.startsWith("/equipe/");
@@ -130,7 +118,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
 
             <button
               type="button"
-              onClick={() => setIsFinanceOpen((prev) => !prev)}
+              onClick={() => setFinanceCollapsed((prev) => !prev)}
               aria-expanded={isFinanceOpen}
               className={sidebarItemStyles({
                 isActive: isFinanceRouteActive && !isFinanceOpen,
@@ -182,7 +170,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
 
             <button
               type="button"
-              onClick={() => setIsRoiOpen((prev) => !prev)}
+              onClick={() => setRoiCollapsed((prev) => !prev)}
               aria-expanded={isRoiOpen}
               className={sidebarItemStyles({
                 isActive: isRoiRouteActive && !isRoiOpen,
