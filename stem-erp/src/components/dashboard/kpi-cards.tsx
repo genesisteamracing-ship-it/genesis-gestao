@@ -64,13 +64,13 @@ export function KpiCards({ kpis }: KpiCardsProps) {
         </CardContent>
       </Card>
 
-      {/* Card 2: Total Arrecadado / Origens */}
+      {/* Card 2: Total Arrecadado */}
       <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
-                Total Arrecadado (Origens)
+                Total Arrecadado
               </p>
               <p className="mt-2 text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight text-foreground truncate">
                 {formatCurrencyFromCents(kpis.totalOriginsCents)}
@@ -91,13 +91,13 @@ export function KpiCards({ kpis }: KpiCardsProps) {
         </CardContent>
       </Card>
 
-      {/* Card 3: Total Gasto / Aplicações */}
+      {/* Card 3: Total Gasto */}
       <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
-                Total Gasto (Aplicações)
+                Total Gasto
               </p>
               <p className="mt-2 text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight text-foreground truncate">
                 {formatCurrencyFromCents(kpis.totalApplicationsCents)}
