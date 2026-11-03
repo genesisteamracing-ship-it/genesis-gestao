@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Network, Grid3X3, MessageSquare, Users, History, Plus } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,7 +43,14 @@ export function CommunicationView({
   logs,
   sponsors,
 }: CommunicationViewProps) {
-  const [activeTab, setActiveTab] = useState<string>("mapa");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabFromUrl = searchParams ? searchParams.get("tab") : null;
+  const activeTab = tabFromUrl || "mapa";
+
+  const handleTabChange = (newTab: string) => {
+    router.push(`/comunicacao?tab=${newTab}`, { scroll: false });
+  };
 
   const [isCreateStakeholderOpen, setIsCreateStakeholderOpen] = useState(false);
   const [stakeholderPrefill, setStakeholderPrefill] =
@@ -77,7 +85,7 @@ export function CommunicationView({
 
   const handleSelectStakeholderForReport = (stakeholderId: string) => {
     setSelectedStakeholderForReport(stakeholderId);
-    setActiveTab("relatorios");
+    handleTabChange("relatorios");
   };
 
   const handleOpenPlanDialog = (stakeholderId: string) => {
@@ -108,7 +116,7 @@ export function CommunicationView({
     >
       <CommunicationKpis metrics={metrics} />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-5">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-5">
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-1">
           <TabsTrigger value="mapa" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
             <Network className="h-4 w-4" />

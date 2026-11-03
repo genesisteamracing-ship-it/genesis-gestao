@@ -40,16 +40,20 @@ export function DashboardShell({
     <SeasonProvider seasonMonths={seasonMonths}>
       <SidebarProvider>
         <div className="flex min-h-screen bg-background text-foreground transition-colors">
-          <AppSidebar currentUser={currentUser} />
+          <React.Suspense fallback={<aside className="hidden w-60 shrink-0 border-r border-border bg-card lg:flex h-screen sticky top-0" />}>
+            <AppSidebar currentUser={currentUser} />
+          </React.Suspense>
 
           <div className="flex flex-1 flex-col min-w-0 transition-all duration-300">
-            <AppHeader
-              currentUser={currentUser}
-              activeTeam={activeTeam}
-              availableTeams={availableTeams}
-              categories={categories}
-              budgetResources={budgetResources}
-            />
+            <React.Suspense fallback={<div className="h-[70px] border-b border-border bg-card" />}>
+              <AppHeader
+                currentUser={currentUser}
+                activeTeam={activeTeam}
+                availableTeams={availableTeams}
+                categories={categories}
+                budgetResources={budgetResources}
+              />
+            </React.Suspense>
 
             <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-7 max-w-[1600px] w-full mx-auto page-fluid-enter min-w-0">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

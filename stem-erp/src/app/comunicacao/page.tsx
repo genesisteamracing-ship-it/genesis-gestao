@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
 import {
   getCommunicationLogs,
@@ -27,13 +28,15 @@ export default async function CommunicationPage() {
   ]);
 
   return (
-    <CommunicationView
-      dashboardMetrics={dashboardMetrics}
-      metrics={metrics}
-      stakeholders={stakeholders}
-      matrixItems={matrixItems}
-      logs={logs}
-      sponsors={sponsors}
-    />
+    <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Carregando módulo de comunicação...</div>}>
+      <CommunicationView
+        dashboardMetrics={dashboardMetrics}
+        metrics={metrics}
+        stakeholders={stakeholders}
+        matrixItems={matrixItems}
+        logs={logs}
+        sponsors={sponsors}
+      />
+    </Suspense>
   );
 }

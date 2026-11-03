@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
   Layers,
@@ -29,7 +29,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { sidebarItemStyles } from "@/components/layout/app-sidebar";
+import {
+  sidebarItemStyles,
+  COMMUNICATION_SUB_ITEMS,
+} from "@/components/layout/app-sidebar";
 import { useSidebar } from "@/providers/sidebar-provider";
 
 const FINANCE_SUB_ITEMS = [
@@ -93,11 +96,15 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
   );
   const [isRoiOpen, setIsRoiOpen] = React.useState<boolean>(true);
 
+  const isComunicacaoRouteActive =
+    pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
+  const [isComunicacaoOpen, setIsComunicacaoOpen] = React.useState<boolean>(true);
+
   const isEquipeActive =
     pathname === "/equipe" || pathname.startsWith("/equipe/");
 
-  const isComunicacaoActive =
-    pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
+  const searchParams = useSearchParams();
+  const currentTab = searchParams ? searchParams.get("tab") : null;
 
   return (
     <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
@@ -222,15 +229,51 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
             )}
           </div>
 
-          {/* Grupo: Comunicação */}
-          <Link
-            href="/comunicacao"
-            onClick={() => setIsMobileOpen(false)}
-            className={sidebarItemStyles({ isActive: isComunicacaoActive })}
-          >
-            <MessageSquareText className="h-4 w-4 shrink-0 text-primary" />
-            <span>Comunicação</span>
-          </Link>
+          {/* Grupo: Comunicação com Submódulos */}
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setIsComunicacaoOpen((prev) => !prev)}
+              aria-expanded={isComunicacaoOpen}
+              className={sidebarItemStyles({
+                isActive: isComunicacaoRouteActive && !isComunicacaoOpen,
+              })}
+            >
+              <MessageSquareText className="h-4 w-4 shrink-0 text-primary" />
+              <span className="flex-1 text-left">Comunicação</span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                  isComunicacaoOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {isComunicacaoOpen && (
+              <div className="ml-4 space-y-1 border-l border-border pl-2.5">
+                {COMMUNICATION_SUB_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    pathname === "/comunicacao" &&
+                    (currentTab === item.tabKey || (!currentTab && item.tabKey === "mapa"));
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsMobileOpen(false)}
+                      className={sidebarItemStyles({
+                        isActive,
+                        isSubItem: true,
+                      })}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Grupo: Equipe & Acessos (SuperAdmin) */}
           {isSuperAdmin && (

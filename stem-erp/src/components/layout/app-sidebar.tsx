@@ -2,14 +2,18 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
+  Grid3X3,
+  History,
   Layers,
   LayoutDashboard,
   ListOrdered,
   Megaphone,
+  MessageSquare,
   MessageSquareText,
+  Network,
   TrendingUp,
   Users,
   Wallet,
@@ -67,6 +71,39 @@ const ROI_SUB_ITEMS = [
   },
 ] as const;
 
+export const COMMUNICATION_SUB_ITEMS = [
+  {
+    href: "/comunicacao?tab=mapa",
+    tabKey: "mapa",
+    label: "Mapa Hierárquico",
+    icon: Network,
+  },
+  {
+    href: "/comunicacao?tab=relatorios",
+    tabKey: "relatorios",
+    label: "Gerador de Relatórios",
+    icon: MessageSquare,
+  },
+  {
+    href: "/comunicacao?tab=stakeholders",
+    tabKey: "stakeholders",
+    label: "Diretório",
+    icon: Users,
+  },
+  {
+    href: "/comunicacao?tab=historico",
+    tabKey: "historico",
+    label: "Histórico",
+    icon: History,
+  },
+  {
+    href: "/comunicacao?tab=matriz",
+    tabKey: "matriz",
+    label: "Matriz Mendelow",
+    icon: Grid3X3,
+  },
+] as const;
+
 interface AppSidebarProps {
   currentUser: AuthenticatedUserDTO;
 }
@@ -74,6 +111,8 @@ interface AppSidebarProps {
 export function AppSidebar({ currentUser }: AppSidebarProps) {
   const { isOpen } = useSidebar();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams ? searchParams.get("tab") : null;
   const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
 
   const isFinanceRouteActive = FINANCE_SUB_ITEMS.some(
@@ -88,11 +127,13 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
   const [roiCollapsed, setRoiCollapsed] = React.useState<boolean>(false);
   const isRoiOpen = isRoiRouteActive || !roiCollapsed;
 
+  const isComunicacaoRouteActive =
+    pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
+  const [comunicacaoCollapsed, setComunicacaoCollapsed] = React.useState<boolean>(false);
+  const isComunicacaoOpen = isComunicacaoRouteActive || !comunicacaoCollapsed;
+
   const isEquipeActive =
     pathname === "/equipe" || pathname.startsWith("/equipe/");
-
-  const isComunicacaoActive =
-    pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
 
   return (
     <aside
@@ -222,21 +263,56 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
             )}
           </div>
 
-          {/* Módulo: Comunicação */}
+          {/* Combo / Grupo: Comunicação */}
           <div className="relative px-5">
-            {isComunicacaoActive && (
+            {isComunicacaoRouteActive && !isComunicacaoOpen && (
               <span
                 aria-hidden="true"
                 className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
               />
             )}
-            <Link
-              href="/comunicacao"
-              className={sidebarItemStyles({ isActive: isComunicacaoActive })}
+
+            <button
+              type="button"
+              onClick={() => setComunicacaoCollapsed((prev) => !prev)}
+              aria-expanded={isComunicacaoOpen}
+              className={sidebarItemStyles({
+                isActive: isComunicacaoRouteActive && !isComunicacaoOpen,
+              })}
             >
               <MessageSquareText className="h-4 w-4 shrink-0 text-primary" />
-              <span>Comunicação</span>
-            </Link>
+              <span className="flex-1 text-left">Comunicação</span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                  isComunicacaoOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {isComunicacaoOpen && (
+              <div className="mt-1 ml-4 space-y-1 border-l border-border pl-2.5">
+                {COMMUNICATION_SUB_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    pathname === "/comunicacao" &&
+                    (currentTab === item.tabKey || (!currentTab && item.tabKey === "mapa"));
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={sidebarItemStyles({
+                        isActive,
+                        isSubItem: true,
+                      })}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Módulo SuperAdmin: Equipe & Acessos */}
