@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createStakeholderSchema, type CreateStakeholderInput } from "@/lib/validations/communication";
@@ -17,7 +17,6 @@ import {
   COMMUNICATION_CHANNEL_LABELS,
   COMMUNICATION_FREQUENCY_LABELS,
   ENGAGEMENT_LEVEL_LABELS,
-  STAKEHOLDER_GROUP_LABELS,
   STAKEHOLDER_INTEREST_LABELS,
   STAKEHOLDER_POWER_LABELS,
 } from "@/lib/communication-constants";
@@ -32,6 +31,14 @@ import type {
   StakeholderPower,
   StakeholderWithRelations,
 } from "@/types/communication";
+
+const NEW_GROUP_SENTINEL = "__NEW_GROUP__";
+
+const INITIAL_GROUPS: Array<{ value: StakeholderGroup; label: string }> = [
+  { value: "SPONSORS", label: "Patrocinadores Corporativos" },
+  { value: "SCHOOL_LEADERSHIP", label: "Direção & Coordenação Escolar" },
+  { value: "TECHNICAL_MENTORS", label: "Mentores e técnicos" },
+];
 
 interface CreateStakeholderDialogProps {
   open: boolean;
@@ -49,6 +56,9 @@ export function CreateStakeholderDialog({
   prefill = null,
 }: CreateStakeholderDialogProps) {
   const [isPending, setIsPending] = useState(false);
+  const [groupsList, setGroupsList] = useState(INITIAL_GROUPS);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } =
     useForm<CreateStakeholderInput>({
@@ -63,7 +73,7 @@ export function CreateStakeholderDialog({
         power: "HIGH",
         interest: "HIGH",
         currentEngagement: "NEUTRAL",
-        targetEngagement: "SUPPORTIVE",
+        targetEngagement: "NEUTRAL",
         preferredChannel: "WHATSAPP",
         preferredFrequency: "MONTHLY",
         email: "",
@@ -84,7 +94,6 @@ export function CreateStakeholderDialog({
   const selectedPower = watch("power");
   const selectedInterest = watch("interest");
   const selectedCurrent = watch("currentEngagement");
-  const selectedTarget = watch("targetEngagement");
   const selectedChannel = watch("preferredChannel");
   const selectedFreq = watch("preferredFrequency");
   const selectedParentId = watch("parentStakeholderId");
@@ -98,10 +107,34 @@ export function CreateStakeholderDialog({
         currentOrg.trim().toLowerCase()
   );
 
+  const handleCreateGroup = () => {
+    const trimmed = newGroupName.trim();
+    if (trimmed.length < 2) {
+      toast.error("Informe um nome de ao menos 2 caracteres para o grupo.");
+      return;
+    }
+    const newItem = {
+      value: "TECHNICAL_MENTORS" as StakeholderGroup,
+      label: trimmed,
+    };
+    setGroupsList((prev) => [...prev, newItem]);
+    setValue("group", newItem.value);
+    setIsCreatingGroup(false);
+    setNewGroupName("");
+    toast.success(`Grupo "${trimmed}" adicionado!`);
+  };
+
   const onSubmit = async (values: CreateStakeholderInput) => {
     setIsPending(true);
     try {
-      const res = await createStakeholderAction(values);
+      // Garante sincronização do engajamento almejado com o engajamento atual
+      const payload: CreateStakeholderInput = {
+        ...values,
+        targetEngagement: values.currentEngagement,
+        notes: values.notes || "",
+      };
+
+      const res = await createStakeholderAction(payload);
       if (!res.success) return void toast.error(res.message || "Erro ao salvar stakeholder.");
       toast.success(res.message);
       reset();
@@ -119,15 +152,22 @@ export function CreateStakeholderDialog({
         <DialogHeader>
           <DialogTitle className="text-base sm:text-lg">Cadastrar Stakeholder no Mapa Hierárquico</DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Informe o Parceiro (ex: SESI, SENAI) e o nível de Poder/Interesse para posicionar na árvore.
+            Informe a Organização (ex: SESI, SENAI) e o nível de Poder/Interesse para posicionar na árvore.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5 py-1">
+          {/* Linha 1: Organização e Nome do Stakeholder */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label htmlFor="organization" className="text-xs font-semibold">Parceiro / Organização *</Label>
-              <Input id="organization" list="partner-organizations-list" {...register("organization")} placeholder="Ex: SESI, SENAI, Bosch" className="text-xs sm:text-sm" />
+              <Label htmlFor="organization" className="text-xs font-semibold">Organização *</Label>
+              <Input
+                id="organization"
+                list="partner-organizations-list"
+                {...register("organization")}
+                placeholder="Ex: SESI, SENAI, Bosch"
+                className="text-xs sm:text-sm"
+              />
               <datalist id="partner-organizations-list">
                 {sponsors.map((sp) => (
                   <option key={sp.id} value={sp.name} />
@@ -135,30 +175,95 @@ export function CreateStakeholderDialog({
               </datalist>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="name" className="text-xs font-semibold">Stakeholder / Nível (Nome) *</Label>
-              <Input id="name" {...register("name")} placeholder="Ex: Diretoria, Técnicos, Professores" className="text-xs sm:text-sm" />
+              <Label htmlFor="name" className="text-xs font-semibold">Nome do Stakeholder *</Label>
+              <Input
+                id="name"
+                {...register("name")}
+                placeholder="Ex: Diretoria, Técnicos, Professores"
+                className="text-xs sm:text-sm"
+              />
               {errors.name && <span className="text-[11px] text-destructive">{errors.name.message}</span>}
             </div>
           </div>
 
+          {/* Linha 2: Grupo Institucional e Cargo */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Grupo Institucional *</Label>
-              <Select value={selectedGroup} onValueChange={(v) => setValue("group", v as StakeholderGroup)}>
-                <SelectTrigger className="w-full text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(STAKEHOLDER_GROUP_LABELS) as StakeholderGroup[]).map((g) => (
-                    <SelectItem key={g} value={g} className="text-xs">{STAKEHOLDER_GROUP_LABELS[g]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isCreatingGroup ? (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    placeholder="Nome do novo grupo..."
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    className="text-xs h-9"
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleCreateGroup}
+                    disabled={newGroupName.trim().length < 2}
+                    className="h-9 px-2.5 shrink-0 text-xs"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Criar</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsCreatingGroup(false);
+                      setNewGroupName("");
+                    }}
+                    className="h-9 px-2 text-muted-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Select
+                  value={selectedGroup}
+                  onValueChange={(val) => {
+                    if (val === NEW_GROUP_SENTINEL) {
+                      setIsCreatingGroup(true);
+                      return;
+                    }
+                    setValue("group", val as StakeholderGroup);
+                  }}
+                >
+                  <SelectTrigger className="w-full text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {groupsList.map((g, idx) => (
+                      <SelectItem key={`${g.value}-${idx}`} value={g.value} className="text-xs">
+                        {g.label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem
+                      value={NEW_GROUP_SENTINEL}
+                      className="font-semibold text-primary focus:text-primary text-xs cursor-pointer"
+                    >
+                      + Cadastrar novo grupo institucional...
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="roleOrJobTitle" className="text-xs font-semibold">Cargo / Detalhamento</Label>
-              <Input id="roleOrJobTitle" {...register("roleOrJobTitle")} placeholder="Ex: Diretoria Regional / Corpo Docente" className="text-xs sm:text-sm" />
+              <Label htmlFor="roleOrJobTitle" className="text-xs font-semibold">Cargo</Label>
+              <Input
+                id="roleOrJobTitle"
+                {...register("roleOrJobTitle")}
+                placeholder="Ex: Diretor Pedagógico, Engenheiro, Coordenador"
+                className="text-xs sm:text-sm"
+              />
             </div>
           </div>
 
+          {/* Linha 3: Posicionamento Hierárquico (Poder × Interesse) */}
           <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-bold text-foreground">Posicionamento Hierárquico (Poder × Interesse)</span>
@@ -188,7 +293,7 @@ export function CreateStakeholderDialog({
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold">Superior no Parceiro (Opcional)</Label>
+                <Label className="text-xs font-semibold">Superior na Organização (Opcional)</Label>
                 <Select value={selectedParentId || "auto"} onValueChange={(v) => setValue("parentStakeholderId", v === "auto" ? null : v)}>
                   <SelectTrigger className="w-full text-xs bg-card"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -202,60 +307,65 @@ export function CreateStakeholderDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Linha 4: Engajamento Atual, Canal e Frequência (com labels dedicados) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs font-semibold">Engajamento Atual → Almejado</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Select value={selectedCurrent} onValueChange={(v) => setValue("currentEngagement", v as EngagementLevel)}>
-                  <SelectTrigger className="w-full text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(ENGAGEMENT_LEVEL_LABELS) as EngagementLevel[]).map((l) => (
-                      <SelectItem key={l} value={l} className="text-xs">{ENGAGEMENT_LEVEL_LABELS[l]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={selectedTarget} onValueChange={(v) => setValue("targetEngagement", v as EngagementLevel)}>
-                  <SelectTrigger className="w-full text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(ENGAGEMENT_LEVEL_LABELS) as EngagementLevel[]).map((l) => (
-                      <SelectItem key={l} value={l} className="text-xs">{ENGAGEMENT_LEVEL_LABELS[l]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Label className="text-xs font-semibold">Nível de Engajamento</Label>
+              <Select
+                value={selectedCurrent}
+                onValueChange={(v) => {
+                  setValue("currentEngagement", v as EngagementLevel);
+                  setValue("targetEngagement", v as EngagementLevel);
+                }}
+              >
+                <SelectTrigger className="w-full text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(ENGAGEMENT_LEVEL_LABELS) as EngagementLevel[]).map((l) => (
+                    <SelectItem key={l} value={l} className="text-xs">{ENGAGEMENT_LEVEL_LABELS[l]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-semibold">Canal & Frequência</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Select value={selectedChannel} onValueChange={(v) => setValue("preferredChannel", v as CommunicationChannel)}>
-                  <SelectTrigger className="w-full text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(COMMUNICATION_CHANNEL_LABELS) as CommunicationChannel[]).map((c) => (
-                      <SelectItem key={c} value={c} className="text-xs">{COMMUNICATION_CHANNEL_LABELS[c]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={selectedFreq} onValueChange={(v) => setValue("preferredFrequency", v as CommunicationFrequency)}>
-                  <SelectTrigger className="w-full text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(COMMUNICATION_FREQUENCY_LABELS) as CommunicationFrequency[]).map((f) => (
-                      <SelectItem key={f} value={f} className="text-xs">{COMMUNICATION_FREQUENCY_LABELS[f]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Label className="text-xs font-semibold">Canal</Label>
+              <Select value={selectedChannel} onValueChange={(v) => setValue("preferredChannel", v as CommunicationChannel)}>
+                <SelectTrigger className="w-full text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(COMMUNICATION_CHANNEL_LABELS) as CommunicationChannel[]).map((c) => (
+                    <SelectItem key={c} value={c} className="text-xs">{COMMUNICATION_CHANNEL_LABELS[c]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Frequência</Label>
+              <Select value={selectedFreq} onValueChange={(v) => setValue("preferredFrequency", v as CommunicationFrequency)}>
+                <SelectTrigger className="w-full text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(COMMUNICATION_FREQUENCY_LABELS) as CommunicationFrequency[]).map((f) => (
+                    <SelectItem key={f} value={f} className="text-xs">{COMMUNICATION_FREQUENCY_LABELS[f]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
+          {/* Linha 5: Contatos (E-mail e WhatsApp) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input {...register("email")} type="email" placeholder="E-mail (opcional)" className="text-xs" />
-            <Input {...register("phone")} placeholder="WhatsApp (DD) 9XXXX-XXXX (opcional)" className="text-xs" />
+            <div className="space-y-1">
+              <Label htmlFor="email" className="text-xs font-semibold text-muted-foreground">E-mail (opcional)</Label>
+              <Input id="email" {...register("email")} type="email" placeholder="contato@organizacao.com" className="text-xs" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-xs font-semibold text-muted-foreground">WhatsApp (opcional)</Label>
+              <Input id="phone" {...register("phone")} placeholder="(DD) 9XXXX-XXXX" className="text-xs" />
+            </div>
           </div>
-
-          <Textarea {...register("notes")} placeholder="Estratégia / ação em andamento para este stakeholder..." rows={2} className="text-xs resize-none" />
 
           <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-1">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">Cancelar</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+              Cancelar
+            </Button>
             <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
               {isPending ? "Salvando no Gráfico..." : "Cadastrar no Gráfico"}
             </Button>

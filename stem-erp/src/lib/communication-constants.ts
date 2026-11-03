@@ -13,7 +13,7 @@ export const STAKEHOLDER_GROUP_LABELS: Record<StakeholderGroup, string> = {
   SPONSORS: "Patrocinadores Corporativos",
   SCHOOL_LEADERSHIP: "Direção & Coordenação Escolar",
   PARENTS_GUARDIANS: "Pais & Responsáveis",
-  TECHNICAL_MENTORS: "Mentores & Especialistas",
+  TECHNICAL_MENTORS: "Mentores e técnicos",
   COMMUNITY_FANS: "Comunidade & Apoiadores",
   COMPETITION_OFFICIALS: "Comissão & Jurados STEM",
 };
