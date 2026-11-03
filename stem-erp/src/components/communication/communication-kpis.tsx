@@ -7,8 +7,8 @@ const kpiCardStyles = tv({
   slots: {
     card: "rounded-2xl border border-border bg-card shadow-2xs transition-all hover:shadow-md",
     content: "p-5 flex items-start justify-between gap-3",
-    infoWrapper: "flex flex-col gap-1 min-w-0",
-    label: "text-xs font-semibold text-muted-foreground truncate",
+    infoWrapper: "flex flex-col gap-1 min-w-0 flex-1",
+    label: "text-xs font-semibold text-muted-foreground leading-snug",
     value: "text-2xl font-extrabold tracking-tight text-foreground",
     description: "text-xs text-muted-foreground mt-2",
     iconWrapper: "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
@@ -46,7 +46,7 @@ export function CommunicationKpis({ metrics }: CommunicationKpisProps) {
 
   return (
     <section aria-label="Métricas Principais de Comunicação" className="w-full">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
         {/* Card 1: Total de Stakeholders */}
         <Card className={c1.card()}>
           <CardContent className={c1.content()}>

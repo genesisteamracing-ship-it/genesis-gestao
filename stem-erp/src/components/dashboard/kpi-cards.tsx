@@ -35,17 +35,17 @@ export function KpiCards({ kpis }: KpiCardsProps) {
   return (
     <section
       aria-label="Indicadores Financeiros Principais"
-      className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4"
+      className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 2xl:grid-cols-4"
     >
       {/* Card 1: Orçamento Total Previsto */}
       <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3 sm:gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
+            <div className="flex-1">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-snug">
                 Orçamento Previsto
               </p>
-              <p className="mt-2 text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight text-foreground truncate">
+              <p className="mt-2 text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight text-foreground">
                 {formatCurrencyFromCents(kpis.totalPlannedBudgetCents)}
               </p>
             </div>
@@ -68,11 +68,11 @@ export function KpiCards({ kpis }: KpiCardsProps) {
       <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3 sm:gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
+            <div className="flex-1">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-snug">
                 Total Arrecadado
               </p>
-              <p className="mt-2 text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight text-foreground truncate">
+              <p className="mt-2 text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight text-foreground">
                 {formatCurrencyFromCents(kpis.totalOriginsCents)}
               </p>
             </div>
@@ -95,11 +95,11 @@ export function KpiCards({ kpis }: KpiCardsProps) {
       <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3 sm:gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
+            <div className="flex-1">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-snug">
                 Total Gasto
               </p>
-              <p className="mt-2 text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight text-foreground truncate">
+              <p className="mt-2 text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight text-foreground">
                 {formatCurrencyFromCents(kpis.totalApplicationsCents)}
               </p>
             </div>
@@ -122,12 +122,12 @@ export function KpiCards({ kpis }: KpiCardsProps) {
       <Card className="rounded-2xl border-0 bg-card shadow-[0_6px_24px_-4px_rgba(16,24,40,0.04)] dark:shadow-none">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3 sm:gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
+            <div className="flex-1">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-snug">
                 Saldo em Caixa Atual
               </p>
               <p
-                className={`mt-2 text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight truncate ${
+                className={`mt-2 text-xl sm:text-2xl lg:text-[26px] font-bold tracking-tight ${
                   isPositiveBalance ? "text-success" : "text-destructive"
                 }`}
               >

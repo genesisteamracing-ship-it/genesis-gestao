@@ -139,7 +139,7 @@ export function ReturnActionsView({ initialMetrics }: ReturnActionsViewProps) {
       {/* 1. KPIs das Ações de Retorno */}
       <section
         aria-label="Indicadores de Ações de Retorno"
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4"
       >
         <div className="rounded-2xl border border-border bg-card p-5 shadow-2xs">
           <div className="flex items-start justify-between gap-3">

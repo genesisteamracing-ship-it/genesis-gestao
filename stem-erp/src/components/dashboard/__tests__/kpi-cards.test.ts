@@ -66,4 +66,10 @@ describe("KPI Cards & Dashboard Metrics", () => {
     };
     assert.equal(negativeKpis.currentCashBalanceCents >= 0, false);
   });
+
+  it("deve formatar valores sem truncar caracteres para exibição íntegra nos cards", () => {
+    const formatted = formatCurrencyFromCents(mockKpis.totalPlannedBudgetCents);
+    assert.ok(!formatted.includes("..."), "Valor formatado não deve conter reticências");
+    assert.ok(formatted.length > 0, "Valor formatado deve ser preenchido");
+  });
 });
