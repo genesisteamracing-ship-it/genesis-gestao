@@ -308,8 +308,11 @@ model Stakeholder {
   team                 Team                   @relation(fields: [teamId], references: [id], onDelete: Cascade)
   sponsorId            String?                // Vínculo opcional se for patrocinador já cadastrado
   sponsor              Sponsor?               @relation(fields: [sponsorId], references: [id], onDelete: SetNull)
+  parentStakeholderId  String?                // Vínculo hierárquico opcional dentro do mesmo Parceiro
+  parent               Stakeholder?           @relation("StakeholderHierarchy", fields: [parentStakeholderId], references: [id], onDelete: SetNull)
+  children             Stakeholder[]          @relation("StakeholderHierarchy")
   name                 String                 // Nome da pessoa ou entidade
-  organization         String?                // Ex: Colégio Alfa, Empresa Bosch
+  organization         String?                // Ex: Colégio Alfa, Empresa Bosch, SESI
   roleOrJobTitle       String?                // Ex: Diretor Pedagógico, Gerente de Marketing
   group                StakeholderGroup       // Grupo de Stakeholder
   email                String?
@@ -328,6 +331,8 @@ model Stakeholder {
 
   @@index([teamId, group])
   @@index([teamId, power, interest])
+  @@index([teamId, organization])
+  @@index([teamId, parentStakeholderId])
 }
 
 // 10. Planos / Régua de Comunicação por Stakeholder

@@ -120,6 +120,22 @@ export async function updateStakeholderAction(
   }
 }
 
+export async function updateStakeholderHierarchyAction(params: {
+  stakeholderId: string;
+  power: "LOW" | "HIGH";
+  interest: "LOW" | "HIGH";
+  parentStakeholderId?: string | null;
+  organization?: string | null;
+}): Promise<ActionResponse<{ id: string }>> {
+  return updateStakeholderAction({
+    id: params.stakeholderId,
+    power: params.power,
+    interest: params.interest,
+    parentStakeholderId: params.parentStakeholderId,
+    organization: params.organization,
+  });
+}
+
 export async function deleteStakeholderAction(
   id: string
 ): Promise<ActionResponse<void>> {

@@ -90,14 +90,38 @@ export async function createStakeholder(
   teamId: string,
   input: CreateStakeholderInput
 ) {
+  let resolvedOrg = input.organization?.trim() || null;
+
+  if (!resolvedOrg && input.sponsorId) {
+    const sponsor = await prisma.sponsor.findFirst({
+      where: { id: input.sponsorId, teamId },
+      select: { name: true },
+    });
+    if (sponsor) {
+      resolvedOrg = sponsor.name;
+    }
+  }
+
+  let validParentId: string | null = null;
+  if (input.parentStakeholderId) {
+    const parent = await prisma.stakeholder.findFirst({
+      where: { id: input.parentStakeholderId, teamId },
+      select: { id: true },
+    });
+    if (parent) {
+      validParentId = parent.id;
+    }
+  }
+
   return prisma.stakeholder.create({
     data: {
       teamId,
-      name: input.name,
-      organization: input.organization || null,
+      name: input.name.trim(),
+      organization: resolvedOrg,
       roleOrJobTitle: input.roleOrJobTitle || null,
       group: input.group,
       sponsorId: input.sponsorId || null,
+      parentStakeholderId: validParentId,
       email: input.email || null,
       phone: input.phone || null,
       power: input.power,
@@ -115,17 +139,31 @@ export async function updateStakeholder(
   teamId: string,
   input: UpdateStakeholderInput
 ) {
+  let validParentId: string | null | undefined = undefined;
+  if (input.parentStakeholderId !== undefined) {
+    if (!input.parentStakeholderId || input.parentStakeholderId === input.id) {
+      validParentId = null;
+    } else {
+      const parent = await prisma.stakeholder.findFirst({
+        where: { id: input.parentStakeholderId, teamId },
+        select: { id: true },
+      });
+      validParentId = parent ? parent.id : null;
+    }
+  }
+
   return prisma.stakeholder.update({
     where: {
       id: input.id,
       teamId,
     },
     data: {
-      ...(input.name !== undefined ? { name: input.name } : {}),
-      ...(input.organization !== undefined ? { organization: input.organization || null } : {}),
+      ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+      ...(input.organization !== undefined ? { organization: input.organization?.trim() || null } : {}),
       ...(input.roleOrJobTitle !== undefined ? { roleOrJobTitle: input.roleOrJobTitle || null } : {}),
       ...(input.group !== undefined ? { group: input.group } : {}),
       ...(input.sponsorId !== undefined ? { sponsorId: input.sponsorId || null } : {}),
+      ...(validParentId !== undefined ? { parentStakeholderId: validParentId } : {}),
       ...(input.email !== undefined ? { email: input.email || null } : {}),
       ...(input.phone !== undefined ? { phone: input.phone || null } : {}),
       ...(input.power !== undefined ? { power: input.power } : {}),

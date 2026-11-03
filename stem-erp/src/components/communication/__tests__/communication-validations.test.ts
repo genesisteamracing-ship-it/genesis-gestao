@@ -2,12 +2,35 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   createStakeholderSchema,
+  updateStakeholderSchema,
   createCommunicationPlanSchema,
   createCommunicationLogSchema,
   createFeedbackSchema,
 } from "../../../lib/validations/communication";
 
 describe("Communication Validations (Zod Schemas)", () => {
+  it("deve validar parentStakeholderId opcional e impedir auto-referência na atualização", () => {
+    const withParent = createStakeholderSchema.safeParse({
+      name: "Técnicos SESI",
+      organization: "SESI",
+      group: "SCHOOL_LEADERSHIP",
+      parentStakeholderId: "st-diretoria-id",
+      power: "LOW",
+      interest: "HIGH",
+      currentEngagement: "SUPPORTIVE",
+      targetEngagement: "LEADING",
+      preferredChannel: "WHATSAPP",
+      preferredFrequency: "BIWEEKLY",
+    });
+    assert.strictEqual(withParent.success, true);
+
+    const selfParent = updateStakeholderSchema.safeParse({
+      id: "same-stakeholder-id",
+      parentStakeholderId: "same-stakeholder-id",
+    });
+    assert.strictEqual(selfParent.success, false);
+  });
+
   it("deve validar com sucesso um cadastro válido de stakeholder", () => {
     const validData = {
       name: "Engenheira Juliana Costa",

@@ -5,27 +5,27 @@ import type { CommunicationMetrics } from "@/types/communication";
 
 const kpiCardStyles = tv({
   slots: {
-    card: "border-border bg-card transition-shadow hover:shadow-sm",
-    content: "p-4 sm:p-5 flex items-center justify-between gap-3",
+    card: "rounded-2xl border border-border bg-card shadow-2xs transition-all hover:shadow-md",
+    content: "p-5 flex items-start justify-between gap-3",
     infoWrapper: "flex flex-col gap-1 min-w-0",
-    label: "text-xs sm:text-sm font-medium text-muted-foreground truncate",
-    value: "text-xl sm:text-2xl font-bold tracking-tight text-foreground",
-    description: "text-[11px] sm:text-xs text-muted-foreground",
-    iconWrapper: "p-2.5 sm:p-3 rounded-lg shrink-0",
+    label: "text-xs font-semibold text-muted-foreground truncate",
+    value: "text-2xl font-extrabold tracking-tight text-foreground",
+    description: "text-xs text-muted-foreground mt-2",
+    iconWrapper: "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
   },
   variants: {
     theme: {
       primary: {
-        iconWrapper: "bg-primary/10 text-primary",
+        iconWrapper: "bg-primary/15 text-primary",
       },
-      blue: {
-        iconWrapper: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+      purple: {
+        iconWrapper: "bg-purple/15 text-purple",
       },
-      emerald: {
-        iconWrapper: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+      warning: {
+        iconWrapper: "bg-warning/15 text-warning",
       },
-      amber: {
-        iconWrapper: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      success: {
+        iconWrapper: "bg-success/15 text-success",
       },
     },
   },
@@ -40,13 +40,13 @@ interface CommunicationKpisProps {
 
 export function CommunicationKpis({ metrics }: CommunicationKpisProps) {
   const c1 = kpiCardStyles({ theme: "primary" });
-  const c2 = kpiCardStyles({ theme: "blue" });
-  const c3 = kpiCardStyles({ theme: "amber" });
-  const c4 = kpiCardStyles({ theme: "emerald" });
+  const c2 = kpiCardStyles({ theme: "purple" });
+  const c3 = kpiCardStyles({ theme: "warning" });
+  const c4 = kpiCardStyles({ theme: "success" });
 
   return (
     <section aria-label="Métricas Principais de Comunicação" className="w-full">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {/* Card 1: Total de Stakeholders */}
         <Card className={c1.card()}>
           <CardContent className={c1.content()}>
@@ -58,7 +58,7 @@ export function CommunicationKpis({ metrics }: CommunicationKpisProps) {
               </span>
             </div>
             <div className={c1.iconWrapper()} aria-hidden="true">
-              <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+              <Users className="h-6 w-6" />
             </div>
           </CardContent>
         </Card>
@@ -72,7 +72,7 @@ export function CommunicationKpis({ metrics }: CommunicationKpisProps) {
               <span className={c2.description()}>Média ponderada da equipe</span>
             </div>
             <div className={c2.iconWrapper()} aria-hidden="true">
-              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
+              <TrendingUp className="h-6 w-6" />
             </div>
           </CardContent>
         </Card>
@@ -88,7 +88,7 @@ export function CommunicationKpis({ metrics }: CommunicationKpisProps) {
               </span>
             </div>
             <div className={c3.iconWrapper()} aria-hidden="true">
-              <Send className="h-5 w-5 sm:h-6 sm:w-6" />
+              <Send className="h-6 w-6" />
             </div>
           </CardContent>
         </Card>
@@ -104,7 +104,7 @@ export function CommunicationKpis({ metrics }: CommunicationKpisProps) {
               </span>
             </div>
             <div className={c4.iconWrapper()} aria-hidden="true">
-              <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
+              <CheckCircle2 className="h-6 w-6" />
             </div>
           </CardContent>
         </Card>

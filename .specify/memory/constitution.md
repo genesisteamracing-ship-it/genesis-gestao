@@ -1,20 +1,13 @@
 <!--
 Sync Impact Report:
-- Version Change: Uninitialized (Template) -> 1.0.0
+- Version Change: 1.0.0 -> 1.1.0
 - Ratification Date: 2026-10-26
-- Last Amended Date: 2026-10-31
-- Principles Defined:
-  1. I. Clean Architecture & Princípios SOLID
-  2. II. Design System Semântico & Zero Hardcoding
-  3. III. Tipagem Estrita, Zod & Padrão Monetário em Centavos
-  4. IV. Testes Automatizados Obrigatórios (Test-First & Qualidade)
-  5. V. Mobile-First, Acessibilidade & Estados Completos de UI
-  6. VI. Multitenancy, Segurança & Trilha de Auditoria
-- Added Sections:
-  - Padrões Tecnológicos & Restrições de Arquitetura
-  - Fluxo de Desenvolvimento, Quality Gates & CI/CD
-  - Governance & Compliance de Competição STEM
-- Removed Sections: None (primeira ratificação formal a partir do template)
+- Last Amended Date: 2026-11-03
+- Modified Principles:
+  - V. Mobile-First, Acessibilidade & Estados Completos de UI -> V. Layout Shell Padronizado (Barra Lateral Fixa), Mobile-First & Estados de UI
+- Added Requirements:
+  - Uso obrigatório de `<DashboardShell>` (`src/components/layout/dashboard-shell.tsx`) em todas as páginas e rotas autenticadas do sistema, garantindo `<AppSidebar />` fixa em todas as telas desktop, `<AppHeader />` no topo e `<MobileNavDrawer />` em dispositivos móveis.
+- Removed Sections: None
 - Follow-up TODOs: None
 -->
 
@@ -32,7 +25,7 @@ Todo o código do sistema deve obedecer rigorosamente à separação de responsa
 ### II. Design System Semântico & Zero Hardcoding
 Nenhum valor arbitrário ou código de cor literal é tolerado no frontend:
 - É expressamente proibido o uso de valores hexadecimais (`#fff`, `#000`), `rgb()`, `hsl()` ou classes arbitrárias do Tailwind (como `bg-[#123456]` ou `text-blue-500` sem propósito semântico).
-- Toda estilização deve utilizar tokens semânticos nativos do Design System (`bg-background`, `text-foreground`, `bg-primary`, `border-border`, `text-muted-foreground`, etc.).
+- Toda estilização deve utilizar tokens semânticos nativos do Design System (`bg-background`, `text-foreground`, `bg-primary`, `bg-success`, `bg-warning`, `bg-purple`, `border-border`, `text-muted-foreground`, etc.).
 - É prioritário o uso do ecossistema `shadcn/ui` e primitivos do Radix UI. Componentes fundamentais (modais, formulários, tabelas, gavetas, dropdowns) não devem ser recriados do zero.
 - As variações de estilo devem ser obrigatoriamente construídas com `tailwind-variants` (`tv`), definindo slots para componentes compostos e extraindo variantes com `VariantProps`.
 
@@ -49,12 +42,12 @@ Nenhuma funcionalidade ou refatoração é considerada concluída sem a respecti
 - Componentes e fluxos de interação devem ser testados com foco no comportamento do usuário (queries semânticas como `getByRole` e `getByLabelText`).
 - Cenários de ponta a ponta (E2E) devem cobrir jornadas críticas de autenticação, lançamentos de livro caixa, controle de cotas de patrocinadores e geração de relatórios de comunicação.
 
-### V. Mobile-First, Acessibilidade & Estados Completos de UI
-O sistema deve proporcionar usabilidade exemplar em qualquer dispositivo e para qualquer usuário:
-- O design deve ser projetado primeiro para telas móveis (`320px` a `639px`) e adaptado progressivamente para desktops (`md:`, `lg:`).
-- Sidebars de desktop devem possuir obrigatoriamente um menu gaveta (`Sheet` móvel) acessível por botão hambúrguer no cabeçalho em telas menores que `lg`.
-- Toda tela ou componente assíncrono deve contemplar e tratar com clareza quatro estados de UI: *Loading* (utilizando `<Skeleton />`), *Error* (com feedback legível e botão de retry), *Empty State* (quando não houver dados cadastrados) e *Success*.
-- Acessibilidade (a11y) deve ser cumprida: tags semânticas de HTML (`main`, `nav`, `section`), navegação por teclado e `aria-labels` em botões de ação ou ícones.
+### V. Layout Shell Padronizado (Barra Lateral Fixa), Mobile-First & Estados de UI
+A consistência estrutural de navegação e responsividade é obrigatória e inegociável em todas as telas do sistema:
+- **Uso Obrigatório do `DashboardShell` e Barra Lateral Fixa (`AppSidebar`)**: Toda página ou módulo autenticado do sistema DEVE obrigatoriamente ser envolvido pelo componente `<DashboardShell>` (`src/components/layout/dashboard-shell.tsx`). É terminantemente proibido renderizar telas internas sem a barra lateral fixa (`AppSidebar` com `sticky top-0 h-screen`), o cabeçalho global (`AppHeader`), o provedor de temporada (`SeasonProvider`) e o container padronizado (`max-w-[1600px] p-4 sm:p-6 lg:p-8`).
+- **Abordagem Mobile-First**: O design deve ser projetado primeiro para telas móveis (`320px` a `639px`) e adaptado progressivamente para desktops (`md:`, `lg:`). Em telas menores que `lg`, a navegação deve ocorrer através do menu gaveta (`MobileNavDrawer` / `Sheet`) integrado ao `AppHeader`.
+- **Estados Completos de UI**: Toda tela ou componente assíncrono deve contemplar e tratar com clareza quatro estados de UI: *Loading* (utilizando `<Skeleton />`), *Error* (com feedback legível e botão de retry), *Empty State* (quando não houver dados cadastrados) e *Success*.
+- **Acessibilidade (a11y)**: Tags semânticas de HTML (`main`, `nav`, `section`), navegação por teclado e `aria-labels` em botões de ação ou ícones devem ser garantidas.
 
 ### VI. Multitenancy, Segurança & Trilha de Auditoria
 O sistema foi concebido para suportar equipes e operações auditáveis em competições STEM:
@@ -90,4 +83,4 @@ A Constituição do projeto é o documento soberano que rege a arquitetura, padr
   - **PATCH**: Ajustes redacionais, correções pontuais de texto ou refinamentos não estruturais.
 - O arquivo `.specify/memory/constitution.md` deve ser mantido atualizado como fonte primária da verdade para orientar desenvolvedores e agentes autônomos de IA durante todo o ciclo de vida do projeto.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-26 | **Last Amended**: 2026-10-31
+**Version**: 1.1.0 | **Ratified**: 2026-10-26 | **Last Amended**: 2026-11-03

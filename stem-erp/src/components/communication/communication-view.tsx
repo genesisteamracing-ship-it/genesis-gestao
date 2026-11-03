@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Grid3X3, MessageSquare, Users, History, Plus } from "lucide-react";
+import { Network, Grid3X3, MessageSquare, Users, History, Plus } from "lucide-react";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { CommunicationKpis } from "./communication-kpis";
+import { StakeholderOrgMap } from "./org-map/stakeholder-org-map";
 import { StakeholderMatrix } from "./stakeholder-matrix";
 import { ReportGeneratorTab } from "./report-generator-tab";
 import { StakeholdersListTab } from "./stakeholders-list-tab";
@@ -13,6 +15,8 @@ import { CreateStakeholderDialog } from "./create-stakeholder-dialog";
 import { CreateCommunicationPlanDialog } from "./create-communication-plan-dialog";
 import { LogCommunicationDialog } from "./log-communication-dialog";
 import { AddFeedbackDialog } from "./add-feedback-dialog";
+import type { QuickAddStakeholderPrefill } from "@/hooks/use-stakeholder-org-map";
+import type { DashboardMetricsDTO } from "@/types/financial";
 import type {
   CommunicationChannel,
   CommunicationLogSummary,
@@ -22,6 +26,7 @@ import type {
 } from "@/types/communication";
 
 interface CommunicationViewProps {
+  dashboardMetrics: DashboardMetricsDTO;
   metrics: CommunicationMetrics;
   stakeholders: StakeholderWithRelations[];
   matrixItems: StakeholderMatrixItem[];
@@ -30,16 +35,19 @@ interface CommunicationViewProps {
 }
 
 export function CommunicationView({
+  dashboardMetrics,
   metrics,
   stakeholders,
   matrixItems,
   logs,
   sponsors,
 }: CommunicationViewProps) {
-  const [activeTab, setActiveTab] = useState<string>("matriz");
+  const [activeTab, setActiveTab] = useState<string>("mapa");
 
-  // Modais
   const [isCreateStakeholderOpen, setIsCreateStakeholderOpen] = useState(false);
+  const [stakeholderPrefill, setStakeholderPrefill] =
+    useState<QuickAddStakeholderPrefill | null>(null);
+
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const [planStakeholderId, setPlanStakeholderId] = useState<string | undefined>(undefined);
 
@@ -62,6 +70,11 @@ export function CommunicationView({
     string | null
   >(null);
 
+  const handleOpenCreateStakeholder = (prefill?: QuickAddStakeholderPrefill) => {
+    setStakeholderPrefill(prefill ?? null);
+    setIsCreateStakeholderOpen(true);
+  };
+
   const handleSelectStakeholderForReport = (stakeholderId: string) => {
     setSelectedStakeholderForReport(stakeholderId);
     setActiveTab("relatorios");
@@ -72,138 +85,112 @@ export function CommunicationView({
     setIsCreatePlanOpen(true);
   };
 
-  const handleOpenLogWithPrefill = (prefill: {
-    stakeholderId: string;
-    subject: string;
-    channel: CommunicationChannel;
-    contentSummary: string;
-    reportTypeIncluded: string;
-  }) => {
-    setLogPrefill(prefill);
-    setIsLogDialogOpen(true);
-  };
-
-  const handleOpenFeedback = (logId: string, subject: string) => {
-    setSelectedLogForFeedback({ id: logId, subject });
-    setIsFeedbackDialogOpen(true);
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Cabeçalho da Página */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl lg:text-[28px] font-bold tracking-tight text-foreground">
-              Comunicação & Engajamento
-            </h1>
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-              <Sparkles className="h-3 w-3" />
-              Gestão STEM
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Estratégia de comunicação personalizada para stakeholders, matriz de engajamento, prestação de contas automatizada e melhoria contínua.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setIsCreateStakeholderOpen(true)}
-            className="text-xs w-full sm:w-auto"
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Novo Stakeholder
-          </Button>
-        </div>
-      </div>
-
-      {/* KPIs Gerais */}
+    <DashboardShell
+      title="Mapa Organizacional & Comunicação"
+      subtitle="Árvore hierárquica de parceiros e stakeholders por nível de Poder e Interesse, réguas ativas e relatórios automatizados"
+      currentUser={dashboardMetrics.currentUser}
+      activeTeam={dashboardMetrics.activeTeam}
+      availableTeams={dashboardMetrics.availableTeams}
+      categories={dashboardMetrics.categories}
+      budgetResources={dashboardMetrics.budgetResources}
+      seasonMonths={dashboardMetrics.seasonMonths}
+      headerAction={
+        <Button
+          type="button"
+          onClick={() => handleOpenCreateStakeholder()}
+          className="w-full sm:w-auto gap-2 font-semibold"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Novo Stakeholder</span>
+        </Button>
+      }
+    >
       <CommunicationKpis metrics={metrics} />
 
-      {/* Abas do Módulo */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto p-1">
-          <TabsTrigger
-            value="matriz"
-            className="flex items-center gap-1.5 py-2 text-xs sm:text-sm"
-          >
-            <Grid3X3 className="h-4 w-4" />
-            Matriz & Estratégia
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-5">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-1">
+          <TabsTrigger value="mapa" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
+            <Network className="h-4 w-4" />
+            Mapa Hierárquico
           </TabsTrigger>
-
-          <TabsTrigger
-            value="relatorios"
-            className="flex items-center gap-1.5 py-2 text-xs sm:text-sm"
-          >
+          <TabsTrigger value="relatorios" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
             <MessageSquare className="h-4 w-4" />
             Gerador de Relatórios
           </TabsTrigger>
-
-          <TabsTrigger
-            value="stakeholders"
-            className="flex items-center gap-1.5 py-2 text-xs sm:text-sm"
-          >
+          <TabsTrigger value="stakeholders" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
             <Users className="h-4 w-4" />
-            Stakeholders ({stakeholders.length})
+            Diretório ({stakeholders.length})
           </TabsTrigger>
-
-          <TabsTrigger
-            value="historico"
-            className="flex items-center gap-1.5 py-2 text-xs sm:text-sm"
-          >
+          <TabsTrigger value="historico" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
             <History className="h-4 w-4" />
-            Histórico & Feedback ({logs.length})
+            Histórico ({logs.length})
+          </TabsTrigger>
+          <TabsTrigger value="matriz" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
+            <Grid3X3 className="h-4 w-4" />
+            Matriz Mendelow
           </TabsTrigger>
         </TabsList>
 
-        {/* Aba 1: Matriz de Poder x Interesse & Gap */}
-        <TabsContent value="matriz" className="space-y-4">
-          <StakeholderMatrix
-            items={matrixItems}
-            onSelectStakeholder={handleSelectStakeholderForReport}
+        <TabsContent value="mapa" className="space-y-4">
+          <StakeholderOrgMap
+            teamName={dashboardMetrics.activeTeam.name}
+            stakeholders={stakeholders}
+            onOpenCreateStakeholder={handleOpenCreateStakeholder}
+            onSelectStakeholderForReport={handleSelectStakeholderForReport}
+            onOpenPlanDialog={handleOpenPlanDialog}
+            onOpenLogForStakeholder={(st) => {
+              setLogPrefill({
+                stakeholderId: st.id,
+                subject: `Alinhamento com ${st.name}`,
+                channel: st.preferredChannel,
+                contentSummary: "",
+                reportTypeIncluded: "COMBINED",
+              });
+              setIsLogDialogOpen(true);
+            }}
           />
         </TabsContent>
 
-        {/* Aba 2: Gerador de Relatórios WhatsApp / E-mail */}
         <TabsContent value="relatorios" className="space-y-4">
           <ReportGeneratorTab
             stakeholders={stakeholders}
-            onOpenLogDialog={handleOpenLogWithPrefill}
+            onOpenLogDialog={(prefill) => (setLogPrefill(prefill), setIsLogDialogOpen(true))}
             initialStakeholderId={selectedStakeholderForReport}
           />
         </TabsContent>
 
-        {/* Aba 3: Diretório de Stakeholders */}
         <TabsContent value="stakeholders" className="space-y-4">
           <StakeholdersListTab
             stakeholders={stakeholders}
-            onOpenCreateDialog={() => setIsCreateStakeholderOpen(true)}
+            onOpenCreateDialog={() => handleOpenCreateStakeholder()}
             onOpenPlanDialog={handleOpenPlanDialog}
             onSelectForReport={handleSelectStakeholderForReport}
           />
         </TabsContent>
 
-        {/* Aba 4: Histórico de Disparos e Feedbacks */}
         <TabsContent value="historico" className="space-y-4">
           <CommunicationLogsTab
             logs={logs}
-            onOpenLogDialog={() => {
-              setLogPrefill(null);
-              setIsLogDialogOpen(true);
-            }}
-            onOpenFeedbackDialog={handleOpenFeedback}
+            onOpenLogDialog={() => (setLogPrefill(null), setIsLogDialogOpen(true))}
+            onOpenFeedbackDialog={(id, subject) => (
+              setSelectedLogForFeedback({ id, subject }),
+              setIsFeedbackDialogOpen(true)
+            )}
           />
+        </TabsContent>
+
+        <TabsContent value="matriz" className="space-y-4">
+          <StakeholderMatrix items={matrixItems} onSelectStakeholder={handleSelectStakeholderForReport} />
         </TabsContent>
       </Tabs>
 
-      {/* Diálogos */}
       <CreateStakeholderDialog
         open={isCreateStakeholderOpen}
         onOpenChange={setIsCreateStakeholderOpen}
         sponsors={sponsors}
+        existingStakeholders={stakeholders}
+        prefill={stakeholderPrefill}
       />
 
       <CreateCommunicationPlanDialog
@@ -228,6 +215,6 @@ export function CommunicationView({
           logSubject={selectedLogForFeedback.subject}
         />
       )}
-    </div>
+    </DashboardShell>
   );
 }

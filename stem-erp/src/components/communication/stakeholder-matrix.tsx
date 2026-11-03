@@ -21,12 +21,12 @@ const matrixStyles = tv({
   slots: {
     container: "space-y-6 w-full",
     quadrantGrid: "grid grid-cols-1 md:grid-cols-2 gap-4",
-    quadrantCard: "border-border bg-card flex flex-col justify-between",
-    quadrantHeader: "p-4 pb-2 border-b border-border/50 flex items-start justify-between gap-2",
-    quadrantTitle: "text-sm sm:text-base font-semibold flex items-center gap-2 text-foreground",
-    quadrantDescription: "text-xs text-muted-foreground mt-0.5",
-    quadrantContent: "p-4 space-y-2.5 flex-1",
-    stakeholderChip: "p-2.5 rounded-md border border-border/60 bg-muted/30 hover:bg-muted/60 transition-colors flex flex-col gap-1",
+    quadrantCard: "rounded-2xl border border-border bg-card flex flex-col justify-between shadow-2xs",
+    quadrantHeader: "p-4 sm:p-5 pb-3 border-b border-border/60 flex items-start justify-between gap-2",
+    quadrantTitle: "text-sm sm:text-base font-bold flex items-center gap-2 text-foreground",
+    quadrantDescription: "text-xs text-muted-foreground mt-1",
+    quadrantContent: "p-4 sm:p-5 space-y-2.5 flex-1",
+    stakeholderChip: "p-3 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/70 transition-colors flex flex-col gap-1",
     gapSection: "space-y-3",
   },
   variants: {
@@ -36,15 +36,15 @@ const matrixStyles = tv({
         quadrantTitle: "text-primary",
       },
       KEEP_SATISFIED: {
-        quadrantCard: "border-blue-500/30 bg-blue-500/5",
-        quadrantTitle: "text-blue-700 dark:text-blue-400",
+        quadrantCard: "border-purple/40 bg-purple/5",
+        quadrantTitle: "text-purple",
       },
       KEEP_INFORMED: {
-        quadrantCard: "border-emerald-500/30 bg-emerald-500/5",
-        quadrantTitle: "text-emerald-700 dark:text-emerald-400",
+        quadrantCard: "border-success/40 bg-success/5",
+        quadrantTitle: "text-success",
       },
       MONITOR: {
-        quadrantCard: "border-muted-foreground/20 bg-muted/10",
+        quadrantCard: "border-border bg-card",
         quadrantTitle: "text-muted-foreground",
       },
     },
@@ -68,8 +68,8 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
     <div className={styles.container()}>
       {/* 1. Grade 2x2 da Matriz Poder x Interesse */}
       <div>
-        <div className="mb-3">
-          <h3 className="text-base sm:text-lg font-semibold text-foreground">
+        <div className="mb-4">
+          <h3 className="text-base sm:text-lg font-bold text-foreground">
             Matriz de Poder vs. Interesse (Mendelow)
           </h3>
           <p className="text-xs sm:text-sm text-muted-foreground">
@@ -83,8 +83,8 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
             <div className={styles.quadrantHeader()}>
               <div>
                 <CardTitle className={matrixStyles({ quadrantType: "MANAGE_CLOSELY" }).quadrantTitle()}>
-                  <Sparkles className="h-4 w-4" />
-                  Gerenciar de Perto (Alto Poder / Alto Interesse)
+                  <Sparkles className="h-4 w-4 shrink-0" />
+                  <span>Gerenciar de Perto (Alto Poder / Alto Interesse)</span>
                 </CardTitle>
                 <CardDescription className={styles.quadrantDescription()}>
                   Parceiros estratégicos chave e patrocinadores Ouro/Diamante. Foco total em ROI e alinhamento frequente.
@@ -96,7 +96,7 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
             </div>
             <CardContent className={styles.quadrantContent()}>
               {manageClosely.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic py-3 text-center">
+                <p className="text-xs text-muted-foreground italic py-4 text-center">
                   Nenhum stakeholder mapeado neste quadrante.
                 </p>
               ) : (
@@ -126,8 +126,8 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
             <div className={styles.quadrantHeader()}>
               <div>
                 <CardTitle className={matrixStyles({ quadrantType: "KEEP_SATISFIED" }).quadrantTitle()}>
-                  <ShieldCheck className="h-4 w-4" />
-                  Manter Satisfeito (Alto Poder / Baixo Interesse)
+                  <ShieldCheck className="h-4 w-4 shrink-0" />
+                  <span>Manter Satisfeito (Alto Poder / Baixo Interesse)</span>
                 </CardTitle>
                 <CardDescription className={styles.quadrantDescription()}>
                   Direção escolar e comissões reguladoras. Envie balanços consolidados e cumpra prazos institucionais.
@@ -139,7 +139,7 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
             </div>
             <CardContent className={styles.quadrantContent()}>
               {keepSatisfied.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic py-3 text-center">
+                <p className="text-xs text-muted-foreground italic py-4 text-center">
                   Nenhum stakeholder mapeado neste quadrante.
                 </p>
               ) : (
@@ -169,8 +169,8 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
             <div className={styles.quadrantHeader()}>
               <div>
                 <CardTitle className={matrixStyles({ quadrantType: "KEEP_INFORMED" }).quadrantTitle()}>
-                  <HelpCircle className="h-4 w-4" />
-                  Manter Informado (Baixo Poder / Alto Interesse)
+                  <HelpCircle className="h-4 w-4 shrink-0" />
+                  <span>Manter Informado (Baixo Poder / Alto Interesse)</span>
                 </CardTitle>
                 <CardDescription className={styles.quadrantDescription()}>
                   Pais, responsáveis, mentores e comunidade. Atualizações via WhatsApp e convites para feiras/pit stops.
@@ -182,7 +182,7 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
             </div>
             <CardContent className={styles.quadrantContent()}>
               {keepInformed.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic py-3 text-center">
+                <p className="text-xs text-muted-foreground italic py-4 text-center">
                   Nenhum stakeholder mapeado neste quadrante.
                 </p>
               ) : (
@@ -212,8 +212,8 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
             <div className={styles.quadrantHeader()}>
               <div>
                 <CardTitle className={matrixStyles({ quadrantType: "MONITOR" }).quadrantTitle()}>
-                  <AlertCircle className="h-4 w-4" />
-                  Monitorar (Baixo Poder / Baixo Interesse)
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>Monitorar (Baixo Poder / Baixo Interesse)</span>
                 </CardTitle>
                 <CardDescription className={styles.quadrantDescription()}>
                   Apoiadores pontuais e fãs em redes sociais. Comunicação em grandes marcos da temporada.
@@ -225,7 +225,7 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
             </div>
             <CardContent className={styles.quadrantContent()}>
               {monitor.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic py-3 text-center">
+                <p className="text-xs text-muted-foreground italic py-4 text-center">
                   Nenhum stakeholder mapeado neste quadrante.
                 </p>
               ) : (
@@ -253,9 +253,9 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
       </div>
 
       {/* 2. Matriz de Avaliação de Engajamento (Gap Analysis Atual vs Almejado) */}
-      <Card className="border-border bg-card">
+      <Card className="rounded-2xl border border-border bg-card shadow-2xs">
         <CardHeader className="p-4 sm:p-6 pb-2">
-          <CardTitle className="text-base sm:text-lg">
+          <CardTitle className="text-base sm:text-lg font-bold">
             Matriz de Avaliação do Engajamento (Gap Analysis)
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm">
@@ -319,7 +319,7 @@ export function StakeholderMatrix({ items, onSelectStakeholder }: StakeholderMat
                             <button
                               type="button"
                               onClick={() => onSelectStakeholder(item.id)}
-                              className="text-xs text-primary hover:underline font-medium"
+                              className="text-xs text-primary hover:underline font-semibold"
                             >
                               Gerar Relatório
                             </button>

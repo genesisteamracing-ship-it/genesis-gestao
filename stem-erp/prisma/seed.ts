@@ -271,6 +271,65 @@ async function main() {
     });
   }
 
+  const alphaStakeholderCount = await prisma.stakeholder.count({
+    where: { teamId: alphaTeam.id },
+  });
+
+  if (alphaStakeholderCount === 0) {
+    const sesiDiretoria = await prisma.stakeholder.create({
+      data: {
+        teamId: alphaTeam.id,
+        name: "Diretoria",
+        organization: "SESI",
+        roleOrJobTitle: "Diretoria Regional de Educação",
+        group: "SCHOOL_LEADERSHIP",
+        power: "HIGH",
+        interest: "HIGH",
+        currentEngagement: "SUPPORTIVE",
+        targetEngagement: "LEADING",
+        preferredChannel: "MEETING",
+        preferredFrequency: "MONTHLY",
+        notes: "Aprovação institucional de laboratórios e apoio estratégico à escuderia.",
+      },
+    });
+
+    const sesiTecnicos = await prisma.stakeholder.create({
+      data: {
+        teamId: alphaTeam.id,
+        name: "Técnicos",
+        organization: "SESI",
+        roleOrJobTitle: "Corpo Técnico & Especialistas",
+        group: "TECHNICAL_MENTORS",
+        parentStakeholderId: sesiDiretoria.id,
+        power: "LOW",
+        interest: "HIGH",
+        currentEngagement: "SUPPORTIVE",
+        targetEngagement: "LEADING",
+        preferredChannel: "WHATSAPP",
+        preferredFrequency: "BIWEEKLY",
+        notes: "Suporte nos testes de pista e validação de manufatura.",
+      },
+    });
+
+    await prisma.stakeholder.create({
+      data: {
+        teamId: alphaTeam.id,
+        name: "Professores",
+        organization: "SESI",
+        roleOrJobTitle: "Docentes articuladores STEM",
+        group: "SCHOOL_LEADERSHIP",
+        parentStakeholderId: sesiTecnicos.id,
+        power: "LOW",
+        interest: "LOW",
+        currentEngagement: "NEUTRAL",
+        targetEngagement: "SUPPORTIVE",
+        preferredChannel: "EMAIL",
+        preferredFrequency: "MONTHLY",
+        notes: "Engajamento em oficinas pedagógicas e divulgação interna.",
+      },
+    });
+  }
+
   console.log("✅ Dados da Equipe Alpha populados e prontos para teste!");
 }
 

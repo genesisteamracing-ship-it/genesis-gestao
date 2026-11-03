@@ -50,6 +50,7 @@ export const createStakeholderSchema = z.object({
     required_error: "Selecione o grupo do stakeholder",
   }),
   sponsorId: z.string().optional().nullable(),
+  parentStakeholderId: z.string().optional().nullable(),
   email: z.string().email("E-mail inválido").optional().or(z.literal("")).nullable(),
   phone: z.string().optional().nullable(),
   power: z.enum(stakeholderPowerValues),
@@ -61,9 +62,18 @@ export const createStakeholderSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-export const updateStakeholderSchema = createStakeholderSchema.partial().extend({
-  id: z.string().min(1, "ID obrigatório"),
-});
+export const updateStakeholderSchema = createStakeholderSchema
+  .partial()
+  .extend({
+    id: z.string().min(1, "ID obrigatório"),
+  })
+  .refine(
+    (data) => !data.parentStakeholderId || data.parentStakeholderId !== data.id,
+    {
+      message: "Um stakeholder não pode ser superior hierárquico de si mesmo",
+      path: ["parentStakeholderId"],
+    }
+  );
 
 export const createCommunicationPlanSchema = z.object({
   stakeholderId: z.string().min(1, "Selecione o stakeholder"),

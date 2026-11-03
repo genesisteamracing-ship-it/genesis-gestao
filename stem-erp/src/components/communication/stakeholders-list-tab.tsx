@@ -26,9 +26,11 @@ import {
   COMMUNICATION_CHANNEL_LABELS,
   COMMUNICATION_FREQUENCY_LABELS,
   ENGAGEMENT_LEVEL_LABELS,
+  HIERARCHY_TIER_META,
   STAKEHOLDER_GROUP_LABELS,
   STAKEHOLDER_POWER_LABELS,
 } from "@/lib/communication-constants";
+import { computeHierarchyTier } from "@/lib/communication-hierarchy";
 import { deleteStakeholderAction } from "@/actions/communication-actions";
 
 interface StakeholdersListTabProps {
@@ -181,11 +183,12 @@ export function StakeholdersListTab({
 
                     <TableCell>
                       <div className="flex flex-col gap-1 text-[11px]">
+                        <Badge variant="outline" className="w-fit text-[10px]">
+                          {HIERARCHY_TIER_META[computeHierarchyTier(s.power, s.interest).tier].shortLabel}
+                        </Badge>
                         <span className="text-muted-foreground">
-                          Poder: <strong>{STAKEHOLDER_POWER_LABELS[s.power]}</strong>
-                        </span>
-                        <span className="text-muted-foreground">
-                          Interesse: <strong>{s.interest === "HIGH" ? "Alto" : "Baixo"}</strong>
+                          Poder: <strong>{STAKEHOLDER_POWER_LABELS[s.power]}</strong> • Interesse:{" "}
+                          <strong>{s.interest === "HIGH" ? "Alto" : "Baixo"}</strong>
                         </span>
                       </div>
                     </TableCell>

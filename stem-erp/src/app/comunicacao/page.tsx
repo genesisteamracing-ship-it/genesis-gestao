@@ -1,5 +1,4 @@
-import { requireAuthUser } from "@/services/auth-service";
-import { resolveActiveTeam } from "@/services/financial-service";
+import { getDashboardMetricsAction } from "@/actions/financial-actions";
 import {
   getCommunicationLogs,
   getCommunicationMetrics,
@@ -12,16 +11,16 @@ import { CommunicationView } from "@/components/communication/communication-view
 export const dynamic = "force-dynamic";
 
 export default async function CommunicationPage() {
-  const user = await requireAuthUser();
-  const { activeTeam } = await resolveActiveTeam(user);
+  const dashboardMetrics = await getDashboardMetricsAction();
+  const teamId = dashboardMetrics.activeTeam.id;
 
   const [metrics, stakeholders, matrixItems, logs, sponsors] = await Promise.all([
-    getCommunicationMetrics(activeTeam.id),
-    getStakeholders(activeTeam.id),
-    getStakeholderMatrix(activeTeam.id),
-    getCommunicationLogs(activeTeam.id),
+    getCommunicationMetrics(teamId),
+    getStakeholders(teamId),
+    getStakeholderMatrix(teamId),
+    getCommunicationLogs(teamId),
     prisma.sponsor.findMany({
-      where: { teamId: activeTeam.id },
+      where: { teamId },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
@@ -29,6 +28,7 @@ export default async function CommunicationPage() {
 
   return (
     <CommunicationView
+      dashboardMetrics={dashboardMetrics}
       metrics={metrics}
       stakeholders={stakeholders}
       matrixItems={matrixItems}

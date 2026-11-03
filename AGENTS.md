@@ -33,7 +33,8 @@ Você é um Engenheiro Frontend Sênior especialista em UI/UX, Arquitetura de So
 - **Acessibilidade (a11y) e Semântica:** Use HTML semântico (`main`, `section`, `nav`, `article`). Garanta navegação por teclado (`tabIndex`), `aria-labels` em botões de ícone e gerenciamento de foco.
 - **Performance & Mobile-First:** Desenvolva estilos pensando primeiro em telas menores (`mobile-first`) e expanda com breakpoints (`md:`, `lg:`). Evite `useEffect` para estados derivados (calcule durante o render).
 
-## 6. Refatoração Mobile-First & Responsividade com Tailwind CSS
+## 6. Layout Shell Padronizado (Barra Lateral Fixa) & Responsividade Mobile-First
+- **Uso Obrigatório do `DashboardShell` e Barra Lateral Fixa (`AppSidebar`):** Toda página ou módulo autenticado do sistema DEVE obrigatoriamente ser envolvido pelo componente `<DashboardShell>` (`src/components/layout/dashboard-shell.tsx`). É terminantemente proibido renderizar telas internas sem a barra lateral fixa (`AppSidebar` com `sticky top-0 h-screen`), o cabeçalho global (`AppHeader`), o provedor de temporada (`SeasonProvider`) e o container padronizado (`max-w-[1600px] p-4 sm:p-6 lg:p-8`).
 - **Abordagem Mobile-First Obrigatória:** Todo estilo base no Tailwind CSS deve ser projetado para telas mobile (`320px` a `639px`) e expandido progressivamente com `sm:`, `md:`, `lg:` e `xl:`.
 - **Navegação Mobile:** Sidebars fixas em desktop (`hidden lg:flex`) devem obrigatoriamente possuir um menu gaveta (`Sheet` / `Dialog` lateral ou menu colapsável) acessível via botão hambúrguer no `AppHeader` em telas `< lg`.
 - **Prevenção de Quebra e Overflow:** Utilize `min-w-0` em filhos de `flex`/`grid`, `overflow-x-auto` com indicadores suaves em tabelas densas (ou visualização em Cards no mobile), e `w-full sm:w-auto` em botões de ação e filtros.

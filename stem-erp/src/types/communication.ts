@@ -18,10 +18,17 @@ export type {
   FeedbackSentiment,
 };
 
+export type HierarchyTier =
+  | "TIER_1_STRATEGIC"
+  | "TIER_2_INSTITUTIONAL"
+  | "TIER_3_TACTICAL"
+  | "TIER_4_OPERATIONAL";
+
 export interface StakeholderWithRelations {
   id: string;
   teamId: string;
   sponsorId: string | null;
+  parentStakeholderId: string | null;
   name: string;
   organization: string | null;
   roleOrJobTitle: string | null;
@@ -121,6 +128,51 @@ export interface StakeholderMatrixItem {
   preferredChannel: CommunicationChannel;
   preferredFrequency: CommunicationFrequency;
   quadrant: "MANAGE_CLOSELY" | "KEEP_SATISFIED" | "KEEP_INFORMED" | "MONITOR";
+}
+
+export interface OrgMapActionCardDTO {
+  id: string;
+  title: string;
+  statusLabel: string;
+  channel: CommunicationChannel;
+  frequency: CommunicationFrequency;
+  progressPercent: number; // 25 a 100
+  isPlanBacked: boolean;
+}
+
+export interface OrgMapStakeholderNode {
+  id: string;
+  stakeholder: StakeholderWithRelations;
+  partnerKey: string;
+  partnerName: string;
+  tier: HierarchyTier;
+  rankWeight: 4 | 3 | 2 | 1;
+  depth: number;
+  children: OrgMapStakeholderNode[];
+  actionCards: OrgMapActionCardDTO[];
+}
+
+export interface OrgMapPartnerBranch {
+  partnerKey: string;
+  partnerName: string;
+  sponsorId: string | null;
+  sponsorTier: string | null;
+  primaryGroup: StakeholderGroup;
+  totalStakeholders: number;
+  totalActivePlans: number;
+  totalLogs: number;
+  highPowerCount: number;
+  rootNodes: OrgMapStakeholderNode[];
+}
+
+export interface StakeholderOrgMapTree {
+  teamName: string;
+  totalPartners: number;
+  totalGroupsActive: number;
+  totalStakeholders: number;
+  totalPlans: number;
+  totalLogs: number;
+  partners: OrgMapPartnerBranch[];
 }
 
 export interface ReportDataPayload {
