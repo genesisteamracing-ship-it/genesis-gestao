@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { F1TrackIllustration } from "@/components/auth/f1-track-illustration";
 
 export function LoginForm() {
@@ -143,16 +144,13 @@ export function LoginForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-                          <Input
-                            type="password"
-                            autoComplete="current-password"
-                            placeholder="Senha"
-                            className="h-12 rounded-xl border-border bg-muted/30 pl-10 text-sm focus:bg-card"
-                            {...field}
-                          />
-                        </div>
+                        <PasswordInput
+                          autoComplete="current-password"
+                          placeholder="Senha"
+                          startIcon={<Lock className="h-4 w-4" />}
+                          className="h-12 rounded-xl border-border bg-muted/30 text-sm focus:bg-card"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
