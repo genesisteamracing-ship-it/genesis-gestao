@@ -138,25 +138,26 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
   return (
     <aside
       aria-label="Menu Lateral"
-      className={`hidden shrink-0 flex-col border-r border-border bg-card lg:flex select-none h-screen sticky top-0 transition-all duration-300 ease-in-out ${
+      className={`hidden shrink-0 flex-col border-r border-border bg-card lg:flex select-none h-screen sticky top-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out ${
         isOpen
           ? "w-60 opacity-100"
-          : "w-0 -ml-60 border-r-0 opacity-0 pointer-events-none"
+          : "w-0 border-r-0 opacity-0 pointer-events-none"
       }`}
     >
-      {/* Logo Topo */}
-      <div className="flex h-[70px] shrink-0 items-center justify-center px-6 border-b border-border">
-        <Link
-          href="/dashboard"
-          className="text-xl font-extrabold tracking-tight"
-        >
-          <span className="text-primary">Genesis</span>
-          <span className="text-foreground">Gestão</span>
-        </Link>
-      </div>
+      <div className="w-60 h-full flex flex-col shrink-0">
+        {/* Logo Topo */}
+        <div className="flex h-[70px] shrink-0 items-center justify-center px-6 border-b border-border">
+          <Link
+            href="/dashboard"
+            className="text-xl font-extrabold tracking-tight"
+          >
+            <span className="text-primary">Genesis</span>
+            <span className="text-foreground">Gestão</span>
+          </Link>
+        </div>
 
-      {/* Navegação dos Módulos */}
-      <div className="flex-1 overflow-y-auto py-3">
+        {/* Navegação dos Módulos */}
+        <div className="flex-1 overflow-y-auto py-3">
         <nav className="space-y-1.5">
           {/* Combo / Grupo: Finanças */}
           <div className="relative px-5">
@@ -334,6 +335,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
             </div>
           )}
         </nav>
+      </div>
       </div>
     </aside>
   );

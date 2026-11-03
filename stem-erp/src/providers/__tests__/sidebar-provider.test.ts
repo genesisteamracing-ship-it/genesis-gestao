@@ -17,14 +17,15 @@ describe("Sidebar Provider Logic & Storage Contracts", () => {
     }
   });
 
-  it("deve calcular a largura correta para classes da barra lateral baseada no estado", () => {
+  it("deve calcular a largura correta para classes da barra lateral baseada no estado sem deslocar o conteudo da tela", () => {
     const getSidebarClasses = (isOpen: boolean) =>
       isOpen
         ? "w-60 opacity-100"
-        : "w-0 -ml-60 border-r-0 opacity-0 pointer-events-none";
+        : "w-0 border-r-0 opacity-0 pointer-events-none";
 
     assert.ok(getSidebarClasses(true).includes("w-60"));
-    assert.ok(getSidebarClasses(false).includes("w-0 -ml-60"));
+    assert.ok(getSidebarClasses(false).includes("w-0"));
+    assert.ok(!getSidebarClasses(false).includes("-ml-60"), "Não deve usar margem negativa que desloque a tela");
   });
 
   it("deve gerar aria-label e title semânticos no botão de painel lateral", () => {
