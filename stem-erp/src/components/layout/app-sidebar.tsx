@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { tv } from "tailwind-variants";
 import type { AuthenticatedUserDTO } from "@/types/auth";
+import { useSidebar } from "@/providers/sidebar-provider";
 
 export const sidebarItemStyles = tv({
   base: "flex w-full items-center gap-3.5 rounded-lg px-4 py-3 text-sm font-semibold transition-colors cursor-pointer",
@@ -71,6 +72,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ currentUser }: AppSidebarProps) {
+  const { isOpen } = useSidebar();
   const pathname = usePathname();
   const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
 
@@ -95,7 +97,11 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
   return (
     <aside
       aria-label="Menu Lateral"
-      className="hidden w-60 shrink-0 flex-col border-r border-border bg-card lg:flex select-none h-screen sticky top-0 transition-colors"
+      className={`hidden shrink-0 flex-col border-r border-border bg-card lg:flex select-none h-screen sticky top-0 transition-all duration-300 ease-in-out ${
+        isOpen
+          ? "w-60 opacity-100"
+          : "w-0 -ml-60 border-r-0 opacity-0 pointer-events-none"
+      }`}
     >
       {/* Logo Topo */}
       <div className="flex h-[70px] shrink-0 items-center justify-center px-6 border-b border-border">

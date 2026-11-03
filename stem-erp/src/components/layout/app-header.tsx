@@ -1,20 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import * as React from "react";
 import {
   ChevronDown,
   Flag,
-  Layers,
-  LayoutDashboard,
-  ListOrdered,
   Lock,
   LogOut,
-  TrendingUp,
-  Users,
+  PanelLeft,
 } from "lucide-react";
-import { tv } from "tailwind-variants";
 import { DELIVERY_GROUP_SHORT_LABELS } from "@/lib/constants";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type {
@@ -23,6 +17,7 @@ import type {
   CategoryDTO,
 } from "@/types/financial";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +36,7 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAppHeader } from "@/components/layout/use-app-header";
 import { MobileNavDrawer } from "@/components/layout/mobile-nav-drawer";
+import { useSidebar } from "@/providers/sidebar-provider";
 
 interface AppHeaderProps {
   currentUser: AuthenticatedUserDTO;
@@ -55,6 +51,7 @@ export function AppHeader({
   activeTeam,
   availableTeams = [],
 }: AppHeaderProps) {
+  const { isOpen, toggleSidebar } = useSidebar();
   const {
     isSuperAdmin,
     initials,
@@ -67,8 +64,8 @@ export function AppHeader({
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-card transition-colors">
       <div className="flex min-h-[60px] sm:min-h-[70px] items-center justify-between gap-2.5 sm:gap-4 px-3 sm:px-6 lg:px-8 py-2">
-        {/* Menu Hambúrguer Mobile + Logo Mobile + Indicador/Seletor de Equipe */}
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+        {/* Menu Hambúrguer Mobile + Logo Mobile + Toggle Barra Lateral + Indicador/Seletor de Equipe */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           {/* Botão Hambúrguer Mobile */}
           <MobileNavDrawer currentUser={currentUser} />
 
@@ -80,6 +77,19 @@ export function AppHeader({
             <span className="text-primary">Genesis</span>
             <span className="text-foreground">Gestão</span>
           </Link>
+
+          {/* Botão de Painel Lateral para abrir/fechar a barra lateral */}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={toggleSidebar}
+            className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-lg border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors"
+            aria-label={isOpen ? "Recolher barra lateral" : "Expandir barra lateral"}
+            title={isOpen ? "Recolher barra lateral" : "Expandir barra lateral"}
+          >
+            <PanelLeft className="h-4 w-4" aria-hidden="true" />
+          </Button>
 
           {/* Seletor de Equipe ou Badge de Isolamento Multi-Equipe */}
           <div className="flex items-center min-w-0">

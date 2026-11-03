@@ -30,6 +30,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { sidebarItemStyles } from "@/components/layout/app-sidebar";
+import { useSidebar } from "@/providers/sidebar-provider";
 
 const FINANCE_SUB_ITEMS = [
   {
@@ -67,7 +68,7 @@ interface MobileNavDrawerProps {
 }
 
 export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
-  const [open, setOpen] = React.useState(false);
+  const { isMobileOpen, setIsMobileOpen } = useSidebar();
   const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
@@ -99,7 +100,7 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
     pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
       <SheetTrigger asChild>
         <Button
           variant="outline"
@@ -117,7 +118,7 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
           <SheetTitle asChild>
             <Link
               href="/dashboard"
-              onClick={() => setOpen(false)}
+              onClick={() => setIsMobileOpen(false)}
               className="text-lg font-extrabold tracking-tight"
             >
               <span className="text-primary">Genesis</span>
@@ -159,7 +160,7 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={() => setOpen(false)}
+                      onClick={() => setIsMobileOpen(false)}
                       className={sidebarItemStyles({
                         isActive,
                         isSubItem: true,
@@ -206,7 +207,7 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={() => setOpen(false)}
+                      onClick={() => setIsMobileOpen(false)}
                       className={sidebarItemStyles({
                         isActive,
                         isSubItem: true,
@@ -224,7 +225,7 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
           {/* Grupo: Comunicação */}
           <Link
             href="/comunicacao"
-            onClick={() => setOpen(false)}
+            onClick={() => setIsMobileOpen(false)}
             className={sidebarItemStyles({ isActive: isComunicacaoActive })}
           >
             <MessageSquareText className="h-4 w-4 shrink-0 text-primary" />
@@ -235,7 +236,7 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
           {isSuperAdmin && (
             <Link
               href="/equipe"
-              onClick={() => setOpen(false)}
+              onClick={() => setIsMobileOpen(false)}
               className={sidebarItemStyles({ isActive: isEquipeActive })}
             >
               <Users className="h-4 w-4 shrink-0" />
