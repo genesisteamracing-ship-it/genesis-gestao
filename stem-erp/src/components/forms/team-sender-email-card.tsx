@@ -60,11 +60,26 @@ export function TeamSenderEmailCard({
     e.preventDefault();
     setIsSaving(true);
     try {
-      const res = await updateTeamSenderEmailAction({
+      const actionPromise = updateTeamSenderEmailAction({
         teamId,
         senderEmail,
         smtpAppPassword,
       });
+
+      // Timeout de segurança client-side (15 segundos) para garantir que a UI nunca trave infinitamente
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                "O tempo de resposta do servidor expirou (15s). Verifique a conexão com o servidor."
+              )
+            ),
+          15000
+        );
+      });
+
+      const res = await Promise.race([actionPromise, timeoutPromise]);
 
       if (!res.success) {
         toast.error(res.message);
@@ -76,8 +91,12 @@ export function TeamSenderEmailCard({
         setSmtpAppPassword("");
       }
       toast.success(res.message);
-    } catch {
-      toast.error("Erro ao autorizar e salvar credenciais de e-mail.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Erro ao autorizar e salvar credenciais de e-mail."
+      );
     } finally {
       setIsSaving(false);
     }

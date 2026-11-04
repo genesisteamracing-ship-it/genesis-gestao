@@ -2,7 +2,6 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import {
   ACTIVE_TEAM_COOKIE_NAME,
   getHttpOnlyCookieOptions,
@@ -363,6 +362,8 @@ export async function updateTeamSenderEmailAction(
       ? parsed.data.smtpAppPassword.replace(/\s+/g, "").trim()
       : undefined;
 
+    let warningNote: string | undefined;
+
     if (cleanPass) {
       const verification = await verifySmtpCredentials({
         senderEmail: parsed.data.senderEmail,
@@ -377,6 +378,7 @@ export async function updateTeamSenderEmailAction(
             "Não foi possível autorizar o e-mail junto ao servidor SMTP.",
         };
       }
+      warningNote = verification.warning;
     }
 
     const updated = await prisma.team.update({
@@ -398,11 +400,13 @@ export async function updateTeamSenderEmailAction(
     revalidatePath("/equipe");
     revalidatePath("/comunicacao");
 
+    const baseMessage = cleanPass
+      ? `E-mail "${updated.senderEmail}" autorizado e ativado com sucesso!`
+      : `E-mail remetente atualizado para "${updated.senderEmail}"!`;
+
     return {
       success: true,
-      message: cleanPass
-        ? `E-mail "${updated.senderEmail}" autorizado e ativado com sucesso!`
-        : `E-mail remetente atualizado para "${updated.senderEmail}"!`,
+      message: warningNote ? `${baseMessage} ${warningNote}` : baseMessage,
     };
   } catch (error) {
     return {
