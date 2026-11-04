@@ -42,6 +42,7 @@ interface RecursiveNodeSubtreeProps {
   viewMode: OrgMapViewMode;
   onSelectNode: (node: OrgMapStakeholderNode) => void;
   onAddSubordinate: (node: OrgMapStakeholderNode) => void;
+  onAddLateral?: (node: OrgMapStakeholderNode) => void;
 }
 
 function RecursiveStakeholderSubtree({
@@ -49,6 +50,7 @@ function RecursiveStakeholderSubtree({
   viewMode,
   onSelectNode,
   onAddSubordinate,
+  onAddLateral,
 }: RecursiveNodeSubtreeProps) {
   const styles = orgMapStyles();
   const hasChildren = node.children.length > 0;
@@ -60,6 +62,7 @@ function RecursiveStakeholderSubtree({
         viewMode={viewMode}
         onSelect={onSelectNode}
         onAddSubordinate={onAddSubordinate}
+        onAddLateral={onAddLateral}
       />
 
       {hasChildren && (
@@ -79,6 +82,7 @@ function RecursiveStakeholderSubtree({
                   viewMode={viewMode}
                   onSelectNode={onSelectNode}
                   onAddSubordinate={onAddSubordinate}
+                  onAddLateral={onAddLateral}
                 />
               </div>
             ))}
@@ -195,6 +199,13 @@ export function StakeholderOrgMap({
                                 sponsorId: n.stakeholder.sponsorId,
                                 parentStakeholderId: n.id,
                                 parentStakeholderName: n.stakeholder.name,
+                              })
+                            }
+                            onAddLateral={(n) =>
+                              onOpenCreateStakeholder({
+                                organization: n.partnerName,
+                                sponsorId: n.stakeholder.sponsorId,
+                                parentStakeholderId: n.stakeholder.parentStakeholderId ?? null,
                               })
                             }
                           />

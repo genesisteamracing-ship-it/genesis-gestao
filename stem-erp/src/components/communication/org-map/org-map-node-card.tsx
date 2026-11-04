@@ -1,8 +1,9 @@
 "use client";
 
 import { tv, type VariantProps } from "tailwind-variants";
-import { Building2, FolderGit2, Layers, Plus, Sparkles, Users } from "lucide-react";
+import { Building2, Clock, FolderGit2, Layers, Plus, Sparkles, Users } from "lucide-react";
 import {
+  COMMUNICATION_FREQUENCY_LABELS,
   ENGAGEMENT_LEVEL_LABELS,
   HIERARCHY_TIER_META,
   STAKEHOLDER_GROUP_LABELS,
@@ -104,6 +105,20 @@ export function PartnerNodeCard({
         <span>•</span>
         <span>{branch.totalActivePlans} réguas</span>
       </div>
+
+      {/* Botão Hover de Adicionar Abaixo */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onAddStakeholder(branch.partnerName, branch.sponsorId);
+        }}
+        className={`${styles.quickAddBtn()} absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-card shadow-xs`}
+        title={`Adicionar stakeholder em ${branch.partnerName}`}
+        aria-label={`Adicionar stakeholder em ${branch.partnerName}`}
+      >
+        <Plus className="h-3 w-3" />
+      </button>
     </div>
   );
 }
@@ -113,11 +128,13 @@ export function StakeholderNodeCard({
   viewMode,
   onSelect,
   onAddSubordinate,
+  onAddLateral,
 }: {
   node: OrgMapStakeholderNode;
   viewMode: OrgMapViewMode;
   onSelect: (node: OrgMapStakeholderNode) => void;
   onAddSubordinate: (node: OrgMapStakeholderNode) => void;
+  onAddLateral?: (node: OrgMapStakeholderNode) => void;
 }) {
   const tierMeta = HIERARCHY_TIER_META[node.tier];
   const styles = orgNodeStyles({ tone: tierMeta.tone });
@@ -151,11 +168,11 @@ export function StakeholderNodeCard({
       </div>
       <div className={styles.metaFooter()}>
         {viewMode === "hierarchy" && (
-          <>
+          <div className="flex items-center gap-1.5 truncate">
             <span className="font-semibold text-foreground/90">Poder {stakeholder.power === "HIGH" ? "Alto" : "Baixo"}</span>
             <span>•</span>
             <span>Interesse {stakeholder.interest === "HIGH" ? "Alto" : "Baixo"}</span>
-          </>
+          </div>
         )}
         {viewMode === "structure" && (
           <span className="truncate flex items-center gap-1">
@@ -164,13 +181,64 @@ export function StakeholderNodeCard({
           </span>
         )}
         {viewMode === "relations" && (
-          <>
+          <div className="flex items-center gap-1 truncate">
             <span>{ENGAGEMENT_LEVEL_LABELS[stakeholder.currentEngagement]}</span>
             <span>→</span>
             <span className="font-semibold text-foreground">{ENGAGEMENT_LEVEL_LABELS[stakeholder.targetEngagement]}</span>
-          </>
+          </div>
         )}
+
+        <span
+          className="inline-flex items-center gap-1 shrink-0 rounded-md border border-border/80 bg-secondary/80 px-1.5 py-0.5 text-[9.5px] font-medium text-foreground"
+          title={`Periodicidade: ${COMMUNICATION_FREQUENCY_LABELS[stakeholder.preferredFrequency]}`}
+        >
+          <Clock className="h-2.5 w-2.5 text-primary" />
+          <span>{COMMUNICATION_FREQUENCY_LABELS[stakeholder.preferredFrequency]}</span>
+        </span>
       </div>
+
+      {/* Botão Hover de Adicionar Abaixo */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onAddSubordinate(node);
+        }}
+        className={`${styles.quickAddBtn()} absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-card shadow-xs`}
+        title={`Adicionar subordinado abaixo de ${stakeholder.name}`}
+        aria-label={`Adicionar subordinado abaixo de ${stakeholder.name}`}
+      >
+        <Plus className="h-3 w-3" />
+      </button>
+
+      {/* Botão Hover de Adicionar na Lateral Direita */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          (onAddLateral ?? onAddSubordinate)(node);
+        }}
+        className={`${styles.quickAddBtn()} absolute -right-2.5 top-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-card shadow-xs`}
+        title={`Adicionar contato na lateral de ${stakeholder.name}`}
+        aria-label={`Adicionar contato na lateral de ${stakeholder.name}`}
+      >
+        <Plus className="h-3 w-3" />
+      </button>
+
+      {/* Botão Hover de Adicionar na Lateral Esquerda */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          (onAddLateral ?? onAddSubordinate)(node);
+        }}
+        className={`${styles.quickAddBtn()} absolute -left-2.5 top-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-card shadow-xs`}
+        title={`Adicionar contato na lateral de ${stakeholder.name}`}
+        aria-label={`Adicionar contato na lateral de ${stakeholder.name}`}
+      >
+        <Plus className="h-3 w-3" />
+      </button>
     </div>
   );
+}
 }
