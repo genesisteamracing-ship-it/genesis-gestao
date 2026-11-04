@@ -414,9 +414,15 @@ export async function sendStakeholderReportEmailAction(
       };
     }
 
+    const teamRecord = await prisma.team.findUnique({
+      where: { id: activeTeam.id },
+      select: { senderEmail: true, smtpAppPassword: true, name: true },
+    });
+
     const emailResult = await sendAutomatedEmail({
-      fromEmail: activeTeam.senderEmail || "genesisteamracing@gmail.com",
-      fromName: activeTeam.name,
+      fromEmail: teamRecord?.senderEmail || activeTeam.senderEmail || "genesisteamracing@gmail.com",
+      fromName: teamRecord?.name || activeTeam.name,
+      smtpAppPassword: teamRecord?.smtpAppPassword,
       toEmail: stakeholder.email,
       toName: stakeholder.name,
       subject: parsed.data.subject,

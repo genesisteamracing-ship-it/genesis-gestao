@@ -5,6 +5,7 @@ export const DEFAULT_TEAM_SENDER_EMAIL = "genesisteamracing@gmail.com";
 export interface SendAutomatedEmailParams {
   fromEmail?: string | null;
   fromName?: string | null;
+  smtpAppPassword?: string | null;
   toEmail: string;
   toName?: string | null;
   subject: string;
@@ -25,11 +26,14 @@ export function resolveTeamSenderEmail(candidate?: string | null): string {
 }
 
 /**
- * Envia um e-mail transacional de relatório executivo utilizando Nodemailer.
- * Quando as variáveis SMTP (SMTP_PASS / GMAIL_APP_PASSWORD) estão configuradas no ambiente,
- * realiza o disparo real via SMTP (por padrão smtp.gmail.com para genesisteamracing@gmail.com).
- * Em ambiente local/teste sem credencial SMTP, executa o envio simulado seguro (dry-run)
- * mantendo rastreabilidade completa.
+ * Normaliza a Senha de App do Google removendo espaços em branco (ex: "abcd efgh ijkl mnop" -> "abcdefghijklmnop").
+ */
+export function normalizeSmtpAppPassword(rawPassword?: string | null): string {
+  return (rawPassword || "").replace(/\s+/g, "").trim();
+}
+
+/**
+ * Envia um e-mail transacional de relatório executivo utilizando Nodemailer via SMTP real.
  */
 export async function sendAutomatedEmail(
   params: SendAutomatedEmailParams
@@ -45,24 +49,23 @@ export async function sendAutomatedEmail(
   const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
   const smtpPort = Number(process.env.SMTP_PORT || "465");
   const smtpUser = process.env.SMTP_USER?.trim() || senderEmail;
-  const smtpPass =
-    process.env.SMTP_PASS?.trim() || process.env.GMAIL_APP_PASSWORD?.trim() || "";
+  const smtpPass = normalizeSmtpAppPassword(
+    params.smtpAppPassword ||
+      process.env.SMTP_PASS ||
+      process.env.GMAIL_APP_PASSWORD ||
+      ""
+  );
+
+  if (!smtpPass) {
+    throw new Error(
+      `A Senha de App do Gmail para "${senderEmail}" ainda não foi configurada. Acesse "Equipe & Acessos" e informe a Senha de App do Google (16 letras) para enviar e-mails reais.`
+    );
+  }
 
   const fromHeader = `"${senderName.replace(/"/g, "")}" <${senderEmail}>`;
   const toHeader = params.toName
     ? `"${params.toName.trim().replace(/"/g, "")}" <${recipientEmail}>`
     : recipientEmail;
-
-  if (!smtpPass) {
-    // Modo simulado seguro quando credenciais SMTP não estão definidas no ambiente local
-    const simulatedId = `<simulated-${Date.now()}@genesisracing.local>`;
-    return {
-      messageId: simulatedId,
-      senderEmail,
-      recipientEmail,
-      simulated: true,
-    };
-  }
 
   const transporter = nodemailer.createTransport({
     host: smtpHost,

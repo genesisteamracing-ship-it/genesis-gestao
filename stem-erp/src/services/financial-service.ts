@@ -138,6 +138,7 @@ export async function resolveActiveTeam(
       slug: true,
       schoolOrOrg: true,
       senderEmail: true,
+      smtpAppPassword: true,
       season: true,
       seasonStartDate: true,
       seasonEndDate: true,
@@ -158,6 +159,11 @@ export async function resolveActiveTeam(
       slug: t.slug,
       schoolOrOrg: t.schoolOrOrg,
       senderEmail: t.senderEmail || "genesisteamracing@gmail.com",
+      hasSmtpPassword: Boolean(
+        t.smtpAppPassword?.trim() ||
+          process.env.SMTP_PASS?.trim() ||
+          process.env.GMAIL_APP_PASSWORD?.trim()
+      ),
       season: {
         label,
         startDate: start.toISOString(),

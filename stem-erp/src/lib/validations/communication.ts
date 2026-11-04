@@ -144,6 +144,11 @@ export const updateTeamSenderEmailSchema = z.object({
     .trim()
     .min(1, "Informe o e-mail de envio da equipe.")
     .email("Informe um endereço de e-mail válido (ex: genesisteamracing@gmail.com)."),
+  smtpAppPassword: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal("")),
 });
 
 export type CreateStakeholderInput = z.infer<typeof createStakeholderSchema>;

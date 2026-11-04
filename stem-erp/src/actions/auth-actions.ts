@@ -358,9 +358,16 @@ export async function updateTeamSenderEmailAction(
   }
 
   try {
+    const cleanPass = parsed.data.smtpAppPassword
+      ? parsed.data.smtpAppPassword.replace(/\s+/g, "").trim()
+      : undefined;
+
     const updated = await prisma.team.update({
       where: { id: parsed.data.teamId },
-      data: { senderEmail: parsed.data.senderEmail },
+      data: {
+        senderEmail: parsed.data.senderEmail,
+        ...(cleanPass ? { smtpAppPassword: cleanPass } : {}),
+      },
     });
 
     revalidatePath("/equipe");
@@ -368,7 +375,7 @@ export async function updateTeamSenderEmailAction(
 
     return {
       success: true,
-      message: `E-mail de envio da equipe "${updated.name}" atualizado para ${updated.senderEmail}!`,
+      message: `Configuração de e-mail da equipe "${updated.name}" (${updated.senderEmail}) salva com sucesso!`,
     };
   } catch (error) {
     return {

@@ -132,6 +132,7 @@ export default async function EquipePage() {
         teamId={financialMetrics.activeTeam.id}
         teamName={financialMetrics.activeTeam.name}
         initialSenderEmail={financialMetrics.activeTeam.senderEmail}
+        hasSmtpPassword={financialMetrics.activeTeam.hasSmtpPassword}
       />
 
       {/* Painel das Equipes Competidoras */}

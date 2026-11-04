@@ -26,6 +26,7 @@ export interface ActiveTeamSummaryDTO {
   slug: string;
   schoolOrOrg: string | null;
   senderEmail?: string;
+  hasSmtpPassword?: boolean;
   season: SeasonDTO;
 }
 
