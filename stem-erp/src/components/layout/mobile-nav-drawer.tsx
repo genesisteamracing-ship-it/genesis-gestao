@@ -117,7 +117,7 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
                 isActive: isFinanceRouteActive && !isFinanceOpen,
               })}
             >
-              <Wallet className="h-4 w-4 shrink-0 text-primary" />
+              <Wallet className="h-4 w-4 shrink-0" />
               <span className="flex-1 text-left">Finanças</span>
               <ChevronDown
                 className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
@@ -163,7 +163,7 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
                 isActive: isRoiRouteActive && !isRoiOpen,
               })}
             >
-              <TrendingUp className="h-4 w-4 shrink-0 text-primary" />
+              <TrendingUp className="h-4 w-4 shrink-0" />
               <span className="flex-1 text-left">ROI</span>
               <ChevronDown
                 className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
@@ -210,7 +210,7 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
                 isActive: isComunicacaoRouteActive && !isComunicacaoOpen,
               })}
             >
-              <MessageSquareText className="h-4 w-4 shrink-0 text-primary" />
+              <MessageSquareText className="h-4 w-4 shrink-0" />
               <span className="flex-1 text-left">Comunicação</span>
               <ChevronDown
                 className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
