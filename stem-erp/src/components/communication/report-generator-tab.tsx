@@ -49,10 +49,8 @@ export function ReportGeneratorTab({
   const selectedStakeholder = stakeholders.find((s) => s.id === selectedStakeholderId);
 
   const [recipientName, setRecipientName] = useState(selectedStakeholder?.name || "");
-  const [recipientPhone, setRecipientPhone] = useState(selectedStakeholder?.phone || "");
-  const [group, setGroup] = useState<StakeholderGroup>(
-    selectedStakeholder?.group || "SPONSORS"
-  );
+  const group: StakeholderGroup = selectedStakeholder?.group || "SPONSORS";
+  const recipientPhone = selectedStakeholder?.phone || "";
   const [reportType, setReportType] = useState<"FINANCIAL" | "ROI" | "COMBINED">("COMBINED");
   const [customMessage, setCustomMessage] = useState("");
 
@@ -66,8 +64,6 @@ export function ReportGeneratorTab({
     const found = stakeholders.find((s) => s.id === id);
     if (found) {
       setRecipientName(found.name);
-      setRecipientPhone(found.phone || "");
-      setGroup(found.group);
       if (found.group === "SPONSORS") {
         setReportType("ROI");
       } else if (found.group === "SCHOOL_LEADERSHIP") {
@@ -172,6 +168,16 @@ export function ReportGeneratorTab({
                   ))}
                 </SelectContent>
               </Select>
+              {selectedStakeholder && (
+                <div className="flex flex-wrap items-center gap-2 pt-0.5 text-[11px] text-muted-foreground">
+                  <span className="rounded-md border border-border bg-secondary/80 px-2 py-0.5 font-medium text-foreground">
+                    {STAKEHOLDER_GROUP_LABELS[selectedStakeholder.group]}
+                  </span>
+                  {selectedStakeholder.phone && (
+                    <span className="text-muted-foreground">WhatsApp: {selectedStakeholder.phone}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Nome do Contato */}
@@ -183,38 +189,6 @@ export function ReportGeneratorTab({
                 placeholder="Ex: Carlos Mendes"
                 className="text-xs sm:text-sm"
               />
-            </div>
-
-            {/* Grupo / Perfil */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Grupo de Stakeholder</Label>
-                <Select
-                  value={group}
-                  onValueChange={(val) => setGroup(val as StakeholderGroup)}
-                >
-                  <SelectTrigger className="w-full text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(STAKEHOLDER_GROUP_LABELS) as StakeholderGroup[]).map((g) => (
-                      <SelectItem key={g} value={g} className="text-xs">
-                        {STAKEHOLDER_GROUP_LABELS[g]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">WhatsApp (com DDD)</Label>
-                <Input
-                  value={recipientPhone}
-                  onChange={(e) => setRecipientPhone(e.target.value)}
-                  placeholder="(11) 98765-4321"
-                  className="text-xs"
-                />
-              </div>
             </div>
 
             {/* Tipo de Relatório */}
