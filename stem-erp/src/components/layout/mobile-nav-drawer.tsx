@@ -31,40 +31,11 @@ import {
 } from "@/components/ui/sheet";
 import {
   sidebarItemStyles,
+  FINANCE_SUB_ITEMS,
+  ROI_SUB_ITEMS,
   COMMUNICATION_SUB_ITEMS,
 } from "@/components/layout/app-sidebar";
 import { useSidebar } from "@/providers/sidebar-provider";
-
-const FINANCE_SUB_ITEMS = [
-  {
-    href: "/dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    href: "/planejamento",
-    label: "Planejamento",
-    icon: Layers,
-  },
-  {
-    href: "/lancamentos",
-    label: "Livro Caixa",
-    icon: ListOrdered,
-  },
-] as const;
-
-const ROI_SUB_ITEMS = [
-  {
-    href: "/roi",
-    label: "Visão Geral & Cotas",
-    icon: TrendingUp,
-  },
-  {
-    href: "/roi/acoes",
-    label: "Ações de Retorno",
-    icon: Megaphone,
-  },
-] as const;
 
 interface MobileNavDrawerProps {
   currentUser: AuthenticatedUserDTO;
@@ -89,16 +60,16 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
   const isFinanceRouteActive = FINANCE_SUB_ITEMS.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
-  const [isFinanceOpen, setIsFinanceOpen] = React.useState<boolean>(true);
+  const [isFinanceOpen, setIsFinanceOpen] = React.useState<boolean>(false);
 
   const isRoiRouteActive = ROI_SUB_ITEMS.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
-  const [isRoiOpen, setIsRoiOpen] = React.useState<boolean>(true);
+  const [isRoiOpen, setIsRoiOpen] = React.useState<boolean>(false);
 
   const isComunicacaoRouteActive =
     pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
-  const [isComunicacaoOpen, setIsComunicacaoOpen] = React.useState<boolean>(true);
+  const [isComunicacaoOpen, setIsComunicacaoOpen] = React.useState<boolean>(false);
 
   const isEquipeActive =
     pathname === "/equipe" || pathname.startsWith("/equipe/");

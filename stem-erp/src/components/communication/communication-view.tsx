@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Network, Grid3X3, MessageSquare, Users, History, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { CommunicationKpis } from "./communication-kpis";
 import { StakeholderOrgMap } from "./org-map/stakeholder-org-map";
@@ -117,29 +117,6 @@ export function CommunicationView({
       <CommunicationKpis metrics={metrics} />
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-5">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-1">
-          <TabsTrigger value="mapa" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
-            <Network className="h-4 w-4" />
-            Mapa Hierárquico
-          </TabsTrigger>
-          <TabsTrigger value="relatorios" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
-            <MessageSquare className="h-4 w-4" />
-            Gerador de Relatórios
-          </TabsTrigger>
-          <TabsTrigger value="stakeholders" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
-            <Users className="h-4 w-4" />
-            Diretório ({stakeholders.length})
-          </TabsTrigger>
-          <TabsTrigger value="historico" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
-            <History className="h-4 w-4" />
-            Histórico ({logs.length})
-          </TabsTrigger>
-          <TabsTrigger value="matriz" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
-            <Grid3X3 className="h-4 w-4" />
-            Matriz Mendelow
-          </TabsTrigger>
-        </TabsList>
-
         <TabsContent value="mapa" className="space-y-4">
           <StakeholderOrgMap
             teamName={dashboardMetrics.activeTeam.name}

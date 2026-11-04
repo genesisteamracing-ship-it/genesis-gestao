@@ -5,6 +5,7 @@ import {
   buildStakeholderHierarchyTree,
   resolvePartnerInfo,
 } from "@/lib/communication-hierarchy";
+import { useCanvasPanZoom } from "@/hooks/use-canvas-pan-zoom";
 import type {
   OrgMapStakeholderNode,
   StakeholderWithRelations,
@@ -22,19 +23,22 @@ export interface QuickAddStakeholderPrefill {
 interface UseStakeholderOrgMapParams {
   teamName: string;
   stakeholders: StakeholderWithRelations[];
+  viewportRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export function useStakeholderOrgMap({
   teamName,
   stakeholders,
+  viewportRef,
 }: UseStakeholderOrgMapParams) {
   const [viewMode, setViewMode] = useState<OrgMapViewMode>("hierarchy");
   const [partnerFilter, setPartnerFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [zoom, setZoom] = useState<number>(1);
   const [collapsedPartners, setCollapsedPartners] = useState<Record<string, boolean>>({});
   const [inspectedStakeholder, setInspectedStakeholder] =
     useState<StakeholderWithRelations | null>(null);
+
+  const canvas = useCanvasPanZoom(viewportRef, 1);
 
   const availablePartners = useMemo(() => {
     const map = new Map<string, { key: string; name: string; count: number }>();
@@ -63,14 +67,6 @@ export function useStakeholderOrgMap({
     [teamName, stakeholders, searchQuery, partnerFilter]
   );
 
-  const handleZoomIn = () =>
-    setZoom((prev) => Math.min(1.35, Number((prev + 0.1).toFixed(2))));
-
-  const handleZoomOut = () =>
-    setZoom((prev) => Math.max(0.65, Number((prev - 0.1).toFixed(2))));
-
-  const handleZoomReset = () => setZoom(1);
-
   const togglePartnerCollapse = (partnerKey: string) => {
     setCollapsedPartners((prev) => ({
       ...prev,
@@ -89,10 +85,14 @@ export function useStakeholderOrgMap({
     setPartnerFilter,
     searchQuery,
     setSearchQuery,
-    zoom,
-    handleZoomIn,
-    handleZoomOut,
-    handleZoomReset,
+    zoom: canvas.zoom,
+    pan: canvas.pan,
+    isDragging: canvas.isDragging,
+    viewportRef: canvas.viewportRef,
+    canvasHandlers: canvas.canvasHandlers,
+    handleZoomIn: canvas.zoomIn,
+    handleZoomOut: canvas.zoomOut,
+    handleZoomReset: canvas.reset,
     collapsedPartners,
     togglePartnerCollapse,
     availablePartners,

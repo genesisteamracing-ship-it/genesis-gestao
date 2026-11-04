@@ -1,7 +1,8 @@
 "use client";
 
+import * as React from "react";
 import { tv } from "tailwind-variants";
-import { Network, Plus } from "lucide-react";
+import { Hand, Network, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   useStakeholderOrgMap,
@@ -13,7 +14,6 @@ import {
   RootTeamNodeCard,
   StakeholderNodeCard,
 } from "./org-map-node-card";
-import { OrgMapPlanCard } from "./org-map-plan-card";
 import { OrgMapHeaderControls } from "./org-map-controls";
 import { StakeholderInspectorDialog } from "./stakeholder-inspector-dialog";
 import type {
@@ -24,14 +24,16 @@ import type {
 const orgMapStyles = tv({
   slots: {
     shell: "relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm",
-    canvasViewport: "relative min-h-[540px] w-full overflow-x-auto bg-background/80 p-4 sm:p-8",
-    treeCanvas: "mx-auto flex min-w-max flex-col items-center transition-transform duration-200 origin-top",
+    canvasViewport:
+      "relative min-h-[580px] w-full overflow-hidden bg-background bg-[radial-gradient(var(--border)_1.2px,transparent_1.2px)] [background-size:24px_24px] p-4 sm:p-8 touch-none select-none",
+    treeCanvas:
+      "mx-auto flex min-w-max flex-col items-center origin-top select-none will-change-transform",
     vLine: "h-6 w-px bg-border",
     hBar: "h-px bg-border",
     branchesRow: "flex items-start justify-center gap-6 sm:gap-10 pt-0",
     branchCol: "flex flex-col items-center",
-    planStack: "mt-1 flex flex-col items-center gap-2",
-    minimap: "pointer-events-none absolute bottom-4 right-4 hidden lg:flex flex-col justify-between rounded-xl border border-border bg-card/90 p-3 shadow-md w-44 h-24",
+    minimap:
+      "pointer-events-none absolute bottom-4 right-4 hidden lg:flex flex-col justify-between rounded-xl border border-border bg-card/90 p-3 shadow-md w-44 h-24 backdrop-blur-xs",
   },
 });
 
@@ -60,11 +62,13 @@ function RecursiveStakeholderSubtree({
         onAddSubordinate={onAddSubordinate}
       />
 
-      {hasChildren ? (
+      {hasChildren && (
         <>
           <div className={styles.vLine()} aria-hidden="true" />
           {node.children.length > 1 && (
-            <div className="w-full px-16"><div className={styles.hBar()} /></div>
+            <div className="w-full px-16">
+              <div className={styles.hBar()} />
+            </div>
           )}
           <div className="flex items-start justify-center gap-5">
             {node.children.map((child) => (
@@ -80,20 +84,6 @@ function RecursiveStakeholderSubtree({
             ))}
           </div>
         </>
-      ) : (
-        node.actionCards.length > 0 && (
-          <div className={styles.planStack()}>
-            <div className="h-4 w-px bg-border/80" aria-hidden="true" />
-            {node.actionCards.map((card) => (
-              <OrgMapPlanCard
-                key={card.id}
-                card={card}
-                tier={node.tier}
-                onClick={() => onSelectNode(node)}
-              />
-            ))}
-          </div>
-        )
       )}
     </div>
   );
@@ -117,7 +107,8 @@ export function StakeholderOrgMap({
   onOpenLogForStakeholder,
 }: StakeholderOrgMapProps) {
   const styles = orgMapStyles();
-  const map = useStakeholderOrgMap({ teamName, stakeholders });
+  const viewportRef = React.useRef<HTMLDivElement | null>(null);
+  const map = useStakeholderOrgMap({ teamName, stakeholders, viewportRef });
 
   return (
     <section className={styles.shell()} aria-label="Mapa Organizacional de Stakeholders">
@@ -137,7 +128,13 @@ export function StakeholderOrgMap({
         onOpenCreateStakeholder={() => onOpenCreateStakeholder()}
       />
 
-      <div className={styles.canvasViewport()}>
+      <div
+        ref={viewportRef}
+        {...map.canvasHandlers}
+        className={`${styles.canvasViewport()} ${
+          map.isDragging ? "cursor-grabbing" : "cursor-grab"
+        }`}
+      >
         {map.tree.partners.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
             <Network className="h-10 w-10 text-muted-foreground" />
@@ -155,7 +152,11 @@ export function StakeholderOrgMap({
           <div
             role="tree"
             className={styles.treeCanvas()}
-            style={{ transform: `scale(${map.zoom})` }}
+            style={{
+              transform: `translate3d(${map.pan.x}px, ${map.pan.y}px, 0) scale(${map.zoom})`,
+              transformOrigin: "center top",
+              transition: map.isDragging ? "none" : "transform 140ms ease-out",
+            }}
           >
             <RootTeamNodeCard
               teamName={map.tree.teamName}
@@ -206,6 +207,12 @@ export function StakeholderOrgMap({
             </div>
           </div>
         )}
+
+        {/* Dica visual de navegação no estilo quadro em branco */}
+        <div className="pointer-events-none absolute left-4 bottom-4 hidden sm:flex items-center gap-1.5 rounded-lg border border-border/80 bg-card/85 backdrop-blur-xs px-2.5 py-1 text-[11px] text-muted-foreground shadow-2xs">
+          <Hand className="h-3.5 w-3.5 text-primary" />
+          <span>Arraste com o mouse para mover o quadro • Role para zoom</span>
+        </div>
 
         <div className={styles.minimap()} aria-hidden="true">
           <span className="text-[10px] font-semibold text-muted-foreground">Panorama da Árvore</span>

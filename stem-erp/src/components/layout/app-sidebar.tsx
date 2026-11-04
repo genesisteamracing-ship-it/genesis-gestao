@@ -40,7 +40,7 @@ export const sidebarItemStyles = tv({
   },
 });
 
-const FINANCE_SUB_ITEMS = [
+export const FINANCE_SUB_ITEMS = [
   {
     href: "/dashboard",
     label: "Dashboard",
@@ -58,7 +58,7 @@ const FINANCE_SUB_ITEMS = [
   },
 ] as const;
 
-const ROI_SUB_ITEMS = [
+export const ROI_SUB_ITEMS = [
   {
     href: "/roi",
     label: "Visão Geral & Cotas",
@@ -118,19 +118,16 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
   const isFinanceRouteActive = FINANCE_SUB_ITEMS.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
-  const [financeCollapsed, setFinanceCollapsed] = React.useState<boolean>(false);
-  const isFinanceOpen = isFinanceRouteActive || !financeCollapsed;
+  const [isFinanceOpen, setIsFinanceOpen] = React.useState<boolean>(false);
 
   const isRoiRouteActive = ROI_SUB_ITEMS.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
-  const [roiCollapsed, setRoiCollapsed] = React.useState<boolean>(false);
-  const isRoiOpen = isRoiRouteActive || !roiCollapsed;
+  const [isRoiOpen, setIsRoiOpen] = React.useState<boolean>(false);
 
   const isComunicacaoRouteActive =
     pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
-  const [comunicacaoCollapsed, setComunicacaoCollapsed] = React.useState<boolean>(false);
-  const isComunicacaoOpen = isComunicacaoRouteActive || !comunicacaoCollapsed;
+  const [isComunicacaoOpen, setIsComunicacaoOpen] = React.useState<boolean>(false);
 
   const isEquipeActive =
     pathname === "/equipe" || pathname.startsWith("/equipe/");
@@ -170,7 +167,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
 
             <button
               type="button"
-              onClick={() => setFinanceCollapsed((prev) => !prev)}
+              onClick={() => setIsFinanceOpen((prev) => !prev)}
               aria-expanded={isFinanceOpen}
               className={sidebarItemStyles({
                 isActive: isFinanceRouteActive && !isFinanceOpen,
@@ -222,7 +219,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
 
             <button
               type="button"
-              onClick={() => setRoiCollapsed((prev) => !prev)}
+              onClick={() => setIsRoiOpen((prev) => !prev)}
               aria-expanded={isRoiOpen}
               className={sidebarItemStyles({
                 isActive: isRoiRouteActive && !isRoiOpen,
@@ -275,7 +272,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
 
             <button
               type="button"
-              onClick={() => setComunicacaoCollapsed((prev) => !prev)}
+              onClick={() => setIsComunicacaoOpen((prev) => !prev)}
               aria-expanded={isComunicacaoOpen}
               className={sidebarItemStyles({
                 isActive: isComunicacaoRouteActive && !isComunicacaoOpen,

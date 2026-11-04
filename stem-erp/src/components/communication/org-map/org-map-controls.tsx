@@ -13,7 +13,6 @@ const controlsStyles = tv({
     statsRow: "flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground",
     statItem: "inline-flex items-center gap-1 font-medium",
     subToolbar: "flex flex-col gap-2.5 border-b border-border/60 bg-background/60 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between",
-    modePillGroup: "inline-flex items-center rounded-xl border border-border bg-card p-1 shadow-2xs self-center",
     modePill: "rounded-lg px-3 py-1 text-xs font-semibold transition-colors cursor-pointer",
   },
   variants: {
@@ -26,8 +25,8 @@ const controlsStyles = tv({
 
 interface OrgMapHeaderControlsProps {
   tree: StakeholderOrgMapTree;
-  viewMode: OrgMapViewMode;
-  onViewModeChange: (mode: OrgMapViewMode) => void;
+  viewMode?: OrgMapViewMode;
+  onViewModeChange?: (mode: OrgMapViewMode) => void;
   partnerFilter: string;
   onPartnerFilterChange: (partnerKey: string) => void;
   availablePartners: Array<{ key: string; name: string; count: number }>;
@@ -118,25 +117,6 @@ export function OrgMapHeaderControls({
             className="h-8 pl-8 text-xs bg-card"
             aria-label="Buscar no mapa de stakeholders"
           />
-        </div>
-
-        <div className={styles.modePillGroup()} role="tablist" aria-label="Modo do mapa">
-          {([
-            { id: "hierarchy", label: "Hierarquia" },
-            { id: "structure", label: "Estrutura" },
-            { id: "relations", label: "Relações" },
-          ] as const).map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              role="tab"
-              aria-selected={viewMode === m.id}
-              onClick={() => onViewModeChange(m.id)}
-              className={controlsStyles({ active: viewMode === m.id }).modePill()}
-            >
-              {m.label}
-            </button>
-          ))}
         </div>
 
         <div className="flex items-center justify-end gap-1">
