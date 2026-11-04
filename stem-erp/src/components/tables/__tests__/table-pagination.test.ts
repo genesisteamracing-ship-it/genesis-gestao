@@ -42,9 +42,9 @@ describe("Table Pagination Logic & Boundaries", () => {
   });
 
   it("deve calcular startRow e endRow coerentemente", () => {
-    const total = 25;
-    const pageSize = 10;
-    const pageIndex = 2; // Página 3 (base 0)
+    const total: number = 25;
+    const pageSize: number = 10;
+    const pageIndex: number = 2; // Página 3 (base 0)
 
     const startIndex = pageIndex * pageSize;
     const endIndex = Math.min(startIndex + pageSize, total);

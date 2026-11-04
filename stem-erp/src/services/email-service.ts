@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import type SMTPTransport from "nodemailer/lib/smtp-transport";
 
 export const DEFAULT_TEAM_SENDER_EMAIL = "genesisteamracing@gmail.com";
 
@@ -58,7 +59,8 @@ function buildSmtpTransporter(options: {
     connectionTimeout: timeout,
     greetingTimeout: timeout,
     socketTimeout: timeout + 3000,
-  } as nodemailer.TransportOptions);
+    dnsTimeout: timeout,
+  } as SMTPTransport.Options & { family?: number });
 }
 
 /**
