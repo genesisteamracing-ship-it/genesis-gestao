@@ -39,6 +39,7 @@ import {
   updateTeamSenderEmailSchema,
   type UpdateTeamSenderEmailInput,
 } from "@/lib/validations/communication";
+import { verifySmtpCredentials } from "@/services/email-service";
 import type { ActionResponse } from "./financial-actions";
 
 export async function loginAction(
@@ -362,6 +363,22 @@ export async function updateTeamSenderEmailAction(
       ? parsed.data.smtpAppPassword.replace(/\s+/g, "").trim()
       : undefined;
 
+    if (cleanPass) {
+      const verification = await verifySmtpCredentials({
+        senderEmail: parsed.data.senderEmail,
+        smtpAppPassword: cleanPass,
+      });
+
+      if (!verification.valid) {
+        return {
+          success: false,
+          message:
+            verification.errorMessage ||
+            "Não foi possível autorizar o e-mail junto ao servidor SMTP.",
+        };
+      }
+    }
+
     const updated = await prisma.team.update({
       where: { id: parsed.data.teamId },
       data: {
@@ -370,12 +387,22 @@ export async function updateTeamSenderEmailAction(
       },
     });
 
+    // Sincroniza a credencial nas demais equipes que utilizam o mesmo endereço remetente
+    if (cleanPass) {
+      await prisma.team.updateMany({
+        where: { senderEmail: parsed.data.senderEmail },
+        data: { smtpAppPassword: cleanPass },
+      });
+    }
+
     revalidatePath("/equipe");
     revalidatePath("/comunicacao");
 
     return {
       success: true,
-      message: `Configuração de e-mail da equipe "${updated.name}" (${updated.senderEmail}) salva com sucesso!`,
+      message: cleanPass
+        ? `E-mail "${updated.senderEmail}" autorizado e ativado com sucesso!`
+        : `E-mail remetente atualizado para "${updated.senderEmail}"!`,
     };
   } catch (error) {
     return {
@@ -384,6 +411,42 @@ export async function updateTeamSenderEmailAction(
         error instanceof Error
           ? error.message
           : "Não foi possível atualizar o e-mail de envio da equipe.",
+    };
+  }
+}
+
+export async function revokeTeamEmailAuthorizationAction(
+  teamId: string
+): Promise<ActionResponse> {
+  const user = await requireAuthUser();
+
+  if (user.role === "AUDITOR") {
+    return {
+      success: false,
+      message: "Acesso negado: o perfil Auditor possui permissão somente de leitura.",
+    };
+  }
+
+  try {
+    await prisma.team.update({
+      where: { id: teamId },
+      data: { smtpAppPassword: null },
+    });
+
+    revalidatePath("/equipe");
+    revalidatePath("/comunicacao");
+
+    return {
+      success: true,
+      message: "Autorização SMTP desconectada. O status de envio agora está Inativo.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Erro ao desconectar autorização de e-mail.",
     };
   }
 }

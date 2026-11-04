@@ -33,6 +33,51 @@ export function normalizeSmtpAppPassword(rawPassword?: string | null): string {
 }
 
 /**
+ * Testa e valida em tempo real as credenciais SMTP junto ao servidor do Gmail (smtp.gmail.com)
+ * antes de autorizar e ativar o disparo de e-mails na tela de Equipe & Acessos.
+ */
+export async function verifySmtpCredentials(params: {
+  senderEmail: string;
+  smtpAppPassword: string;
+}): Promise<{ valid: boolean; errorMessage?: string }> {
+  const senderEmail = resolveTeamSenderEmail(params.senderEmail);
+  const smtpPass = normalizeSmtpAppPassword(params.smtpAppPassword);
+
+  if (!smtpPass || smtpPass.length < 8) {
+    return {
+      valid: false,
+      errorMessage: "Informe a Senha de App de 16 caracteres gerada na conta Google.",
+    };
+  }
+
+  const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+  const smtpPort = Number(process.env.SMTP_PORT || "465");
+
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: {
+      user: senderEmail,
+      pass: smtpPass,
+    },
+  });
+
+  try {
+    await transporter.verify();
+    return { valid: true };
+  } catch (error) {
+    return {
+      valid: false,
+      errorMessage:
+        error instanceof Error
+          ? `O Gmail recusou a autorização (${error.message}). Confira se a Verificação em 2 Etapas está ativa e se a Senha de App de 16 letras está correta.`
+          : "Falha ao autenticar no servidor SMTP do Gmail.",
+    };
+  }
+}
+
+/**
  * Envia um e-mail transacional de relatório executivo utilizando Nodemailer via SMTP real.
  */
 export async function sendAutomatedEmail(
