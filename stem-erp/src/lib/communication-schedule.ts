@@ -231,7 +231,7 @@ export function getNextStakeholderScheduleDate(
 }
 
 /**
- * Constrói a grade completa de 42 dias (6 semanas x 7 colunas, Domingo a Sábado)
+ * Constrói a grade de 35 dias (5 semanas x 7 colunas = 5 linhas, Domingo a Sábado)
  * do calendário mensal de Agendamentos de Comunicação.
  */
 export function buildMonthlyScheduleCalendar(
@@ -306,8 +306,8 @@ export function buildMonthlyScheduleCalendar(
     });
   }
 
-  // 3. Dias iniciais do próximo mês até completar 42 células (6 semanas)
-  const remainingCells = 42 - days.length;
+  // 3. Dias iniciais do próximo mês até completar 35 células (5 semanas = 5 linhas)
+  const remainingCells = Math.max(0, 35 - days.length);
   for (let dayNum = 1; dayNum <= remainingCells; dayNum++) {
     const dateKey = formatDateKeyUTC(nextMonthYear, nextMonth, dayNum);
     const scheduledItems = scheduleByDateKey.get(dateKey) ?? [];
@@ -321,13 +321,14 @@ export function buildMonthlyScheduleCalendar(
     });
   }
 
+  const finalDays = days.slice(0, 35);
   const monthName = MONTH_NAMES_PT_BR[monthZeroBased] ?? "Mês";
 
   return {
     year,
     month: monthZeroBased,
     monthLabel: `${monthName} de ${year}`,
-    days,
+    days: finalDays,
     totalScheduledInMonth: upcomingItemsInMonth.length,
     upcomingItemsInMonth,
   };

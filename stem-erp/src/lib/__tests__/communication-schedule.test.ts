@@ -68,7 +68,7 @@ describe("Communication Schedule Calendar Engine", () => {
     assert.equal(febItems[0].occurrenceNumber, 1);
   });
 
-  it("deve construir a grade mensal de 42 dias marcando hasScheduledReports = true nos dias agendados", () => {
+  it("deve construir a grade mensal de 35 dias (5 linhas) marcando hasScheduledReports = true nos dias agendados", () => {
     const stakeholders = [
       {
         id: "st-weekly-04",
@@ -88,7 +88,7 @@ describe("Communication Schedule Calendar Engine", () => {
       "2026-11-04T12:00:00.000Z"
     );
 
-    assert.equal(calendar.days.length, 42);
+    assert.equal(calendar.days.length, 35);
     assert.equal(calendar.monthLabel, "Novembro de 2026");
     assert.equal(calendar.totalScheduledInMonth, 3);
 
