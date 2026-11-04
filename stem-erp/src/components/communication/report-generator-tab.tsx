@@ -22,12 +22,15 @@ import type {
   StakeholderGroup,
   StakeholderWithRelations,
 } from "@/types/communication";
-import { generateReportMessageAction } from "@/actions/communication-actions";
+import {
+  generateReportMessageAction,
+  sendStakeholderReportEmailAction,
+} from "@/actions/communication-actions";
 import { STAKEHOLDER_GROUP_LABELS } from "@/lib/communication-constants";
 
 interface ReportGeneratorTabProps {
   stakeholders: StakeholderWithRelations[];
-  onOpenLogDialog: (prefill: {
+  onOpenLogDialog?: (prefill: {
     stakeholderId: string;
     subject: string;
     channel: "WHATSAPP" | "EMAIL" | "MEETING" | "REPORT_PDF";
@@ -39,7 +42,6 @@ interface ReportGeneratorTabProps {
 
 export function ReportGeneratorTab({
   stakeholders,
-  onOpenLogDialog,
   initialStakeholderId,
 }: ReportGeneratorTabProps) {
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>(
@@ -55,6 +57,7 @@ export function ReportGeneratorTab({
   const [customMessage, setCustomMessage] = useState("");
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [generatedResult, setGeneratedResult] =
     useState<GeneratedCommunicationMessage | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -120,22 +123,35 @@ export function ReportGeneratorTab({
     window.open(generatedResult.whatsappLink, "_blank", "noopener,noreferrer");
   };
 
-  const handleLogDispatched = (channel: "WHATSAPP" | "EMAIL") => {
+  const handleSendEmail = async () => {
     if (!generatedResult || !selectedStakeholderId) {
       toast.error("Gere um relatório e selecione um stakeholder primeiro.");
       return;
     }
 
-    onOpenLogDialog({
-      stakeholderId: selectedStakeholderId,
-      subject: generatedResult.subject,
-      channel,
-      contentSummary:
-        channel === "WHATSAPP"
-          ? generatedResult.whatsappText.slice(0, 180) + "..."
-          : generatedResult.emailPlainText.slice(0, 180) + "...",
-      reportTypeIncluded: reportType,
-    });
+    setIsSendingEmail(true);
+    try {
+      const res = await sendStakeholderReportEmailAction({
+        stakeholderId: selectedStakeholderId,
+        reportType,
+        periodLabel: "Temporada Atual",
+        customNote: customMessage,
+        subject: generatedResult.emailSubject,
+        emailText: generatedResult.emailPlainText,
+        emailHtml: generatedResult.emailHtml,
+      });
+
+      if (!res.success) {
+        toast.error(res.message || "Falha ao enviar o e-mail.");
+        return;
+      }
+
+      toast.success(res.message);
+    } catch {
+      toast.error("Ocorreu um erro inesperado ao disparar o e-mail.");
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   return (
@@ -307,7 +323,7 @@ export function ReportGeneratorTab({
                       >
                         {copiedKey === "wa" ? (
                           <>
-                            <Check className="mr-1.5 h-3.5 w-3.5 text-green-600" />
+                            <Check className="mr-1.5 h-3.5 w-3.5 text-success" />
                             Copiado!
                           </>
                         ) : (
@@ -316,16 +332,6 @@ export function ReportGeneratorTab({
                             Copiar Texto
                           </>
                         )}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleLogDispatched("WHATSAPP")}
-                        className="w-full sm:w-auto"
-                      >
-                        <Send className="mr-1.5 h-3.5 w-3.5" />
-                        Registrar Envio no Histórico
                       </Button>
                     </div>
                   </TabsContent>
@@ -404,13 +410,13 @@ export function ReportGeneratorTab({
                       </Button>
                       <Button
                         type="button"
-                        variant="secondary"
                         size="sm"
-                        onClick={() => handleLogDispatched("EMAIL")}
-                        className="w-full sm:w-auto"
+                        onClick={handleSendEmail}
+                        disabled={isSendingEmail}
+                        className="w-full sm:w-auto gap-1.5 font-semibold"
                       >
-                        <Send className="mr-1.5 h-3.5 w-3.5" />
-                        Registrar Envio no Histórico
+                        <Send className="h-3.5 w-3.5" />
+                        {isSendingEmail ? "Enviando E-mail..." : "Enviar E-mail"}
                       </Button>
                     </div>
                   </TabsContent>

@@ -76,6 +76,7 @@ model Team {
   name            String           @unique // Ex: Equipe Gênesis, Equipe Alpha
   slug            String           @unique // Ex: equipe-genesis, equipe-alpha
   schoolOrOrg     String?          // Ex: SENAI / Escuderia Gênesis
+  senderEmail     String           @default("genesisteamracing@gmail.com") // E-mail oficial de envio de relatórios
   season          String?          // Temporada: "2025/2026"
   seasonStartDate DateTime?        // Início da temporada (gera os meses do fluxo de caixa)
   seasonEndDate   DateTime?        // Fim da temporada

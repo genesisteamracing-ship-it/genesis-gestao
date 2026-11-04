@@ -25,6 +25,7 @@ export interface ActiveTeamSummaryDTO {
   name: string;
   slug: string;
   schoolOrOrg: string | null;
+  senderEmail?: string;
   season: SeasonDTO;
 }
 

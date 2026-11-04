@@ -11,7 +11,7 @@ import { StakeholderOrgMap } from "./org-map/stakeholder-org-map";
 import { StakeholderMatrix } from "./stakeholder-matrix";
 import { ReportGeneratorTab } from "./report-generator-tab";
 import { StakeholdersListTab } from "./stakeholders-list-tab";
-import { CommunicationLogsTab } from "./communication-logs-tab";
+import { CommunicationScheduleTab } from "./communication-schedule-tab";
 import { CreateStakeholderDialog } from "./create-stakeholder-dialog";
 import { CreateCommunicationPlanDialog } from "./create-communication-plan-dialog";
 import { LogCommunicationDialog } from "./log-communication-dialog";
@@ -40,13 +40,12 @@ export function CommunicationView({
   metrics,
   stakeholders,
   matrixItems,
-  logs,
   sponsors,
 }: CommunicationViewProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabFromUrl = searchParams ? searchParams.get("tab") : null;
-  const activeTab = tabFromUrl || "mapa";
+  const activeTab = tabFromUrl === "historico" ? "agendamentos" : tabFromUrl || "mapa";
 
   const handleTabChange = (newTab: string) => {
     router.push(`/comunicacao?tab=${newTab}`, { scroll: false });
@@ -69,7 +68,7 @@ export function CommunicationView({
   } | null>(null);
 
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
-  const [selectedLogForFeedback, setSelectedLogForFeedback] = useState<{
+  const [selectedLogForFeedback] = useState<{
     id: string;
     subject: string;
   } | null>(null);
@@ -154,14 +153,11 @@ export function CommunicationView({
           />
         </TabsContent>
 
-        <TabsContent value="historico" className="space-y-4">
-          <CommunicationLogsTab
-            logs={logs}
-            onOpenLogDialog={() => (setLogPrefill(null), setIsLogDialogOpen(true))}
-            onOpenFeedbackDialog={(id, subject) => (
-              setSelectedLogForFeedback({ id, subject }),
-              setIsFeedbackDialogOpen(true)
-            )}
+        <TabsContent value="agendamentos" className="space-y-4">
+          <CommunicationScheduleTab
+            stakeholders={stakeholders}
+            senderEmail={dashboardMetrics.activeTeam.senderEmail}
+            onSelectStakeholderForReport={handleSelectStakeholderForReport}
           />
         </TabsContent>
 

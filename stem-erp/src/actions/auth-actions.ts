@@ -30,10 +30,15 @@ import {
   deleteTeamService,
   getTeamManagementMetricsService,
   logoutUserService,
+  requireAuthUser,
   requireSuperAdmin,
   unlockUserAccountService,
   updateTeamMemberAccessService,
 } from "@/services/auth-service";
+import {
+  updateTeamSenderEmailSchema,
+  type UpdateTeamSenderEmailInput,
+} from "@/lib/validations/communication";
 import type { ActionResponse } from "./financial-actions";
 
 export async function loginAction(
@@ -327,4 +332,51 @@ export async function deleteTeamMemberAction(
 export async function getTeamManagementMetricsAction() {
   await requireSuperAdmin();
   return getTeamManagementMetricsService();
+}
+
+export async function updateTeamSenderEmailAction(
+  rawData: UpdateTeamSenderEmailInput
+): Promise<ActionResponse> {
+  const user = await requireAuthUser();
+
+  if (user.role === "AUDITOR") {
+    return {
+      success: false,
+      message: "Acesso negado: o perfil Auditor possui permissão somente de leitura.",
+    };
+  }
+
+  const parsed = updateTeamSenderEmailSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message:
+        parsed.error.issues[0]?.message ||
+        "Informe um endereço de e-mail válido.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const updated = await prisma.team.update({
+      where: { id: parsed.data.teamId },
+      data: { senderEmail: parsed.data.senderEmail },
+    });
+
+    revalidatePath("/equipe");
+    revalidatePath("/comunicacao");
+
+    return {
+      success: true,
+      message: `E-mail de envio da equipe "${updated.name}" atualizado para ${updated.senderEmail}!`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar o e-mail de envio da equipe.",
+    };
+  }
 }

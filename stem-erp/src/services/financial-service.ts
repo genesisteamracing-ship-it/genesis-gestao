@@ -137,6 +137,7 @@ export async function resolveActiveTeam(
       name: true,
       slug: true,
       schoolOrOrg: true,
+      senderEmail: true,
       season: true,
       seasonStartDate: true,
       seasonEndDate: true,
@@ -156,6 +157,7 @@ export async function resolveActiveTeam(
       name: t.name,
       slug: t.slug,
       schoolOrOrg: t.schoolOrOrg,
+      senderEmail: t.senderEmail || "genesisteamracing@gmail.com",
       season: {
         label,
         startDate: start.toISOString(),

@@ -33,7 +33,7 @@ describe("Sidebar Submodules Contracts", () => {
       { tabKey: "mapa", label: "Mapa Hierárquico", href: "/comunicacao?tab=mapa" },
       { tabKey: "relatorios", label: "Gerador de Relatórios", href: "/comunicacao?tab=relatorios" },
       { tabKey: "stakeholders", label: "Diretório", href: "/comunicacao?tab=stakeholders" },
-      { tabKey: "historico", label: "Histórico", href: "/comunicacao?tab=historico" },
+      { tabKey: "agendamentos", label: "Agendamentos", href: "/comunicacao?tab=agendamentos" },
       { tabKey: "matriz", label: "Matriz Mendelow", href: "/comunicacao?tab=matriz" },
     ];
 

@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/services/auth-service";
 import { resolveActiveTeam } from "@/services/financial-service";
+import { sendAutomatedEmail } from "@/services/email-service";
 import {
   createCommunicationFeedback,
   createCommunicationLog,
@@ -19,11 +21,13 @@ import {
   createCommunicationPlanSchema,
   createFeedbackSchema,
   createStakeholderSchema,
+  sendStakeholderReportEmailSchema,
   updateStakeholderSchema,
   type CreateCommunicationLogInput,
   type CreateCommunicationPlanInput,
   type CreateFeedbackInput,
   type CreateStakeholderInput,
+  type SendStakeholderReportEmailInput,
   type UpdateStakeholderInput,
 } from "@/lib/validations/communication";
 import {
@@ -355,6 +359,97 @@ export async function generateReportMessageAction(params: {
     return {
       success: false,
       message: error instanceof Error ? error.message : "Erro ao gerar relatório.",
+    };
+  }
+}
+
+export async function sendStakeholderReportEmailAction(
+  rawData: SendStakeholderReportEmailInput
+): Promise<
+  ActionResponse<{
+    logId: string;
+    recipientEmail: string;
+    senderEmail: string;
+    simulated: boolean;
+  }>
+> {
+  const user = await requireAuthUser();
+
+  if (user.role === UserRole.AUDITOR) {
+    return {
+      success: false,
+      message: "Acesso negado: o perfil Auditor possui permissão somente de leitura.",
+    };
+  }
+
+  const parsed = sendStakeholderReportEmailSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Verifique os dados do relatório antes de enviar o e-mail.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const { activeTeam } = await resolveActiveTeam(user);
+    const stakeholder = await prisma.stakeholder.findFirst({
+      where: {
+        id: parsed.data.stakeholderId,
+        teamId: activeTeam.id,
+      },
+    });
+
+    if (!stakeholder) {
+      return {
+        success: false,
+        message: "Stakeholder não encontrado na equipe ativa.",
+      };
+    }
+
+    if (!stakeholder.email || !stakeholder.email.includes("@")) {
+      return {
+        success: false,
+        message: `O stakeholder "${stakeholder.name}" não possui um endereço de e-mail cadastrado.`,
+      };
+    }
+
+    const emailResult = await sendAutomatedEmail({
+      fromEmail: activeTeam.senderEmail || "genesisteamracing@gmail.com",
+      fromName: activeTeam.name,
+      toEmail: stakeholder.email,
+      toName: stakeholder.name,
+      subject: parsed.data.subject,
+      text: parsed.data.emailText,
+      html: parsed.data.emailHtml,
+    });
+
+    const log = await createCommunicationLog(activeTeam.id, {
+      stakeholderId: stakeholder.id,
+      subject: parsed.data.subject,
+      channel: "EMAIL",
+      dispatchedByName: user.name,
+      contentSummary: parsed.data.emailText.slice(0, 240),
+      reportTypeIncluded: parsed.data.reportType,
+    });
+
+    revalidatePath("/comunicacao");
+
+    return {
+      success: true,
+      message: `E-mail enviado com sucesso para ${emailResult.recipientEmail} (via ${emailResult.senderEmail})!`,
+      data: {
+        logId: log.id,
+        recipientEmail: emailResult.recipientEmail,
+        senderEmail: emailResult.senderEmail,
+        simulated: emailResult.simulated,
+      },
+    };
+  } catch (error) {
+    console.error("[sendStakeholderReportEmailAction] Erro:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Erro ao enviar e-mail do relatório.",
     };
   }
 }

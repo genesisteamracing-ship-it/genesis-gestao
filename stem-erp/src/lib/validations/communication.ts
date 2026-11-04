@@ -114,8 +114,42 @@ export const createFeedbackSchema = z.object({
   isAddressed: z.boolean(),
 });
 
+export const sendStakeholderReportEmailSchema = z.object({
+  stakeholderId: z.string().min(1, "Selecione um stakeholder destinatário."),
+  reportType: z.enum(["FINANCIAL", "ROI", "COMBINED"]).default("COMBINED"),
+  periodLabel: z
+    .string()
+    .trim()
+    .min(2, "Informe o período de referência.")
+    .max(80, "O período deve ter no máximo 80 caracteres."),
+  customNote: z
+    .string()
+    .trim()
+    .max(500, "A nota personalizada deve ter no máximo 500 caracteres.")
+    .optional()
+    .or(z.literal("")),
+  subject: z
+    .string()
+    .trim()
+    .min(3, "O assunto do e-mail deve ter pelo menos 3 caracteres.")
+    .max(180, "O assunto deve ter no máximo 180 caracteres."),
+  emailText: z.string().min(10, "O corpo do e-mail em texto não pode estar vazio."),
+  emailHtml: z.string().min(10, "O corpo do e-mail em HTML não pode estar vazio."),
+});
+
+export const updateTeamSenderEmailSchema = z.object({
+  teamId: z.string().min(1, "Identificador da equipe é obrigatório."),
+  senderEmail: z
+    .string()
+    .trim()
+    .min(1, "Informe o e-mail de envio da equipe.")
+    .email("Informe um endereço de e-mail válido (ex: genesisteamracing@gmail.com)."),
+});
+
 export type CreateStakeholderInput = z.infer<typeof createStakeholderSchema>;
 export type UpdateStakeholderInput = z.infer<typeof updateStakeholderSchema>;
 export type CreateCommunicationPlanInput = z.infer<typeof createCommunicationPlanSchema>;
 export type CreateCommunicationLogInput = z.infer<typeof createCommunicationLogSchema>;
 export type CreateFeedbackInput = z.infer<typeof createFeedbackSchema>;
+export type SendStakeholderReportEmailInput = z.infer<typeof sendStakeholderReportEmailSchema>;
+export type UpdateTeamSenderEmailInput = z.infer<typeof updateTeamSenderEmailSchema>;

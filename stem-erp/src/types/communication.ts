@@ -214,3 +214,36 @@ export interface GeneratedCommunicationMessage {
   emailHtml: string;
   emailPlainText: string;
 }
+
+export interface ScheduledReportItemDTO {
+  id: string;
+  stakeholderId: string;
+  stakeholderName: string;
+  organization: string | null;
+  group: StakeholderGroup;
+  recipientEmail: string | null;
+  frequency: CommunicationFrequency;
+  frequencyLabel: string;
+  registeredAtIso: string;
+  scheduledDateKey: string;
+  reportTitle: string;
+  occurrenceNumber: number;
+}
+
+export interface CalendarDayScheduleDTO {
+  dateKey: string;
+  dayOfMonth: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  scheduledItems: ScheduledReportItemDTO[];
+  hasScheduledReports: boolean;
+}
+
+export interface MonthlyScheduleCalendarDTO {
+  year: number;
+  month: number;
+  monthLabel: string;
+  days: CalendarDayScheduleDTO[];
+  totalScheduledInMonth: number;
+  upcomingItemsInMonth: ScheduledReportItemDTO[];
+}

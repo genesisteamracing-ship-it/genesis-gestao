@@ -4,9 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
+  CalendarClock,
   ChevronDown,
   Grid3X3,
-  History,
   Layers,
   LayoutDashboard,
   ListOrdered,
@@ -91,10 +91,10 @@ export const COMMUNICATION_SUB_ITEMS = [
     icon: Users,
   },
   {
-    href: "/comunicacao?tab=historico",
-    tabKey: "historico",
-    label: "Histórico",
-    icon: History,
+    href: "/comunicacao?tab=agendamentos",
+    tabKey: "agendamentos",
+    label: "Agendamentos",
+    icon: CalendarClock,
   },
   {
     href: "/comunicacao?tab=matriz",

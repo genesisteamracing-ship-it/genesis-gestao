@@ -12,6 +12,7 @@ import { CreateMemberDialog } from "@/components/modals/create-member-dialog";
 import { DeleteTeamDialog } from "@/components/modals/delete-team-dialog";
 import { TeamMembersDataTable } from "@/components/tables/team-members-data-table";
 import { SecurityAuditTable } from "@/components/tables/security-audit-table";
+import { TeamSenderEmailCard } from "@/components/forms/team-sender-email-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -125,6 +126,13 @@ export default async function EquipePage() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Configuração do E-mail de Envio da Equipe Ativa */}
+      <TeamSenderEmailCard
+        teamId={financialMetrics.activeTeam.id}
+        teamName={financialMetrics.activeTeam.name}
+        initialSenderEmail={financialMetrics.activeTeam.senderEmail}
+      />
 
       {/* Painel das Equipes Competidoras */}
       <section className="space-y-3">
