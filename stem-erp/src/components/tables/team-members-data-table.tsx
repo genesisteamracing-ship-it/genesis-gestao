@@ -5,6 +5,8 @@ import { flexRender, type ColumnDef } from "@tanstack/react-table";
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Filter,
   RotateCcw,
   Search,
@@ -414,29 +416,76 @@ export function TeamMembersDataTable({
 
       {/* 4. Paginação */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 pt-1">
-        <p className="text-xs sm:text-sm font-medium text-muted-foreground text-center sm:text-left">
-          Mostrando {startRow}-{formattedEndRow} de {totalFiltered}
-        </p>
+        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+          <p className="font-medium text-center sm:text-left">
+            Mostrando {startRow}-{formattedEndRow} de {totalFiltered} integrantes
+          </p>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs">Exibir:</span>
+            <Select
+              value={String(table.getState().pagination.pageSize)}
+              onValueChange={(val) => table.setPageSize(Number(val))}
+            >
+              <SelectTrigger className="h-8 w-[76px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5" className="text-xs">5 / pág</SelectItem>
+                <SelectItem value="10" className="text-xs">10 / pág</SelectItem>
+                <SelectItem value="20" className="text-xs">20 / pág</SelectItem>
+                <SelectItem value="50" className="text-xs">50 / pág</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-        <div className="inline-flex items-center overflow-hidden rounded-lg border border-border bg-card shadow-2xs">
-          <button
-            type="button"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            aria-label="Página anterior"
-            className="flex h-9 w-11 sm:h-8 sm:w-10 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            aria-label="Próxima página"
-            className="flex h-9 w-11 sm:h-8 sm:w-10 items-center justify-center text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
+            Página {table.getState().pagination.pageIndex + 1} de{" "}
+            {Math.max(1, table.getPageCount())}
+          </span>
+          <div className="inline-flex items-center overflow-hidden rounded-lg border border-border bg-card shadow-2xs">
+            <button
+              type="button"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+              aria-label="Primeira página"
+              title="Primeira página"
+              className="flex h-8 w-8 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              aria-label="Página anterior"
+              title="Página anterior"
+              className="flex h-8 w-8 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              aria-label="Próxima página"
+              title="Próxima página"
+              className="flex h-8 w-8 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+              aria-label="Última página"
+              title="Última página"
+              className="flex h-8 w-8 items-center justify-center text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
