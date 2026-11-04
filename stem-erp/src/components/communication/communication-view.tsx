@@ -147,6 +147,7 @@ export function CommunicationView({
         <TabsContent value="stakeholders" className="space-y-4">
           <StakeholdersListTab
             stakeholders={stakeholders}
+            sponsors={sponsors}
             onOpenCreateDialog={() => handleOpenCreateStakeholder()}
             onOpenPlanDialog={handleOpenPlanDialog}
             onSelectForReport={handleSelectStakeholderForReport}

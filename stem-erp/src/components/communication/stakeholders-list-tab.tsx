@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, CalendarPlus, FileText, Phone, Mail } from "lucide-react";
+import { Plus, Trash2, CalendarPlus, FileText, Phone, Mail, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,9 +32,11 @@ import {
 } from "@/lib/communication-constants";
 import { computeHierarchyTier } from "@/lib/communication-hierarchy";
 import { deleteStakeholderAction } from "@/actions/communication-actions";
+import { EditStakeholderDialog } from "./edit-stakeholder-dialog";
 
 interface StakeholdersListTabProps {
   stakeholders: StakeholderWithRelations[];
+  sponsors?: Array<{ id: string; name: string }>;
   onOpenCreateDialog: () => void;
   onOpenPlanDialog: (stakeholderId: string) => void;
   onSelectForReport: (stakeholderId: string) => void;
@@ -42,12 +44,14 @@ interface StakeholdersListTabProps {
 
 export function StakeholdersListTab({
   stakeholders,
+  sponsors = [],
   onOpenCreateDialog,
   onOpenPlanDialog,
   onSelectForReport,
 }: StakeholdersListTabProps) {
   const [filterGroup, setFilterGroup] = useState<string>("ALL");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingStakeholder, setEditingStakeholder] = useState<StakeholderWithRelations | null>(null);
 
   const filteredStakeholders = stakeholders.filter((s) => {
     if (filterGroup === "ALL") return true;
@@ -135,7 +139,7 @@ export function StakeholdersListTab({
                   <TableHead className="min-w-[110px]">Poder / Interesse</TableHead>
                   <TableHead className="min-w-[120px]">Engajamento</TableHead>
                   <TableHead className="min-w-[130px]">Canal / Frequência</TableHead>
-                  <TableHead className="text-right min-w-[130px]">Ações</TableHead>
+                  <TableHead className="text-right min-w-[160px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -214,6 +218,16 @@ export function StakeholdersListTab({
                           type="button"
                           variant="ghost"
                           size="icon"
+                          onClick={() => setEditingStakeholder(s)}
+                          title="Editar Stakeholder"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
                           onClick={() => onSelectForReport(s.id)}
                           title="Gerar Relatório"
                           className="h-8 w-8 text-primary"
@@ -250,6 +264,16 @@ export function StakeholdersListTab({
           </div>
         )}
       </CardContent>
+
+      <EditStakeholderDialog
+        open={Boolean(editingStakeholder)}
+        onOpenChange={(open) => {
+          if (!open) setEditingStakeholder(null);
+        }}
+        stakeholder={editingStakeholder}
+        sponsors={sponsors}
+        existingStakeholders={stakeholders}
+      />
     </Card>
   );
 }
