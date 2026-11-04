@@ -373,44 +373,6 @@ export function ReportGeneratorTab({
                       <Button
                         type="button"
                         size="sm"
-                        variant="outline"
-                        onClick={() => handleCopy(generatedResult.emailPlainText, "emailText")}
-                        className="w-full sm:w-auto"
-                      >
-                        {copiedKey === "emailText" ? (
-                          <>
-                            <Check className="mr-1.5 h-3.5 w-3.5 text-green-600" />
-                            Copiado!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="mr-1.5 h-3.5 w-3.5" />
-                            Copiar Texto do E-mail
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleCopy(generatedResult.emailHtml, "emailHtml")}
-                        className="w-full sm:w-auto"
-                      >
-                        {copiedKey === "emailHtml" ? (
-                          <>
-                            <Check className="mr-1.5 h-3.5 w-3.5 text-green-600" />
-                            HTML Copiado!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="mr-1.5 h-3.5 w-3.5" />
-                            Copiar HTML do E-mail
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
                         onClick={handleSendEmail}
                         disabled={isSendingEmail}
                         className="w-full sm:w-auto gap-1.5 font-semibold"
