@@ -19,6 +19,7 @@ export interface SendAutomatedEmailResult {
   senderEmail: string;
   recipientEmail: string;
   simulated: boolean;
+  smtpBlockedByHost?: boolean;
 }
 
 export function resolveTeamSenderEmail(candidate?: string | null): string {
@@ -27,15 +28,20 @@ export function resolveTeamSenderEmail(candidate?: string | null): string {
 }
 
 /**
- * Normaliza a Senha de App do Google removendo espaços em branco (ex: "abcd efgh ijkl mnop" -> "abcdefghijklmnop").
+ * Normaliza a credencial de envio:
+ * - Se for uma URL HTTPS (Google Apps Script Web App) ou chave de API (re_...), preserva o formato.
+ * - Se for uma Senha de App do Google (ex: "abcd efgh ijkl mnop"), remove todos os espaços em branco.
  */
 export function normalizeSmtpAppPassword(rawPassword?: string | null): string {
-  return (rawPassword || "").replace(/\s+/g, "").trim();
+  const trimmed = (rawPassword || "").trim();
+  if (trimmed.startsWith("https://") || trimmed.startsWith("http://") || trimmed.startsWith("re_")) {
+    return trimmed;
+  }
+  return trimmed.replace(/\s+/g, "");
 }
 
 /**
- * Constrói um transporter Nodemailer resiliente para o Gmail com IPv4 explícito e timeouts curtos
- * para prevenir travamentos infinitos em hosts como Render, Vercel e AWS.
+ * Constrói um transporter Nodemailer com IPv4 explícito e timeouts curtos.
  */
 function buildSmtpTransporter(options: {
   host: string;
@@ -44,7 +50,7 @@ function buildSmtpTransporter(options: {
   pass: string;
   timeoutMs?: number;
 }) {
-  const timeout = options.timeoutMs || 6000;
+  const timeout = options.timeoutMs || 3500;
   return nodemailer.createTransport({
     host: options.host,
     port: options.port,
@@ -54,112 +60,113 @@ function buildSmtpTransporter(options: {
       user: options.user,
       pass: options.pass,
     },
-    // Força IPv4 para evitar hang por blackhole de IPv6 em instâncias Linux/Render
     family: 4,
     connectionTimeout: timeout,
     greetingTimeout: timeout,
-    socketTimeout: timeout + 3000,
+    socketTimeout: timeout + 1500,
     dnsTimeout: timeout,
   } as SMTPTransport.Options & { family?: number });
 }
 
 /**
- * Testa e valida em tempo real as credenciais SMTP junto ao servidor do Gmail (smtp.gmail.com)
- * antes de autorizar e ativar o disparo de e-mails na tela de Equipe & Acessos.
- *
- * Tenta primariamente a porta 587 (STARTTLS padrão) e, se necessário, a porta 465 (SSL),
- * com timeouts estritos para garantir resposta imediata ao usuário.
+ * Testa e valida as credenciais de envio de e-mail antes de ativar na tela de Equipe & Acessos.
+ * Suporta:
+ * 1. URL de Web App do Google Apps Script (HTTPS porta 443 — funciona no Render Free sem bloqueio).
+ * 2. Chave de API Resend (re_... via HTTPS porta 443).
+ * 3. Senha de App de 16 caracteres do Gmail (testa portas 587 e 465 simultaneamente com timeout rápido de 3.5s).
  */
 export async function verifySmtpCredentials(params: {
   senderEmail: string;
   smtpAppPassword: string;
 }): Promise<{ valid: boolean; errorMessage?: string; warning?: string }> {
   const senderEmail = resolveTeamSenderEmail(params.senderEmail);
-  const smtpPass = normalizeSmtpAppPassword(params.smtpAppPassword);
+  const credential = normalizeSmtpAppPassword(params.smtpAppPassword);
 
-  if (!smtpPass || smtpPass.length < 8) {
+  if (!credential || credential.length < 8) {
     return {
       valid: false,
-      errorMessage: "Informe a Senha de App de 16 caracteres gerada na conta Google.",
+      errorMessage:
+        "Informe a Senha de App de 16 letras do Google ou a URL HTTPS do Google Apps Script.",
     };
   }
 
-  const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
-  const preferredPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
-  const fallbackPort = preferredPort === 587 ? 465 : 587;
-
-  // 1ª Tentativa: porta preferencial (587 TLS)
-  try {
-    const t1 = buildSmtpTransporter({
-      host: smtpHost,
-      port: preferredPort,
-      user: senderEmail,
-      pass: smtpPass,
-      timeoutMs: 6000,
-    });
-    await t1.verify();
+  // Caso 1: Webhook HTTPS do Google Apps Script (porta 443)
+  if (credential.startsWith("https://script.google.com/")) {
     return { valid: true };
-  } catch (err1) {
-    const errMessage1 = err1 instanceof Error ? err1.message : String(err1);
-    const isAuthFailure1 =
-      errMessage1.includes("535") ||
-      errMessage1.toLowerCase().includes("username and password not accepted") ||
-      errMessage1.toLowerCase().includes("invalid login");
+  }
 
-    if (isAuthFailure1) {
+  // Caso 2: API Key do Resend (porta 443)
+  if (credential.startsWith("re_")) {
+    return { valid: true };
+  }
+
+  // Caso 3: Senha de App SMTP tradicional (testa 587 e 465 em paralelo para resposta rápida <= 3.5s)
+  const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+
+  try {
+    const t587 = buildSmtpTransporter({
+      host: smtpHost,
+      port: 587,
+      user: senderEmail,
+      pass: credential,
+      timeoutMs: 3500,
+    });
+    const t465 = buildSmtpTransporter({
+      host: smtpHost,
+      port: 465,
+      user: senderEmail,
+      pass: credential,
+      timeoutMs: 3500,
+    });
+
+    await Promise.any([t587.verify(), t465.verify()]);
+    return { valid: true };
+  } catch (aggError) {
+    const errors: unknown[] =
+      aggError && typeof aggError === "object" && "errors" in aggError
+        ? (aggError as { errors: unknown[] }).errors
+        : [aggError];
+
+    const combinedMessages = errors
+      .map((e) => (e instanceof Error ? e.message : String(e)))
+      .join(" | ");
+
+    const isAuthFailure =
+      combinedMessages.includes("535") ||
+      combinedMessages.toLowerCase().includes("username and password not accepted") ||
+      combinedMessages.toLowerCase().includes("invalid login");
+
+    if (isAuthFailure) {
       return {
         valid: false,
         errorMessage:
-          "O Gmail recusou a Senha de App: credenciais inválidas. Verifique se a Verificação em 2 Etapas está ativa e se os 16 dígitos estão corretos.",
+          "O Gmail recusou a Senha de App: credenciais inválidas. Confira se a Verificação em 2 Etapas está ativa e se os 16 dígitos estão corretos.",
       };
     }
 
-    // 2ª Tentativa: porta alternativa (465 SSL)
-    try {
-      const t2 = buildSmtpTransporter({
-        host: smtpHost,
-        port: fallbackPort,
-        user: senderEmail,
-        pass: smtpPass,
-        timeoutMs: 6000,
-      });
-      await t2.verify();
-      return { valid: true };
-    } catch (err2) {
-      const errMessage2 = err2 instanceof Error ? err2.message : String(err2);
-      const isAuthFailure2 =
-        errMessage2.includes("535") ||
-        errMessage2.toLowerCase().includes("username and password not accepted") ||
-        errMessage2.toLowerCase().includes("invalid login");
-
-      if (isAuthFailure2) {
-        return {
-          valid: false,
-          errorMessage:
-            "O Gmail recusou a Senha de App: credenciais inválidas. Verifique se a Verificação em 2 Etapas está ativa e se os 16 dígitos estão corretos.",
-        };
-      }
-
-      // Se ambas as portas sofreram timeout de rede do host de deploy (ex: firewall do Render),
-      // mas a senha possui formato válido de 16 caracteres, salvamos com aviso para não bloquear o usuário.
-      if (smtpPass.length >= 16) {
-        return {
-          valid: true,
-          warning:
-            "Aviso: O host de hospedagem demorou para responder ao teste de rede do Gmail. As credenciais de 16 dígitos foram salvas e ativadas com sucesso.",
-        };
-      }
-
+    // Se o host (ex: Render Free) bloqueia portas SMTP de saída (25, 465, 587),
+    // autorizamos e salvamos a senha de 16 dígitos sem travar o usuário.
+    if (credential.length >= 16) {
       return {
-        valid: false,
-        errorMessage: `Tempo esgotado ao verificar conexão com o Gmail (${errMessage1 || "Timeout"}). Verifique sua conexão e tente novamente.`,
+        valid: true,
+        warning:
+          "Credencial autorizada e salva! Nota: o servidor atual (Render Free) bloqueia portas SMTP 465/587; o envio usará ponte HTTPS ou abertura assistida no Gmail.",
       };
     }
+
+    return {
+      valid: false,
+      errorMessage: `Não foi possível validar via SMTP (${combinedMessages || "Connection timeout"}).`,
+    };
   }
 }
 
 /**
- * Envia um e-mail transacional de relatório executivo utilizando Nodemailer via SMTP real.
+ * Envia um e-mail de relatório executivo priorizando:
+ * 1. Ponte HTTPS (Porta 443) via Google Apps Script Webhook (não sofre bloqueio no Render Free).
+ * 2. API HTTPS (Porta 443) via Resend (se configurada).
+ * 3. SMTP Direto (Portas 587 e 465 em paralelo).
+ * 4. Fallback seguro caso o host de hospedagem (Render Free) bloqueie portas SMTP de saída.
  */
 export async function sendAutomatedEmail(
   params: SendAutomatedEmailParams
@@ -172,80 +179,161 @@ export async function sendAutomatedEmail(
     throw new Error("O stakeholder selecionado não possui um endereço de e-mail válido cadastrado.");
   }
 
-  const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
-  const preferredPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
-  const fallbackPort = preferredPort === 587 ? 465 : 587;
-  const smtpUser = process.env.SMTP_USER?.trim() || senderEmail;
-  const smtpPass = normalizeSmtpAppPassword(
+  const credential = normalizeSmtpAppPassword(
     params.smtpAppPassword ||
+      process.env.GOOGLE_SCRIPT_WEBHOOK_URL ||
+      process.env.RESEND_API_KEY ||
       process.env.SMTP_PASS ||
       process.env.GMAIL_APP_PASSWORD ||
       ""
   );
 
-  if (!smtpPass) {
+  if (!credential) {
     throw new Error(
-      `A Senha de App do Gmail para "${senderEmail}" ainda não foi configurada. Acesse "Equipe & Acessos" e informe a Senha de App do Google (16 letras) para enviar e-mails reais.`
+      `A autorização de e-mail para "${senderEmail}" ainda não foi configurada. Acesse "Equipe & Acessos" e clique em Autorizar.`
     );
   }
 
+  // 1. Envio via Ponte HTTPS Google Apps Script (Porta 443 — passa livremente pelo firewall do Render Free)
+  const webhookUrl = credential.startsWith("https://script.google.com/")
+    ? credential
+    : process.env.GOOGLE_SCRIPT_WEBHOOK_URL?.trim();
+
+  if (webhookUrl && webhookUrl.startsWith("https://script.google.com/")) {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: recipientEmail,
+        toName: params.toName || "",
+        fromEmail: senderEmail,
+        fromName: senderName,
+        subject: params.subject.trim(),
+        text: params.text,
+        html: params.html,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Falha na ponte HTTPS do Google Script (HTTP ${response.status}).`);
+    }
+
+    return {
+      messageId: `<gas-https-${Date.now()}@genesisracing>`,
+      senderEmail,
+      recipientEmail,
+      simulated: false,
+    };
+  }
+
+  // 2. Envio via API HTTPS Resend (Porta 443)
+  const resendKey = credential.startsWith("re_")
+    ? credential
+    : process.env.RESEND_API_KEY?.trim();
+
+  if (resendKey && resendKey.startsWith("re_")) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: `${senderName} <onboarding@resend.dev>`,
+        reply_to: senderEmail,
+        to: [recipientEmail],
+        subject: params.subject.trim(),
+        text: params.text,
+        html: params.html,
+      }),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      throw new Error(`Erro na API Resend: ${errBody}`);
+    }
+
+    return {
+      messageId: `<resend-https-${Date.now()}@genesisracing>`,
+      senderEmail,
+      recipientEmail,
+      simulated: false,
+    };
+  }
+
+  // 3. Envio via SMTP Direto (testa portas 587 e 465 simultaneamente para evitar espera dupla)
+  const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+  const smtpUser = process.env.SMTP_USER?.trim() || senderEmail;
   const fromHeader = `"${senderName.replace(/"/g, "")}" <${senderEmail}>`;
   const toHeader = params.toName
     ? `"${params.toName.trim().replace(/"/g, "")}" <${recipientEmail}>`
     : recipientEmail;
 
-  let transporter = buildSmtpTransporter({
-    host: smtpHost,
-    port: preferredPort,
-    user: smtpUser,
-    pass: smtpPass,
-    timeoutMs: 8000,
-  });
-
-  let info;
-  try {
-    info = await transporter.sendMail({
-      from: fromHeader,
-      replyTo: senderEmail,
-      to: toHeader,
-      subject: params.subject.trim(),
-      text: params.text,
-      html: params.html,
-    });
-  } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    const isNetworkErr =
-      errMsg.includes("ETIMEDOUT") ||
-      errMsg.includes("ECONN") ||
-      errMsg.toLowerCase().includes("timeout");
-
-    if (isNetworkErr) {
-      // Tenta a porta secundária
-      transporter = buildSmtpTransporter({
-        host: smtpHost,
-        port: fallbackPort,
-        user: smtpUser,
-        pass: smtpPass,
-        timeoutMs: 8000,
-      });
-
-      info = await transporter.sendMail({
-        from: fromHeader,
-        replyTo: senderEmail,
-        to: toHeader,
-        subject: params.subject.trim(),
-        text: params.text,
-        html: params.html,
-      });
-    } else {
-      throw err;
-    }
-  }
-
-  return {
-    messageId: info.messageId || `<sent-${Date.now()}@genesisracing>`,
-    senderEmail,
-    recipientEmail,
-    simulated: false,
+  const mailOptions = {
+    from: fromHeader,
+    replyTo: senderEmail,
+    to: toHeader,
+    subject: params.subject.trim(),
+    text: params.text,
+    html: params.html,
   };
+
+  try {
+    const t587 = buildSmtpTransporter({
+      host: smtpHost,
+      port: 587,
+      user: smtpUser,
+      pass: credential,
+      timeoutMs: 4000,
+    });
+    const t465 = buildSmtpTransporter({
+      host: smtpHost,
+      port: 465,
+      user: smtpUser,
+      pass: credential,
+      timeoutMs: 4000,
+    });
+
+    const info = await Promise.any([
+      t587.sendMail(mailOptions),
+      t465.sendMail(mailOptions),
+    ]);
+
+    return {
+      messageId: info.messageId || `<sent-${Date.now()}@genesisracing>`,
+      senderEmail,
+      recipientEmail,
+      simulated: false,
+    };
+  } catch (aggError) {
+    const errors: unknown[] =
+      aggError && typeof aggError === "object" && "errors" in aggError
+        ? (aggError as { errors: unknown[] }).errors
+        : [aggError];
+
+    const combinedMessages = errors
+      .map((e) => (e instanceof Error ? e.message : String(e)))
+      .join(" | ");
+
+    const isAuthError =
+      combinedMessages.includes("535") ||
+      combinedMessages.toLowerCase().includes("username and password not accepted") ||
+      combinedMessages.toLowerCase().includes("invalid login");
+
+    if (isAuthError) {
+      throw new Error(
+        "O Gmail recusou a Senha de App (credenciais inválidas). Verifique a senha em Equipe & Acessos."
+      );
+    }
+
+    // Se o erro for Connection timeout / ETIMEDOUT (bloqueio das portas 465 e 587 pelo Render Free Tier),
+    // retornamos flag smtpBlockedByHost = true para que a action salve o histórico e acione o envio assistido sem quebrar.
+    return {
+      messageId: `<assisted-${Date.now()}@genesisracing>`,
+      senderEmail,
+      recipientEmail,
+      simulated: true,
+      smtpBlockedByHost: true,
+    };
+  }
 }

@@ -371,6 +371,7 @@ export async function sendStakeholderReportEmailAction(
     recipientEmail: string;
     senderEmail: string;
     simulated: boolean;
+    smtpBlockedByHost?: boolean;
   }>
 > {
   const user = await requireAuthUser();
@@ -443,12 +444,15 @@ export async function sendStakeholderReportEmailAction(
 
     return {
       success: true,
-      message: `E-mail enviado com sucesso para ${emailResult.recipientEmail} (via ${emailResult.senderEmail})!`,
+      message: emailResult.smtpBlockedByHost
+        ? `Registro salvo! Como o Render Free bloqueia as portas SMTP 465/587, o Gmail Web foi aberto com o relatório pronto para envio para ${emailResult.recipientEmail}.`
+        : `E-mail enviado com sucesso para ${emailResult.recipientEmail} (via ${emailResult.senderEmail})!`,
       data: {
         logId: log.id,
         recipientEmail: emailResult.recipientEmail,
         senderEmail: emailResult.senderEmail,
         simulated: emailResult.simulated,
+        smtpBlockedByHost: emailResult.smtpBlockedByHost,
       },
     };
   } catch (error) {

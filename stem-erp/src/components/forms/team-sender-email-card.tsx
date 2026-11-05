@@ -188,7 +188,7 @@ export function TeamSenderEmailCard({
             <div className={styles.passCol()}>
               <Label htmlFor="team-smtp-pass-input" className="flex items-center gap-1.5 text-xs font-semibold">
                 <KeyRound className="h-3.5 w-3.5 text-primary" />
-                <span>Senha de App para Autorizar (16 letras)</span>
+                <span>Senha de App (16 letras) ou URL HTTPS (Google Script)</span>
               </Label>
               <Input
                 id="team-smtp-pass-input"
@@ -199,7 +199,7 @@ export function TeamSenderEmailCard({
                 placeholder={
                   isActive
                     ? "•••••••••••••••• (Autorizado)"
-                    : "Cole aqui as 16 letras geradas no Google"
+                    : "Cole as 16 letras ou URL https://script.google.com/..."
                 }
                 className="text-xs sm:text-sm"
               />

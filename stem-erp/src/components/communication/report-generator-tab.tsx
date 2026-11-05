@@ -146,6 +146,15 @@ export function ReportGeneratorTab({
         return;
       }
 
+      if (res.data?.smtpBlockedByHost) {
+        const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
+          res.data.recipientEmail
+        )}&su=${encodeURIComponent(
+          generatedResult.emailSubject
+        )}&body=${encodeURIComponent(generatedResult.emailPlainText)}`;
+        window.open(gmailComposeUrl, "_blank", "noopener,noreferrer");
+      }
+
       toast.success(res.message);
     } catch {
       toast.error("Ocorreu um erro inesperado ao disparar o e-mail.");
