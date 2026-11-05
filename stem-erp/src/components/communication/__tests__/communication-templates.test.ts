@@ -72,6 +72,8 @@ describe("Communication Templates Generator", () => {
     assert.ok(res.emailHtml.includes("Diretor Marcos"));
     assert.ok(res.emailHtml.includes("Saldo em Caixa Atual"));
     assert.ok(!res.emailHtml.includes("Runway"), "Não deve incluir Runway no relatório");
+    assert.ok(res.emailHtml.includes("#0f2942"), "O cabeçalho deve possuir background azul escuro (#0f2942)");
+    assert.ok(!res.emailHtml.includes("📊"), "Não deve conter emojis nos títulos de seção do HTML");
   });
 
   it("deve gerar prestação de contas de ROI com entregas recentes de patrocínio", () => {

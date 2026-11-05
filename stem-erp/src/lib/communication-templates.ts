@@ -64,7 +64,7 @@ export function generateCommunicationReport(options: BuildReportOptions): Genera
   let subject = `Relatório Oficial - ${data.teamName} (${dateFormatted})`;
 
   if (reportType === "FINANCIAL" || reportType === "COMBINED") {
-    waLines.push(`📊 *BALANÇO FINANCEIRO DA TEMPORADA*`);
+    waLines.push(`*BALANÇO FINANCEIRO DA TEMPORADA*`);
     waLines.push(`• Total Arrecadado (Origens): *${formatCurrency(data.financialMetrics.totalRevenueCents)}*`);
     waLines.push(`• Total Aplicado (Custos/Peças): *${formatCurrency(data.financialMetrics.totalExpenseCents)}*`);
     waLines.push(`• Saldo em Caixa Atual: *${formatCurrency(data.financialMetrics.currentBalanceCents)}*`);
@@ -79,14 +79,14 @@ export function generateCommunicationReport(options: BuildReportOptions): Genera
       ? `Relatório de Contrapartidas & ROI - ${data.teamName}` 
       : subject;
 
-    waLines.push(`📈 *RETORNO SOBRE O INVESTIMENTO (ROI DE PATROCÍNIO)*`);
+    waLines.push(`*RETORNO SOBRE O INVESTIMENTO (ROI DE PATROCÍNIO)*`);
     waLines.push(`• Investimento Direto Captado: *${formatCurrency(data.roiMetrics.totalDirectInvestmentCents)}*`);
     waLines.push(`• Valor em Mídia e Entregas Geradas: *${formatCurrency(data.roiMetrics.totalDeliveredValueCents)}*`);
     waLines.push(`• Índice de Retorno Geral: *${data.roiMetrics.roiPercentage}%*`);
     waLines.push("");
 
     if (data.recentActions.length > 0) {
-      waLines.push(`🚀 *ÚLTIMAS ENTREGAS E EXPOSIÇÃO:*`);
+      waLines.push(`*ÚLTIMAS ENTREGAS E EXPOSIÇÃO:*`);
       data.recentActions.slice(0, 3).forEach((action) => {
         const actionDate = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(new Date(action.date));
         waLines.push(`• [${actionDate}] *${action.title}* (${action.sponsorName}) - Retorno: ${formatCurrency(action.valueCents)}${action.reachCount ? ` | Alcance: ${action.reachCount.toLocaleString("pt-BR")} pessoas` : ""}`);
@@ -95,8 +95,8 @@ export function generateCommunicationReport(options: BuildReportOptions): Genera
     }
   }
 
-  waLines.push(`🤝 _Agradecemos imensamente a sua confiança e parceria no desenvolvimento dos nossos estudantes e engenheiros do futuro!_`);
-  waLines.push(`💬 Dúvidas, sugestões ou feedbacks? Responda diretamente esta mensagem.`);
+  waLines.push(`_Agradecemos imensamente a sua confiança e parceria no desenvolvimento dos nossos estudantes e engenheiros do futuro!_`);
+  waLines.push(`Dúvidas, sugestões ou feedbacks? Responda diretamente esta mensagem.`);
 
   const whatsappText = waLines.join("\n");
 
@@ -114,26 +114,27 @@ export function generateCommunicationReport(options: BuildReportOptions): Genera
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>${subject}</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f4f5; margin: 0; padding: 24px; color: #18181b;">
   <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #e4e4e7; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-    <div style="background-color: #18181b; padding: 20px 24px; color: #ffffff;">
-      <h2 style="margin: 0; font-size: 18px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">${data.teamName} | Relatório de Transparência</h2>
-      <p style="margin: 4px 0 0; font-size: 13px; color: #a1a1aa;">Data de Emissão: ${dateFormatted}</p>
+    <div style="background-color: #0f2942; padding: 22px 24px; color: #ffffff;">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${data.teamName} | Relatório de Transparência</h2>
+      <p style="margin: 4px 0 0; font-size: 13px; color: #94a3b8;">Data de Emissão: ${dateFormatted}</p>
     </div>
     
     <div style="padding: 24px;">
       <p style="font-size: 15px; line-height: 1.5; margin-top: 0;">${greeting}</p>
       
       ${customMessage ? `
-      <div style="background-color: #f4f4f5; border-left: 4px solid #18181b; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
-        <strong style="display: block; font-size: 13px; margin-bottom: 4px;">Nota da Equipe:</strong>
-        <span style="font-size: 14px; color: #3f3f46;">${customMessage.trim()}</span>
+      <div style="background-color: #f8fafc; border-left: 4px solid #0f2942; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+        <strong style="display: block; font-size: 13px; margin-bottom: 4px; color: #0f2942;">Nota da Equipe:</strong>
+        <span style="font-size: 14px; color: #334155;">${customMessage.trim()}</span>
       </div>` : ""}
 
       ${(reportType === "FINANCIAL" || reportType === "COMBINED") ? `
-      <h3 style="font-size: 16px; border-bottom: 2px solid #e4e4e7; padding-bottom: 8px; margin-top: 24px; color: #09090b;">📊 Balanço Financeiro da Temporada</h3>
+      <h3 style="font-size: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-top: 24px; color: #0f172a;">Balanço Financeiro da Temporada</h3>
       <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px;">
         <tr style="border-bottom: 1px solid #f4f4f5;">
           <td style="padding: 8px 0; color: #52525b;">Total Arrecadado (Origens):</td>
@@ -155,7 +156,7 @@ export function generateCommunicationReport(options: BuildReportOptions): Genera
       </table>` : ""}
 
       ${(reportType === "ROI" || reportType === "COMBINED") ? `
-      <h3 style="font-size: 16px; border-bottom: 2px solid #e4e4e7; padding-bottom: 8px; margin-top: 24px; color: #09090b;">📈 Retorno sobre Investimento (ROI de Patrocínio)</h3>
+      <h3 style="font-size: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-top: 24px; color: #0f172a;">Retorno sobre Investimento (ROI de Patrocínio)</h3>
       <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px;">
         <tr style="border-bottom: 1px solid #f4f4f5;">
           <td style="padding: 8px 0; color: #52525b;">Investimento Direto Captado:</td>
