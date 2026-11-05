@@ -37,6 +37,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
   SelectContent,
@@ -249,9 +250,8 @@ export function CreateReturnActionDialog({
                   <FormItem>
                     <FormLabel>Valor de Retorno Gerado (R$)</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Ex: 1500,00"
-                        inputMode="decimal"
+                      <CurrencyInput
+                        placeholder="Ex: 1.500,00"
                         {...field}
                       />
                     </FormControl>

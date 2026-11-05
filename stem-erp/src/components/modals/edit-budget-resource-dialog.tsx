@@ -14,7 +14,11 @@ import {
   acquisitionStrategyValues,
   deliveryGroupValues,
 } from "@/lib/validations/financial";
-import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
+import {
+  formatCentsToReais,
+  formatCurrencyFromCents,
+  parseReaisToCents,
+} from "@/lib/utils";
 import {
   createCategoryAction,
   updateBudgetResourceAction,
@@ -45,6 +49,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
   SelectContent,
@@ -131,7 +136,7 @@ export function EditBudgetResourceDialog({
       allocatedTo: resource.allocatedTo,
       plannedMonth: resource.plannedMonth,
       utilizationForecast: resource.utilizationForecast,
-      plannedAmountReais: (resource.plannedAmountCents / 100).toFixed(2),
+      plannedAmountReais: formatCentsToReais(resource.plannedAmountCents),
     },
   });
 
@@ -145,7 +150,7 @@ export function EditBudgetResourceDialog({
         allocatedTo: resource.allocatedTo,
         plannedMonth: resource.plannedMonth,
         utilizationForecast: resource.utilizationForecast,
-        plannedAmountReais: (resource.plannedAmountCents / 100).toFixed(2),
+        plannedAmountReais: formatCentsToReais(resource.plannedAmountCents),
       });
       setIsCreatingCategory(false);
       setNewCategoryName("");
@@ -470,7 +475,7 @@ export function EditBudgetResourceDialog({
                   <FormItem>
                     <FormLabel>Valor Previsto (R$)</FormLabel>
                     <FormControl>
-                      <Input placeholder="0,00" {...field} />
+                      <CurrencyInput placeholder="0,00" {...field} />
                     </FormControl>
                     <FormDescription className="text-xs">
                       {watchedReais

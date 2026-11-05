@@ -54,6 +54,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
   SelectContent,
@@ -415,9 +416,8 @@ export function CreateTransactionDialog({
                   <FormItem>
                     <FormLabel>Valor Realizado (R$)</FormLabel>
                     <FormControl>
-                      <Input
+                      <CurrencyInput
                         placeholder="Ex: 450,00"
-                        inputMode="decimal"
                         {...field}
                       />
                     </FormControl>

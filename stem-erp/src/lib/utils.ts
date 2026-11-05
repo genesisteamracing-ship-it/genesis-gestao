@@ -17,16 +17,86 @@ export function formatCurrencyFromCents(amountCents: number): string {
 }
 
 /**
- * Converte string de valor em Reais (ex: "150,50" ou "150.50") para centavos inteiros (15050)
+ * Converte centavos inteiros (ex: 15050) em string formatada em Reais sem o símbolo de moeda (ex: "150,50" ou "1.500,00").
+ * Se centavos for 0 ou inválido, retorna "0,00".
+ */
+export function formatCentsToReais(amountCents: number): string {
+  if (!Number.isFinite(amountCents) || amountCents <= 0) {
+    return "0,00";
+  }
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amountCents / 100);
+}
+
+/**
+ * Converte string de valor em Reais (ex: "150,50", "1.500,00" ou "150.50") para centavos inteiros (15050).
+ * Trata separadores de milhar (.) e decimais (,) corretamente.
  */
 export function parseReaisToCents(reaisInput: string | number): number {
   if (typeof reaisInput === "number") {
-    return Math.round(reaisInput * 100);
+    return Number.isFinite(reaisInput) ? Math.round(reaisInput * 100) : 0;
   }
-  const normalized = reaisInput.replace(/[^\d,.-]/g, "").replace(",", ".");
-  const parsed = Number.parseFloat(normalized);
+  if (!reaisInput) return 0;
+
+  const clean = reaisInput.toString().trim();
+  if (!clean) return 0;
+
+  // Se contiver vírgula (padrão brasileiro: "1.250,50" ou "450,00")
+  if (clean.includes(",")) {
+    // Remove todos os pontos de milhar e substitui a vírgula por ponto decimal
+    const normalized = clean.replace(/\./g, "").replace(",", ".");
+    const parsed = Number.parseFloat(normalized);
+    return Number.isNaN(parsed) ? 0 : Math.round(parsed * 100);
+  }
+
+  // Se não contiver vírgula (ex: "1250.50" ou "450")
+  const parsed = Number.parseFloat(clean);
   if (Number.isNaN(parsed)) return 0;
   return Math.round(parsed * 100);
+}
+
+/**
+ * Aplica a máscara monetária estilo ATM (começando dos centavos e deslocando casas à esquerda automaticamente).
+ * Exemplos:
+ * "" -> ""
+ * "1" -> "0,01"
+ * "12" -> "0,12"
+ * "123" -> "1,23"
+ * "1234" -> "12,34"
+ * "123456" -> "1.234,56"
+ * Apagar último dígito de "0,01" -> "" (campo limpo)
+ */
+export function formatCurrencyMask(value: string | number): string {
+  if (value === null || value === undefined) return "";
+  const rawStr = String(value).trim();
+  if (rawStr === "") return "";
+
+  // Extrai apenas os dígitos numéricos
+  const digits = rawStr.replace(/\D/g, "");
+  if (!digits) return "";
+
+  // Limita a 12 dígitos para evitar overflow numérico
+  const limitedDigits = digits.slice(-12);
+
+  // Remove zeros à esquerda
+  const unpadded = limitedDigits.replace(/^0+/, "");
+
+  if (!unpadded) {
+    // Se o usuário digitou exatamente um único "0", formata como "0,00"
+    if (limitedDigits === "0") return "0,00";
+    // Se sobrou apenas zeros (ex: apagou o '1' em '0,01' virando '0,0'), limpa o campo
+    return "";
+  }
+
+  const cents = parseInt(unpadded, 10);
+  if (Number.isNaN(cents) || cents === 0) return "";
+
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
 }
 
 /**

@@ -42,6 +42,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
   SelectContent,
@@ -488,9 +489,8 @@ export function CreateBudgetResourceDialog({
                   <FormItem>
                     <FormLabel>Valor Previsto (R$)</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Ex: 1200,00"
-                        inputMode="decimal"
+                      <CurrencyInput
+                        placeholder="Ex: 1.200,00"
                         {...field}
                       />
                     </FormControl>

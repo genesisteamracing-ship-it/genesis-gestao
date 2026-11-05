@@ -22,7 +22,11 @@ import {
   trackingMethodValues,
   transactionTypeValues,
 } from "@/lib/validations/financial";
-import { formatCurrencyFromCents, parseReaisToCents } from "@/lib/utils";
+import {
+  formatCentsToReais,
+  formatCurrencyFromCents,
+  parseReaisToCents,
+} from "@/lib/utils";
 import { updateTransactionAction } from "@/actions/financial-actions";
 import { useDashboardMetrics } from "@/hooks/use-dashboard-metrics";
 import { useInvalidateDashboard } from "@/hooks/use-invalidate-dashboard";
@@ -52,6 +56,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
   SelectContent,
@@ -121,7 +126,7 @@ export function EditTransactionDialog({
       description: transaction.description,
       trackingMethod: transaction.trackingMethod,
       documentRef: transaction.documentRef ?? "",
-      amountReais: (transaction.amountCents / 100).toFixed(2),
+      amountReais: formatCentsToReais(transaction.amountCents),
     },
   });
 
@@ -137,7 +142,7 @@ export function EditTransactionDialog({
         description: transaction.description,
         trackingMethod: transaction.trackingMethod,
         documentRef: transaction.documentRef ?? "",
-        amountReais: (transaction.amountCents / 100).toFixed(2),
+        amountReais: formatCentsToReais(transaction.amountCents),
       });
     }
   }, [open, transaction, form]);
@@ -262,7 +267,7 @@ export function EditTransactionDialog({
                   <FormItem>
                     <FormLabel>Valor Realizado (R$)</FormLabel>
                     <FormControl>
-                      <Input placeholder="0,00" {...field} />
+                      <CurrencyInput placeholder="0,00" {...field} />
                     </FormControl>
                     <FormDescription className="text-xs">
                       {watchedReais
