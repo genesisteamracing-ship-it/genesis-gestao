@@ -133,12 +133,12 @@ export function TeamSenderEmailCard({
             {isActive ? (
               <>
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Ativo</span>
+                <span>Autorizado</span>
               </>
             ) : (
               <>
                 <XCircle className="h-3.5 w-3.5" />
-                <span>Inativo</span>
+                <span>Não Autorizado</span>
               </>
             )}
           </Badge>
@@ -179,6 +179,7 @@ export function TeamSenderEmailCard({
                 value={senderEmail}
                 onChange={(e) => setSenderEmail(e.target.value)}
                 placeholder="genesisteamracing@gmail.com"
+                disabled={isActive || isSaving}
                 required
                 className="text-xs sm:text-sm"
               />
@@ -194,9 +195,10 @@ export function TeamSenderEmailCard({
                 type="password"
                 value={smtpAppPassword}
                 onChange={(e) => setSmtpAppPassword(e.target.value)}
+                disabled={isActive || isSaving}
                 placeholder={
                   isActive
-                    ? "•••••••••••••••• (Autorizado — digite para renovar)"
+                    ? "•••••••••••••••• (Autorizado)"
                     : "Cole aqui as 16 letras geradas no Google"
                 }
                 className="text-xs sm:text-sm"
@@ -204,21 +206,21 @@ export function TeamSenderEmailCard({
             </div>
 
             <div className={styles.actionsCol()}>
-              <Button type="submit" disabled={isSaving} className="w-full gap-1.5 font-semibold">
-                <ShieldCheck className="h-4 w-4" />
-                <span>{isSaving ? "Verificando..." : "Autorizar"}</span>
-              </Button>
-              {isActive && (
+              {isActive ? (
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   disabled={isRevoking}
                   onClick={handleRevoke}
-                  className="w-full gap-1.5 text-xs text-destructive hover:text-destructive"
+                  className="w-full gap-1.5 font-semibold text-destructive hover:text-destructive border-destructive/40 hover:bg-destructive/10"
                 >
-                  <Unplug className="h-3.5 w-3.5" />
-                  <span>{isRevoking ? "Desativando..." : "Desativar"}</span>
+                  <Unplug className="h-4 w-4" />
+                  <span>{isRevoking ? "Desconectando..." : "Desconectar"}</span>
+                </Button>
+              ) : (
+                <Button type="submit" disabled={isSaving} className="w-full gap-1.5 font-semibold">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>{isSaving ? "Verificando..." : "Autorizar"}</span>
                 </Button>
               )}
             </div>
