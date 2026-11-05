@@ -71,7 +71,6 @@ export function generateCommunicationReport(options: BuildReportOptions): Genera
     if (data.financialMetrics.inKindTotalCents > 0) {
       waLines.push(`• Apoio em Serviços/Barter (In-Kind): *${formatCurrency(data.financialMetrics.inKindTotalCents)}*`);
     }
-    waLines.push(`• Autonomia Projetada (Runway): *${data.financialMetrics.projectedRunwayMonths} mês(es)*`);
     waLines.push("");
   }
 
@@ -153,10 +152,6 @@ export function generateCommunicationReport(options: BuildReportOptions): Genera
           <td style="padding: 8px 0; color: #52525b;">Apoio em Barter / Serviços:</td>
           <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #0284c7;">${formatCurrency(data.financialMetrics.inKindTotalCents)}</td>
         </tr>` : ""}
-        <tr>
-          <td style="padding: 8px 0; color: #52525b;">Autonomia Projetada (Runway):</td>
-          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #09090b;">${data.financialMetrics.projectedRunwayMonths} mês(es)</td>
-        </tr>
       </table>` : ""}
 
       ${(reportType === "ROI" || reportType === "COMBINED") ? `

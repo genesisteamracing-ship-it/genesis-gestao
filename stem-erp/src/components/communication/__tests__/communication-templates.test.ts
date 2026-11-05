@@ -70,7 +70,8 @@ describe("Communication Templates Generator", () => {
     // Validar Email
     assert.ok(res.emailSubject.includes("Relatório Oficial"));
     assert.ok(res.emailHtml.includes("Diretor Marcos"));
-    assert.ok(res.emailHtml.includes("Runway"));
+    assert.ok(res.emailHtml.includes("Saldo em Caixa Atual"));
+    assert.ok(!res.emailHtml.includes("Runway"), "Não deve incluir Runway no relatório");
   });
 
   it("deve gerar prestação de contas de ROI com entregas recentes de patrocínio", () => {

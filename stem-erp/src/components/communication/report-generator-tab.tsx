@@ -231,7 +231,7 @@ export function ReportGeneratorTab({
                     Executivo Completo (Financeiro + ROI e Entregas)
                   </SelectItem>
                   <SelectItem value="FINANCIAL" className="text-xs sm:text-sm">
-                    Balanço Financeiro (Caixa, Entradas, Saídas, Runway)
+                    Balanço Financeiro (Caixa, Entradas e Saídas)
                   </SelectItem>
                   <SelectItem value="ROI" className="text-xs sm:text-sm">
                     Prestação de Contas de Patrocínio (ROI e Entregas)
