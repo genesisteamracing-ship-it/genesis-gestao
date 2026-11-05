@@ -852,6 +852,12 @@ const FALLBACK_SYSTEM_USER: AuthenticatedUserDTO = {
   teamName: "Equipe Gênesis",
   deliveryGroup: DeliveryGroup.PROJECT_MANAGEMENT,
   jobTitle: "Team Principal & SuperAdmin",
+  permissions: {
+    finance: true,
+    roi: true,
+    communication: true,
+    team: true,
+  },
 };
 
 export async function getDashboardMetricsService(

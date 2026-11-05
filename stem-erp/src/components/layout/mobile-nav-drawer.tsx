@@ -34,6 +34,7 @@ import {
   FINANCE_SUB_ITEMS,
   ROI_SUB_ITEMS,
   COMMUNICATION_SUB_ITEMS,
+  TEAM_SUB_ITEMS,
 } from "@/components/layout/app-sidebar";
 import { useSidebar } from "@/providers/sidebar-provider";
 
@@ -71,8 +72,17 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
     pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
   const [isComunicacaoOpen, setIsComunicacaoOpen] = React.useState<boolean>(false);
 
-  const isEquipeActive =
-    pathname === "/equipe" || pathname.startsWith("/equipe/");
+  const permissions = currentUser.permissions ?? {
+    finance: true,
+    roi: true,
+    communication: true,
+    team: isSuperAdmin,
+  };
+
+  const isEquipeRouteActive = TEAM_SUB_ITEMS.some(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
+  );
+  const [isEquipeOpen, setIsEquipeOpen] = React.useState<boolean>(false);
 
   const searchParams = useSearchParams();
   const currentTab = searchParams ? searchParams.get("tab") : null;
@@ -108,154 +118,196 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
         {/* Links de Navegação */}
         <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
           {/* Grupo: Finanças */}
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => setIsFinanceOpen((prev) => !prev)}
-              aria-expanded={isFinanceOpen}
-              className={sidebarItemStyles({
-                isActive: isFinanceRouteActive && !isFinanceOpen,
-              })}
-            >
-              <Wallet className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">Finanças</span>
-              <ChevronDown
-                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
-                  isFinanceOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {isFinanceOpen && (
-              <div className="ml-4 space-y-1 border-l border-border pl-2.5">
-                {FINANCE_SUB_ITEMS.map((item) => {
-                  const Icon = item.icon;
-                  const isActive =
-                    pathname === item.href ||
-                    pathname.startsWith(`${item.href}/`);
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsMobileOpen(false)}
-                      className={sidebarItemStyles({
-                        isActive,
-                        isSubItem: true,
-                      })}
-                    >
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
+          {permissions.finance && (
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setIsFinanceOpen((prev) => !prev)}
+                aria-expanded={isFinanceOpen}
+                className={sidebarItemStyles({
+                  isActive: isFinanceRouteActive && !isFinanceOpen,
                 })}
-              </div>
-            )}
-          </div>
+              >
+                <Wallet className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">Finanças</span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                    isFinanceOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isFinanceOpen && (
+                <div className="ml-4 space-y-1 border-l border-border pl-2.5">
+                  {FINANCE_SUB_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      pathname === item.href ||
+                      pathname.startsWith(`${item.href}/`);
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsMobileOpen(false)}
+                        className={sidebarItemStyles({
+                          isActive,
+                          isSubItem: true,
+                        })}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Grupo: ROI & Patrocínio */}
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => setIsRoiOpen((prev) => !prev)}
-              aria-expanded={isRoiOpen}
-              className={sidebarItemStyles({
-                isActive: isRoiRouteActive && !isRoiOpen,
-              })}
-            >
-              <TrendingUp className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">ROI</span>
-              <ChevronDown
-                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
-                  isRoiOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {isRoiOpen && (
-              <div className="ml-4 space-y-1 border-l border-border pl-2.5">
-                {ROI_SUB_ITEMS.map((item) => {
-                  const Icon = item.icon;
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== "/roi" && pathname.startsWith(`${item.href}/`)) ||
-                    (item.href === "/roi" && pathname === "/roi");
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsMobileOpen(false)}
-                      className={sidebarItemStyles({
-                        isActive,
-                        isSubItem: true,
-                      })}
-                    >
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
+          {permissions.roi && (
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setIsRoiOpen((prev) => !prev)}
+                aria-expanded={isRoiOpen}
+                className={sidebarItemStyles({
+                  isActive: isRoiRouteActive && !isRoiOpen,
                 })}
-              </div>
-            )}
-          </div>
+              >
+                <TrendingUp className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">ROI</span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                    isRoiOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isRoiOpen && (
+                <div className="ml-4 space-y-1 border-l border-border pl-2.5">
+                  {ROI_SUB_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      pathname === item.href ||
+                      (item.href !== "/roi" && pathname.startsWith(`${item.href}/`)) ||
+                      (item.href === "/roi" && pathname === "/roi");
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsMobileOpen(false)}
+                        className={sidebarItemStyles({
+                          isActive,
+                          isSubItem: true,
+                        })}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Grupo: Comunicação com Submódulos */}
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => setIsComunicacaoOpen((prev) => !prev)}
-              aria-expanded={isComunicacaoOpen}
-              className={sidebarItemStyles({
-                isActive: isComunicacaoRouteActive && !isComunicacaoOpen,
-              })}
-            >
-              <MessageSquareText className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">Comunicação</span>
-              <ChevronDown
-                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
-                  isComunicacaoOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {isComunicacaoOpen && (
-              <div className="ml-4 space-y-1 border-l border-border pl-2.5">
-                {COMMUNICATION_SUB_ITEMS.map((item) => {
-                  const Icon = item.icon;
-                  const isActive =
-                    pathname === "/comunicacao" &&
-                    (currentTab === item.tabKey || (!currentTab && item.tabKey === "mapa"));
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsMobileOpen(false)}
-                      className={sidebarItemStyles({
-                        isActive,
-                        isSubItem: true,
-                      })}
-                    >
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
+          {permissions.communication && (
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setIsComunicacaoOpen((prev) => !prev)}
+                aria-expanded={isComunicacaoOpen}
+                className={sidebarItemStyles({
+                  isActive: isComunicacaoRouteActive && !isComunicacaoOpen,
                 })}
-              </div>
-            )}
-          </div>
+              >
+                <MessageSquareText className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">Comunicação</span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                    isComunicacaoOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
 
-          {/* Grupo: Equipe & Acessos (SuperAdmin) */}
-          {isSuperAdmin && (
-            <Link
-              href="/equipe"
-              onClick={() => setIsMobileOpen(false)}
-              className={sidebarItemStyles({ isActive: isEquipeActive })}
-            >
-              <Users className="h-4 w-4 shrink-0" />
-              <span>Equipe & Acessos</span>
-            </Link>
+              {isComunicacaoOpen && (
+                <div className="ml-4 space-y-1 border-l border-border pl-2.5">
+                  {COMMUNICATION_SUB_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      pathname === "/comunicacao" &&
+                      (currentTab === item.tabKey || (!currentTab && item.tabKey === "mapa"));
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsMobileOpen(false)}
+                        className={sidebarItemStyles({
+                          isActive,
+                          isSubItem: true,
+                        })}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Grupo: Equipe & Acessos */}
+          {(permissions.team || isSuperAdmin) && (
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setIsEquipeOpen((prev) => !prev)}
+                aria-expanded={isEquipeOpen}
+                className={sidebarItemStyles({
+                  isActive: isEquipeRouteActive && !isEquipeOpen,
+                })}
+              >
+                <Users className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">Equipe & Acessos</span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                    isEquipeOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isEquipeOpen && (
+                <div className="ml-4 space-y-1 border-l border-border pl-2.5">
+                  {TEAM_SUB_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      pathname === item.href ||
+                      pathname.startsWith(`${item.href}/`);
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsMobileOpen(false)}
+                        className={sidebarItemStyles({
+                          isActive,
+                          isSubItem: true,
+                        })}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
         </div>
 

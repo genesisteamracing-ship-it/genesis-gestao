@@ -1,4 +1,5 @@
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
+import { requireModuleAccess } from "@/services/auth-service";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { ResourcesDataTable } from "@/components/tables/resources-data-table";
 import { CreateBudgetResourceDialog } from "@/components/modals/create-budget-resource-dialog";
@@ -6,7 +7,10 @@ import { CreateBudgetResourceDialog } from "@/components/modals/create-budget-re
 export const dynamic = "force-dynamic";
 
 export default async function PlanejamentoPage() {
-  const metrics = await getDashboardMetricsAction();
+  const [, metrics] = await Promise.all([
+    requireModuleAccess("finance"),
+    getDashboardMetricsAction(),
+  ]);
 
   return (
     <DashboardShell

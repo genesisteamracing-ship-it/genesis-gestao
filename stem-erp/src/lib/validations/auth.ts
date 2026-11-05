@@ -108,9 +108,36 @@ export const deleteMemberSchema = z.object({
   userId: z.string().min(1, "ID do integrante é obrigatório"),
 });
 
+export const systemModuleKeySchema = z.enum([
+  "finance",
+  "roi",
+  "communication",
+  "team",
+]);
+
+export const toggleUserModulePermissionSchema = z.object({
+  userId: z.string().min(1, "ID do usuário é obrigatório."),
+  moduleKey: systemModuleKeySchema,
+  allowed: z.boolean(),
+});
+
+export const updateAllUserPermissionsSchema = z.object({
+  userId: z.string().min(1, "ID do usuário é obrigatório."),
+  finance: z.boolean(),
+  roi: z.boolean(),
+  communication: z.boolean(),
+  team: z.boolean(),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type UpdateMemberAccessInput = z.infer<typeof updateMemberAccessSchema>;
 export type DeleteTeamInput = z.infer<typeof deleteTeamSchema>;
 export type DeleteMemberInput = z.infer<typeof deleteMemberSchema>;
+export type ToggleUserModulePermissionInput = z.infer<
+  typeof toggleUserModulePermissionSchema
+>;
+export type UpdateAllUserPermissionsInput = z.infer<
+  typeof updateAllUserPermissionsSchema
+>;

@@ -24,8 +24,8 @@ description: "Task list for Gerenciamento de Permissões de Acesso por Usuário 
 
 **Purpose**: Evolução do schema Prisma e definição das interfaces e tipos base de permissões por módulo.
 
-- [ ] T001 Add boolean permission fields `canAccessFinance Boolean @default(true)`, `canAccessRoi Boolean @default(true)`, `canAccessCommunication Boolean @default(true)`, and `canAccessTeam Boolean @default(false)` to the `User` model in `stem-erp/prisma/schema.prisma` and regenerate Prisma Client
-- [ ] T002 [P] Define `SystemModuleKey` (`"finance" | "roi" | "communication" | "team"`) and `UserModulePermissionsDTO` (`finance: boolean`, `roi: boolean`, `communication: boolean`, `team: boolean`), extending `AuthenticatedUserDTO` and `TeamMemberDTO` with `permissions: UserModulePermissionsDTO` in `stem-erp/src/types/auth.ts`
+- [x] T001 Add boolean permission fields `canAccessFinance Boolean @default(true)`, `canAccessRoi Boolean @default(true)`, `canAccessCommunication Boolean @default(true)`, and `canAccessTeam Boolean @default(false)` to the `User` model in `stem-erp/prisma/schema.prisma` and regenerate Prisma Client
+- [x] T002 [P] Define `SystemModuleKey` (`"finance" | "roi" | "communication" | "team"`) and `UserModulePermissionsDTO` (`finance: boolean`, `roi: boolean`, `communication: boolean`, `team: boolean`), extending `AuthenticatedUserDTO` and `TeamMemberDTO` with `permissions: UserModulePermissionsDTO` in `stem-erp/src/types/auth.ts`
 
 ---
 
@@ -35,10 +35,10 @@ description: "Task list for Gerenciamento de Permissões de Acesso por Usuário 
 
 **⚠️ CRITICAL**: Nenhuma User Story de interface pode ser iniciada antes da conclusão desta fase.
 
-- [ ] T003 [P] Create pure permission utilities (`SYSTEM_MODULES_META`, `getDefaultModulePermissionsByRole`, `canModifyUserModulePermission`, `getFirstAllowedRoute`, `hasModuleAccess`) in `stem-erp/src/lib/permissions.ts`
-- [ ] T004 [P] Add Zod schemas `systemModuleKeySchema` (`z.enum(["finance", "roi", "communication", "team"])`), `toggleUserModulePermissionSchema` (`userId: z.string().min(1)`, `moduleKey`, `allowed: z.boolean()`), and `updateAllUserPermissionsSchema` in `stem-erp/src/lib/validations/auth.ts`
-- [ ] T005 Update `getCurrentUserFromSession`, `getTeamManagementMetricsService`, `createTeamMemberService`, and add `toggleUserModulePermissionService`, `updateAllUserPermissionsService`, and `requireModuleAccess` in `stem-erp/src/services/auth-service.ts`
-- [ ] T006 Expose Server Actions `toggleUserModulePermissionAction` and `updateAllUserPermissionsAction` with Zod validation, audit log creation, and path revalidation (`/permissoes`, `/equipe`, `/`) in `stem-erp/src/actions/auth-actions.ts`
+- [x] T003 [P] Create pure permission utilities (`SYSTEM_MODULES_META`, `getDefaultModulePermissionsByRole`, `canModifyUserModulePermission`, `getFirstAllowedRoute`, `hasModuleAccess`) in `stem-erp/src/lib/permissions.ts`
+- [x] T004 [P] Add Zod schemas `systemModuleKeySchema` (`z.enum(["finance", "roi", "communication", "team"])`), `toggleUserModulePermissionSchema` (`userId: z.string().min(1)`, `moduleKey`, `allowed: z.boolean()`), and `updateAllUserPermissionsSchema` in `stem-erp/src/lib/validations/auth.ts`
+- [x] T005 Update `getCurrentUserFromSession`, `getTeamManagementMetricsService`, `createTeamMemberService`, and add `toggleUserModulePermissionService`, `updateAllUserPermissionsService`, and `requireModuleAccess` in `stem-erp/src/services/auth-service.ts`
+- [x] T006 Expose Server Actions `toggleUserModulePermissionAction` and `updateAllUserPermissionsAction` with Zod validation, audit log creation, and path revalidation (`/permissoes`, `/equipe`, `/`) in `stem-erp/src/actions/auth-actions.ts`
 
 **Checkpoint**: Fundação pronta — serviços, tipos, banco e Server Actions operacionais.
 
@@ -52,16 +52,16 @@ description: "Task list for Gerenciamento de Permissões de Acesso por Usuário 
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Create unit tests for `toggleUserModulePermissionSchema`, `updateAllUserPermissionsSchema`, and `<ModulePermissionToggle />` style variants in `stem-erp/src/components/permissions/__tests__/permissions.test.ts`
+- [x] T007 [P] [US1] Create unit tests for `toggleUserModulePermissionSchema`, `updateAllUserPermissionsSchema`, and `<ModulePermissionToggle />` style variants in `stem-erp/src/components/permissions/__tests__/permissions.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Create `<ModulePermissionToggle />` component using `tailwind-variants` (`tv`) with explicit `SIM` and `NÃO` state indicators, semantic tokens (`bg-success`, `bg-muted`, `text-foreground`), and `role="switch"` accessibility in `stem-erp/src/components/permissions/module-permission-toggle.tsx`
-- [ ] T009 [P] [US1] Create `<PermissionsRowActions />` component encapsulating row actions ("Liberar Todos os Módulos (SIM)", "Restringir Módulos Operacionais (NÃO)") inside a single gear button (`Settings` + `<DropdownMenu align="end">`) per Rule 8 of `AGENTS.md` in `stem-erp/src/components/permissions/permissions-row-actions.tsx`
-- [ ] T010 [P] [US1] Create `usePermissionsTable` custom hook handling search by name/email, team filtering, and optimistic toggle updates in `stem-erp/src/components/permissions/use-permissions-table.ts`
-- [ ] T011 [US1] Create `<PermissionsTable />` component rendering summary KPIs, search/filter bar, desktop table with the 4 module `SIM`/`NÃO` toggles (`Financeiro`, `ROI`, `Comunicação`, `Equipe & Acessos`) + gear menu, and responsive mobile cards in `stem-erp/src/components/permissions/permissions-table.tsx`
-- [ ] T012 [US1] Create dedicated `/permissoes` page wrapped in `<DashboardShell title="Permissões de Acesso" subtitle="Configure individualmente o acesso de cada usuário aos módulos do sistema com botões SIM e NÃO">` in `stem-erp/src/app/permissoes/page.tsx`
-- [ ] T013 [US1] Add quick navigation button to `/permissoes` in the header of `stem-erp/src/app/equipe/page.tsx`
+- [x] T008 [P] [US1] Create `<ModulePermissionToggle />` component using `tailwind-variants` (`tv`) with explicit `SIM` and `NÃO` state indicators, semantic tokens (`bg-success`, `bg-muted`, `text-foreground`), and `role="switch"` accessibility in `stem-erp/src/components/permissions/module-permission-toggle.tsx`
+- [x] T009 [P] [US1] Create `<PermissionsRowActions />` component encapsulating row actions ("Liberar Todos os Módulos (SIM)", "Restringir Módulos Operacionais (NÃO)") inside a single gear button (`Settings` + `<DropdownMenu align="end">`) per Rule 8 of `AGENTS.md` in `stem-erp/src/components/permissions/permissions-row-actions.tsx`
+- [x] T010 [P] [US1] Create `usePermissionsTable` custom hook handling search by name/email, team filtering, and optimistic toggle updates in `stem-erp/src/components/permissions/use-permissions-table.ts`
+- [x] T011 [US1] Create `<PermissionsTable />` component rendering summary KPIs, search/filter bar, desktop table with the 4 module `SIM`/`NÃO` toggles (`Financeiro`, `ROI`, `Comunicação`, `Equipe & Acessos`) + gear menu, and responsive mobile cards in `stem-erp/src/components/permissions/permissions-table.tsx`
+- [x] T012 [US1] Create dedicated `/permissoes` page wrapped in `<DashboardShell title="Permissões de Acesso" subtitle="Configure individualmente o acesso de cada usuário aos módulos do sistema com botões SIM e NÃO">` in `stem-erp/src/app/permissoes/page.tsx`
+- [x] T013 [US1] Add quick navigation button to `/permissoes` in the header of `stem-erp/src/app/equipe/page.tsx`
 
 **Checkpoint**: User Story 1 completa e testável de ponta a ponta em `/permissoes`.
 
@@ -75,13 +75,13 @@ description: "Task list for Gerenciamento de Permissões de Acesso por Usuário 
 
 ### Tests for User Story 2
 
-- [ ] T014 [P] [US2] Update sidebar contract tests to verify `TEAM_SUB_ITEMS` (`/equipe` and `/permissoes`) and module visibility filtering by `UserModulePermissionsDTO` in `stem-erp/src/components/layout/__tests__/app-sidebar.test.ts`
+- [x] T014 [P] [US2] Update sidebar contract tests to verify `TEAM_SUB_ITEMS` (`/equipe` and `/permissoes`) and module visibility filtering by `UserModulePermissionsDTO` in `stem-erp/src/components/layout/__tests__/app-sidebar.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T015 [P] [US2] Update `AppSidebar` to export `TEAM_SUB_ITEMS` (`Equipes & Integrantes` -> `/equipe`, `Permissões` -> `/permissoes`) and filter `Finanças`, `ROI`, `Comunicação`, and `Equipe & Acessos` visibility based on `currentUser.permissions` in `stem-erp/src/components/layout/app-sidebar.tsx`
-- [ ] T016 [P] [US2] Update `MobileNavDrawer` to render `TEAM_SUB_ITEMS` and filter module groups based on `currentUser.permissions` in `stem-erp/src/components/layout/mobile-nav-drawer.tsx`
-- [ ] T017 [US2] Enforce server-side module access guard (`requireModuleAccess`) across module entry pages (`stem-erp/src/app/dashboard/page.tsx`, `stem-erp/src/app/planejamento/page.tsx`, `stem-erp/src/app/lancamentos/page.tsx`, `stem-erp/src/app/roi/page.tsx`, `stem-erp/src/app/roi/acoes/page.tsx`, `stem-erp/src/app/comunicacao/page.tsx`, `stem-erp/src/app/equipe/page.tsx`)
+- [x] T015 [P] [US2] Update `AppSidebar` to export `TEAM_SUB_ITEMS` (`Equipes & Integrantes` -> `/equipe`, `Permissões` -> `/permissoes`) and filter `Finanças`, `ROI`, `Comunicação`, and `Equipe & Acessos` visibility based on `currentUser.permissions` in `stem-erp/src/components/layout/app-sidebar.tsx`
+- [x] T016 [P] [US2] Update `MobileNavDrawer` to render `TEAM_SUB_ITEMS` and filter module groups based on `currentUser.permissions` in `stem-erp/src/components/layout/mobile-nav-drawer.tsx`
+- [x] T017 [US2] Enforce server-side module access guard (`requireModuleAccess`) across module entry pages (`stem-erp/src/app/dashboard/page.tsx`, `stem-erp/src/app/planejamento/page.tsx`, `stem-erp/src/app/lancamentos/page.tsx`, `stem-erp/src/app/roi/page.tsx`, `stem-erp/src/app/roi/acoes/page.tsx`, `stem-erp/src/app/comunicacao/page.tsx`, `stem-erp/src/app/equipe/page.tsx`)
 
 **Checkpoint**: User Stories 1 e 2 funcionando integradas com ocultação na sidebar e bloqueio real de rotas.
 
@@ -95,11 +95,11 @@ description: "Task list for Gerenciamento de Permissões de Acesso por Usuário 
 
 ### Tests for User Story 3
 
-- [ ] T018 [P] [US3] Add unit tests for self-lockout prevention (`canModifyUserModulePermission`), default permissions by role (`getDefaultModulePermissionsByRole`), and fallback route resolution (`getFirstAllowedRoute`) in `stem-erp/src/components/permissions/__tests__/permissions.test.ts`
+- [x] T018 [P] [US3] Add unit tests for self-lockout prevention (`canModifyUserModulePermission`), default permissions by role (`getDefaultModulePermissionsByRole`), and fallback route resolution (`getFirstAllowedRoute`) in `stem-erp/src/components/permissions/__tests__/permissions.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T019 [US3] Enforce self-lockout protection in `<PermissionsTable />` and `<PermissionsRowActions />` (disabling the `team` toggle for `currentUser.id` with explanatory tooltip) in `stem-erp/src/components/permissions/permissions-table.tsx` and `stem-erp/src/components/permissions/permissions-row-actions.tsx`
+- [x] T019 [US3] Enforce self-lockout protection in `<PermissionsTable />` and `<PermissionsRowActions />` (disabling the `team` toggle for `currentUser.id` with explanatory tooltip) in `stem-erp/src/components/permissions/permissions-table.tsx` and `stem-erp/src/components/permissions/permissions-row-actions.tsx`
 
 **Checkpoint**: Todas as 3 User Stories completas, protegidas e testadas.
 
@@ -109,8 +109,8 @@ description: "Task list for Gerenciamento de Permissões de Acesso por Usuário 
 
 **Purpose**: Sincronização de mocks existentes nos testes, verificação de compilação TypeScript estrita e execução completa da suíte de testes.
 
-- [ ] T020 [P] Update any existing test mocks of `AuthenticatedUserDTO` / `TeamMemberDTO` to include `permissions` if needed and run full test suite (`npm --prefix stem-erp test`)
-- [ ] T021 Run static type check (`npx tsc --project stem-erp/tsconfig.json --noEmit`) and validate all scenarios from `specs/003-module-access-permissions/quickstart.md`
+- [x] T020 [P] Update any existing test mocks of `AuthenticatedUserDTO` / `TeamMemberDTO` to include `permissions` if needed and run full test suite (`npm --prefix stem-erp test`)
+- [x] T021 Run static type check (`npx tsc --project stem-erp/tsconfig.json --noEmit`) and validate all scenarios from `specs/003-module-access-permissions/quickstart.md`
 
 ---
 

@@ -18,14 +18,24 @@ import type {
   DeleteMemberInput,
   DeleteTeamInput,
   LoginInput,
+  ToggleUserModulePermissionInput,
+  UpdateAllUserPermissionsInput,
   UpdateMemberAccessInput,
 } from "@/lib/validations/auth";
 import type {
   AuthenticatedUserDTO,
+  SystemModuleKey,
   TeamDTO,
   TeamManagementMetricsDTO,
   TeamMemberDTO,
+  UserModulePermissionsDTO,
 } from "@/types/auth";
+import {
+  canModifyUserModulePermission,
+  getDefaultModulePermissionsByRole,
+  getFirstAllowedRoute,
+  SYSTEM_MODULES_META,
+} from "@/lib/permissions";
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutos
@@ -359,6 +369,12 @@ export async function getCurrentUserFromSession(): Promise<AuthenticatedUserDTO 
       teamName: effectiveTeamName,
       deliveryGroup: session.user.deliveryGroup,
       jobTitle: session.user.jobTitle,
+      permissions: {
+        finance: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessFinance,
+        roi: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessRoi,
+        communication: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessCommunication,
+        team: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessTeam,
+      },
     };
   } catch {
     return null;
@@ -468,6 +484,7 @@ export async function createTeamMemberService(
 
   const passwordHash = await bcrypt.hash(input.password, 12);
   const { ipAddress, userAgent } = await getRequestMetadata();
+  const defaultPermissions = getDefaultModulePermissionsByRole(input.role);
 
   return prisma.$transaction(async (tx) => {
     const createdUser = await tx.user.create({
@@ -480,6 +497,10 @@ export async function createTeamMemberService(
         deliveryGroup: input.deliveryGroup,
         jobTitle: input.jobTitle,
         isActive: true,
+        canAccessFinance: defaultPermissions.finance,
+        canAccessRoi: defaultPermissions.roi,
+        canAccessCommunication: defaultPermissions.communication,
+        canAccessTeam: defaultPermissions.team,
         createdById: superAdmin.id,
       },
     });
@@ -701,6 +722,12 @@ export async function getTeamManagementMetricsService(): Promise<TeamManagementM
     deliveryGroup: u.deliveryGroup,
     jobTitle: u.jobTitle,
     isActive: u.isActive,
+    permissions: {
+      finance: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessFinance,
+      roi: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessRoi,
+      communication: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessCommunication,
+      team: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessTeam,
+    },
     failedLoginAttempts: u.failedLoginAttempts,
     lockedUntil: u.lockedUntil ? u.lockedUntil.toISOString() : null,
     isLocked: Boolean(u.lockedUntil && u.lockedUntil > now),
@@ -857,4 +884,152 @@ export async function deleteTeamMemberService(
 
     return targetUser;
   });
+}
+
+export async function requireModuleAccess(
+  moduleKey: SystemModuleKey
+): Promise<AuthenticatedUserDTO> {
+  const user = await requireAuthUser();
+
+  if (!user.permissions[moduleKey]) {
+    const fallbackRoute = getFirstAllowedRoute(user.permissions);
+    redirect(fallbackRoute);
+  }
+
+  return user;
+}
+
+export async function toggleUserModulePermissionService(
+  adminUser: AuthenticatedUserDTO,
+  input: ToggleUserModulePermissionInput
+): Promise<UserModulePermissionsDTO> {
+  // Apenas quem possui acesso de Equipe & Acessos / SUPER_ADMIN pode gerenciar permissões
+  if (
+    adminUser.role !== UserRole.SUPER_ADMIN &&
+    !adminUser.permissions.team
+  ) {
+    throw new Error("Permissão negada. Apenas administradores podem gerenciar acessos.");
+  }
+
+  const check = canModifyUserModulePermission({
+    currentAdminUserId: adminUser.id,
+    targetUserId: input.userId,
+    moduleKey: input.moduleKey,
+    nextAllowed: input.allowed,
+  });
+
+  if (!check.allowed) {
+    throw new Error(check.reason || "Operação de permissão inválida.");
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: input.userId },
+  });
+
+  if (!targetUser) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  const fieldMap: Record<SystemModuleKey, string> = {
+    finance: "canAccessFinance",
+    roi: "canAccessRoi",
+    communication: "canAccessCommunication",
+    team: "canAccessTeam",
+  };
+
+  const dbField = fieldMap[input.moduleKey];
+  const { ipAddress, userAgent } = await getRequestMetadata();
+
+  const updatedUser = await prisma.$transaction(async (tx) => {
+    const userUpdated = await tx.user.update({
+      where: { id: input.userId },
+      data: {
+        [dbField]: input.allowed,
+      },
+    });
+
+    const statusLabel = input.allowed ? "SIM (Habilitado)" : "NÃO (Bloqueado)";
+    const moduleLabel = SYSTEM_MODULES_META[input.moduleKey]?.label || input.moduleKey;
+
+    await tx.authAuditLog.create({
+      data: {
+        userId: adminUser.id,
+        emailAttempt: targetUser.email,
+        event: AuthEventType.USER_ROLE_UPDATED,
+        ipAddress,
+        userAgent,
+        details: `Permissão do módulo "${moduleLabel}" para "${targetUser.name}" alterada para ${statusLabel}.`,
+      },
+    });
+
+    return userUpdated;
+  });
+
+  return {
+    finance: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessFinance,
+    roi: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessRoi,
+    communication: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessCommunication,
+    team: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessTeam,
+  };
+}
+
+export async function updateAllUserPermissionsService(
+  adminUser: AuthenticatedUserDTO,
+  input: UpdateAllUserPermissionsInput
+): Promise<UserModulePermissionsDTO> {
+  if (
+    adminUser.role !== UserRole.SUPER_ADMIN &&
+    !adminUser.permissions.team
+  ) {
+    throw new Error("Permissão negada. Apenas administradores podem gerenciar acessos.");
+  }
+
+  // Previne auto-bloqueio administrativo
+  if (adminUser.id === input.userId && input.team === false) {
+    throw new Error(
+      "Você não pode revogar seu próprio acesso ao módulo de Equipe & Permissões."
+    );
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: input.userId },
+  });
+
+  if (!targetUser) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  const { ipAddress, userAgent } = await getRequestMetadata();
+
+  const updatedUser = await prisma.$transaction(async (tx) => {
+    const userUpdated = await tx.user.update({
+      where: { id: input.userId },
+      data: {
+        canAccessFinance: input.finance,
+        canAccessRoi: input.roi,
+        canAccessCommunication: input.communication,
+        canAccessTeam: input.team,
+      },
+    });
+
+    await tx.authAuditLog.create({
+      data: {
+        userId: adminUser.id,
+        emailAttempt: targetUser.email,
+        event: AuthEventType.USER_ROLE_UPDATED,
+        ipAddress,
+        userAgent,
+        details: `Permissões em lote atualizadas para "${targetUser.name}": Financeiro=${input.finance ? "SIM" : "NÃO"}, ROI=${input.roi ? "SIM" : "NÃO"}, Comunicação=${input.communication ? "SIM" : "NÃO"}, Equipe=${input.team ? "SIM" : "NÃO"}.`,
+      },
+    });
+
+    return userUpdated;
+  });
+
+  return {
+    finance: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessFinance,
+    roi: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessRoi,
+    communication: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessCommunication,
+    team: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessTeam,
+  };
 }

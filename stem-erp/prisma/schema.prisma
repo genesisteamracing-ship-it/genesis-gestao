@@ -170,6 +170,13 @@ model User {
   deliveryGroup       DeliveryGroup?  // Setor/Área de atuação dentro da equipe
   jobTitle            String?         // Ex: Líder de Manufatura CNC
   isActive            Boolean         @default(true)
+
+  // Permissões granulares de acesso por módulo (SIM = true / NÃO = false)
+  canAccessFinance       Boolean         @default(true)
+  canAccessRoi           Boolean         @default(true)
+  canAccessCommunication Boolean         @default(true)
+  canAccessTeam          Boolean         @default(false)
+
   failedLoginAttempts Int             @default(0)
   lockedUntil         DateTime?       // Bloqueio automático anti-força bruta
   lastLoginAt         DateTime?

@@ -1,5 +1,14 @@
 import type { AuthEventType, DeliveryGroup, UserRole } from "@prisma/client";
 
+export type SystemModuleKey = "finance" | "roi" | "communication" | "team";
+
+export interface UserModulePermissionsDTO {
+  finance: boolean;       // Módulo Financeiro (/dashboard, /planejamento, /lancamentos)
+  roi: boolean;           // Módulo ROI & Patrocínio (/roi, /roi/acoes)
+  communication: boolean; // Módulo Comunicação (/comunicacao)
+  team: boolean;          // Módulo Equipe & Acessos (/equipe, /permissoes)
+}
+
 export interface TeamDTO {
   id: string;
   name: string;
@@ -22,6 +31,7 @@ export interface AuthenticatedUserDTO {
   teamName: string | null;
   deliveryGroup: DeliveryGroup | null;
   jobTitle: string | null;
+  permissions: UserModulePermissionsDTO;
 }
 
 export interface TeamMemberDTO {
@@ -34,6 +44,7 @@ export interface TeamMemberDTO {
   deliveryGroup: DeliveryGroup | null;
   jobTitle: string | null;
   isActive: boolean;
+  permissions: UserModulePermissionsDTO;
   failedLoginAttempts: number;
   lockedUntil: string | null;
   isLocked: boolean;

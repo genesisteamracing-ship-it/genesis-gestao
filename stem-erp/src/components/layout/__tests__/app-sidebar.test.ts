@@ -4,6 +4,7 @@ import {
   FINANCE_SUB_ITEMS,
   ROI_SUB_ITEMS,
   COMMUNICATION_SUB_ITEMS,
+  TEAM_SUB_ITEMS,
   sidebarItemStyles,
 } from "../app-sidebar";
 
@@ -26,6 +27,14 @@ describe("Sidebar Submodules Contracts", () => {
 
   it("deve conter exatamente 5 submódulos de comunicação mapeados a partir das abas da página", () => {
     assert.equal(COMMUNICATION_SUB_ITEMS.length, 5);
+  });
+
+  it("deve exportar a lista de submódulos de Equipe & Acessos corretamente", () => {
+    assert.equal(TEAM_SUB_ITEMS.length, 2);
+    assert.deepEqual(
+      TEAM_SUB_ITEMS.map((item) => item.href),
+      ["/equipe", "/permissoes"]
+    );
   });
 
   it("deve mapear os submódulos corretos para as abas de comunicação", () => {

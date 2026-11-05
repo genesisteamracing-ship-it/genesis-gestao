@@ -1,11 +1,14 @@
+import Link from "next/link";
 import {
   Flag,
   KeyRound,
   ShieldAlert,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import { getTeamManagementMetricsAction } from "@/actions/auth-actions";
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
+import { requireModuleAccess } from "@/services/auth-service";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { CreateTeamDialog } from "@/components/modals/create-team-dialog";
 import { CreateMemberDialog } from "@/components/modals/create-member-dialog";
@@ -14,12 +17,14 @@ import { TeamMembersDataTable } from "@/components/tables/team-members-data-tabl
 import { SecurityAuditTable } from "@/components/tables/security-audit-table";
 import { TeamSenderEmailCard } from "@/components/forms/team-sender-email-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
 export default async function EquipePage() {
-  const [financialMetrics, teamMetrics] = await Promise.all([
+  const [, financialMetrics, teamMetrics] = await Promise.all([
+    requireModuleAccess("team"),
     getDashboardMetricsAction(),
     getTeamManagementMetricsAction(),
   ]);
@@ -36,6 +41,15 @@ export default async function EquipePage() {
       seasonMonths={financialMetrics.seasonMonths}
       headerAction={
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <Link href="/permissoes">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto gap-2 text-xs sm:text-sm font-semibold border-border hover:bg-muted"
+            >
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              <span>Matriz de Permissões</span>
+            </Button>
+          </Link>
           <CreateTeamDialog />
           <CreateMemberDialog teams={teamMetrics.teams} />
         </div>

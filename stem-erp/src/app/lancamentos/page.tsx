@@ -1,4 +1,5 @@
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
+import { requireModuleAccess } from "@/services/auth-service";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { TransactionsDataTable } from "@/components/tables/transactions-data-table";
 import { CreateTransactionDialog } from "@/components/modals/create-transaction-dialog";
@@ -6,7 +7,10 @@ import { CreateTransactionDialog } from "@/components/modals/create-transaction-
 export const dynamic = "force-dynamic";
 
 export default async function LancamentosPage() {
-  const metrics = await getDashboardMetricsAction();
+  const [, metrics] = await Promise.all([
+    requireModuleAccess("finance"),
+    getDashboardMetricsAction(),
+  ]);
 
   return (
     <DashboardShell

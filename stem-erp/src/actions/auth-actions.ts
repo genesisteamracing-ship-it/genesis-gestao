@@ -13,12 +13,16 @@ import {
   deleteMemberSchema,
   deleteTeamSchema,
   loginSchema,
+  toggleUserModulePermissionSchema,
+  updateAllUserPermissionsSchema,
   updateMemberAccessSchema,
   type CreateMemberInput,
   type CreateTeamInput,
   type DeleteMemberInput,
   type DeleteTeamInput,
   type LoginInput,
+  type ToggleUserModulePermissionInput,
+  type UpdateAllUserPermissionsInput,
   type UpdateMemberAccessInput,
 } from "@/lib/validations/auth";
 import {
@@ -31,7 +35,9 @@ import {
   logoutUserService,
   requireAuthUser,
   requireSuperAdmin,
+  toggleUserModulePermissionService,
   unlockUserAccountService,
+  updateAllUserPermissionsService,
   updateTeamMemberAccessService,
 } from "@/services/auth-service";
 import {
@@ -451,6 +457,86 @@ export async function revokeTeamEmailAuthorizationAction(
         error instanceof Error
           ? error.message
           : "Erro ao desconectar autorização de e-mail.",
+    };
+  }
+}
+
+export async function toggleUserModulePermissionAction(
+  rawData: ToggleUserModulePermissionInput
+): Promise<ActionResponse> {
+  const adminUser = await requireAuthUser();
+
+  const parsed = toggleUserModulePermissionSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Dados de permissão inválidos.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const updatedPermissions = await toggleUserModulePermissionService(
+      adminUser,
+      parsed.data
+    );
+
+    revalidatePath("/permissoes");
+    revalidatePath("/equipe");
+    revalidatePath("/", "layout");
+
+    return {
+      success: true,
+      message: "Permissão atualizada com sucesso.",
+      data: updatedPermissions,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Erro ao atualizar permissão do usuário.",
+    };
+  }
+}
+
+export async function updateAllUserPermissionsAction(
+  rawData: UpdateAllUserPermissionsInput
+): Promise<ActionResponse> {
+  const adminUser = await requireAuthUser();
+
+  const parsed = updateAllUserPermissionsSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Dados de permissão em lote inválidos.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const updatedPermissions = await updateAllUserPermissionsService(
+      adminUser,
+      parsed.data
+    );
+
+    revalidatePath("/permissoes");
+    revalidatePath("/equipe");
+    revalidatePath("/", "layout");
+
+    return {
+      success: true,
+      message: "Permissões atualizadas com sucesso.",
+      data: updatedPermissions,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Erro ao atualizar permissões do usuário.",
     };
   }
 }
