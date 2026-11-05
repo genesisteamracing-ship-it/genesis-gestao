@@ -27,6 +27,7 @@ export default async function EquipePage() {
   return (
     <DashboardShell
       title="Equipes & Integrantes"
+      subtitle="Gestão de membros, permissões e governança multi-equipe da temporada"
       currentUser={financialMetrics.currentUser}
       activeTeam={financialMetrics.activeTeam}
       availableTeams={financialMetrics.availableTeams}

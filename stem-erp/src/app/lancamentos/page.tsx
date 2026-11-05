@@ -11,6 +11,7 @@ export default async function LancamentosPage() {
   return (
     <DashboardShell
       title="Livro Caixa"
+      subtitle="Registro e conciliação de receitas, despesas e fluxo financeiro da temporada"
       currentUser={metrics.currentUser}
       activeTeam={metrics.activeTeam}
       availableTeams={metrics.availableTeams}

@@ -11,6 +11,7 @@ export default async function PlanejamentoPage() {
   return (
     <DashboardShell
       title="Planejamento"
+      subtitle="Estrutura de contas, teto de gastos e orçamento previsto da temporada"
       currentUser={metrics.currentUser}
       activeTeam={metrics.activeTeam}
       availableTeams={metrics.availableTeams}

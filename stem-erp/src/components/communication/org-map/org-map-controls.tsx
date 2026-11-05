@@ -1,7 +1,7 @@
 "use client";
 
 import { tv } from "tailwind-variants";
-import { Building2, GitBranch, Maximize2, Network, Plus, Search, Users, ZoomIn, ZoomOut } from "lucide-react";
+import { Building2, Maximize2, Network, Plus, Search, Users, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { OrgMapViewMode } from "@/hooks/use-stakeholder-org-map";
@@ -72,8 +72,6 @@ export function OrgMapHeaderControls({
             <span className={styles.statItem()}><Building2 className="h-3.5 w-3.5 text-primary" />{tree.totalPartners} parceiros</span>
             <span>•</span>
             <span className={styles.statItem()}><Users className="h-3.5 w-3.5 text-purple" />{tree.totalStakeholders} stakeholders</span>
-            <span>•</span>
-            <span className={styles.statItem()}><GitBranch className="h-3.5 w-3.5 text-success" />{tree.totalPlans} réguas ativas</span>
             <span>•</span>
             <span>{tree.totalLogs} interações</span>
           </div>

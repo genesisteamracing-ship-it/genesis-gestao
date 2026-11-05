@@ -416,28 +416,9 @@ export function TeamMembersDataTable({
 
       {/* 4. Paginação */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 pt-1">
-        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-          <p className="font-medium text-center sm:text-left">
-            Mostrando {startRow}-{formattedEndRow} de {totalFiltered} integrantes
-          </p>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs">Exibir:</span>
-            <Select
-              value={String(table.getState().pagination.pageSize)}
-              onValueChange={(val) => table.setPageSize(Number(val))}
-            >
-              <SelectTrigger className="h-8 w-[76px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5" className="text-xs">5 / pág</SelectItem>
-                <SelectItem value="10" className="text-xs">10 / pág</SelectItem>
-                <SelectItem value="20" className="text-xs">20 / pág</SelectItem>
-                <SelectItem value="50" className="text-xs">50 / pág</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <p className="text-xs sm:text-sm font-medium text-muted-foreground text-center sm:text-left">
+          Mostrando {startRow}-{formattedEndRow} de {totalFiltered} integrantes
+        </p>
 
         <div className="flex items-center gap-2">
           <span className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">

@@ -18,13 +18,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -56,16 +49,17 @@ function getAuditBadgeVariant(
   }
 }
 
+const PAGE_SIZE = 10;
+
 export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(10);
 
   const totalLogs = logs.length;
-  const totalPages = Math.max(1, Math.ceil(totalLogs / pageSize));
+  const totalPages = Math.max(1, Math.ceil(totalLogs / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
 
-  const startIndex = (safeCurrentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalLogs);
+  const startIndex = (safeCurrentPage - 1) * PAGE_SIZE;
+  const endIndex = Math.min(startIndex + PAGE_SIZE, totalLogs);
   const currentLogs = React.useMemo(
     () => logs.slice(startIndex, endIndex),
     [logs, startIndex, endIndex]
@@ -165,31 +159,9 @@ export function SecurityAuditTable({ logs }: SecurityAuditTableProps) {
 
         {/* Paginação da Trilha de Auditoria */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 pt-1">
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-            <p className="font-medium text-center sm:text-left">
-              Mostrando {startRow}-{endIndex} de {totalLogs} registros
-            </p>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs">Exibir:</span>
-              <Select
-                value={String(pageSize)}
-                onValueChange={(val) => {
-                  setPageSize(Number(val));
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="h-8 w-[76px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5" className="text-xs">5 / pág</SelectItem>
-                  <SelectItem value="10" className="text-xs">10 / pág</SelectItem>
-                  <SelectItem value="20" className="text-xs">20 / pág</SelectItem>
-                  <SelectItem value="50" className="text-xs">50 / pág</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground text-center sm:text-left">
+            Mostrando {startRow}-{endIndex} de {totalLogs} registros
+          </p>
 
           <div className="flex items-center gap-2">
             <span className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">

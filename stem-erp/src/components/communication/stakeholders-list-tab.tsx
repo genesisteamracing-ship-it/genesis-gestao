@@ -1,11 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, CalendarPlus, FileText, Phone, Mail, Pencil } from "lucide-react";
+import { Plus, Trash2, FileText, Phone, Mail, Pencil, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -38,7 +45,7 @@ interface StakeholdersListTabProps {
   stakeholders: StakeholderWithRelations[];
   sponsors?: Array<{ id: string; name: string }>;
   onOpenCreateDialog: () => void;
-  onOpenPlanDialog: (stakeholderId: string) => void;
+  onOpenPlanDialog?: (stakeholderId: string) => void;
   onSelectForReport: (stakeholderId: string) => void;
 }
 
@@ -213,48 +220,48 @@ export function StakeholdersListTab({
                     </TableCell>
 
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setEditingStakeholder(s)}
-                          title="Editar Stakeholder"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onSelectForReport(s.id)}
-                          title="Gerar Relatório"
-                          className="h-8 w-8 text-primary"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onOpenPlanDialog(s.id)}
-                          title="Criar Régua de Comunicação"
-                          className="h-8 w-8 text-foreground"
-                        >
-                          <CalendarPlus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(s.id, s.name)}
-                          disabled={deletingId === s.id}
-                          title="Excluir Stakeholder"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="flex items-center justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 rounded-lg border-border/80 bg-card hover:bg-muted/80 hover:text-foreground"
+                              aria-label={`Ações para o stakeholder ${s.name}`}
+                            >
+                              <Settings className="h-4 w-4 text-foreground transition-transform duration-200 hover:rotate-45" />
+                            </Button>
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem
+                              onClick={() => setEditingStakeholder(s)}
+                              className="cursor-pointer gap-2 text-xs font-medium"
+                            >
+                              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span>Editar</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              onClick={() => onSelectForReport(s.id)}
+                              className="cursor-pointer gap-2 text-xs font-medium text-primary focus:text-primary"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              <span>Gerar Relatório</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(s.id, s.name)}
+                              disabled={deletingId === s.id}
+                              className="cursor-pointer gap-2 text-xs font-medium text-destructive focus:bg-destructive/10 focus:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span>Excluir</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>

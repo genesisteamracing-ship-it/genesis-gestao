@@ -13,7 +13,6 @@ import { ReportGeneratorTab } from "./report-generator-tab";
 import { StakeholdersListTab } from "./stakeholders-list-tab";
 import { CommunicationScheduleTab } from "./communication-schedule-tab";
 import { CreateStakeholderDialog } from "./create-stakeholder-dialog";
-import { CreateCommunicationPlanDialog } from "./create-communication-plan-dialog";
 import { LogCommunicationDialog } from "./log-communication-dialog";
 import { AddFeedbackDialog } from "./add-feedback-dialog";
 import type { QuickAddStakeholderPrefill } from "@/hooks/use-stakeholder-org-map";
@@ -35,6 +34,34 @@ interface CommunicationViewProps {
   sponsors: Array<{ id: string; name: string }>;
 }
 
+const TAB_HEADER_METADATA: Record<string, { title: string; subtitle: string }> = {
+  mapa: {
+    title: "Mapa Organizacional & Comunicação",
+    subtitle:
+      "Árvore hierárquica de parceiros e stakeholders por nível de Poder e Interesse, réguas ativas e relatórios automatizados",
+  },
+  relatorios: {
+    title: "Gerador de Relatórios",
+    subtitle:
+      "Criação, exportação e envio de relatórios executivos, técnicos e combinados para stakeholders",
+  },
+  stakeholders: {
+    title: "Diretório de Stakeholders",
+    subtitle:
+      "Gerenciamento completo de contatos, organizações parceiras, cargos e preferências de comunicação",
+  },
+  agendamentos: {
+    title: "Agendamentos de Comunicação",
+    subtitle:
+      "Programação de envios, calendário de contatos e histórico consolidado de interações com parceiros",
+  },
+  matriz: {
+    title: "Matriz Poder x Interesse",
+    subtitle:
+      "Mapeamento estratégico de engajamento para direcionar a comunicação e governança dos stakeholders",
+  },
+};
+
 export function CommunicationView({
   dashboardMetrics,
   metrics,
@@ -47,6 +74,8 @@ export function CommunicationView({
   const tabFromUrl = searchParams ? searchParams.get("tab") : null;
   const activeTab = tabFromUrl === "historico" ? "agendamentos" : tabFromUrl || "mapa";
 
+  const currentHeader = TAB_HEADER_METADATA[activeTab] ?? TAB_HEADER_METADATA.mapa;
+
   const handleTabChange = (newTab: string) => {
     router.push(`/comunicacao?tab=${newTab}`, { scroll: false });
   };
@@ -54,9 +83,6 @@ export function CommunicationView({
   const [isCreateStakeholderOpen, setIsCreateStakeholderOpen] = useState(false);
   const [stakeholderPrefill, setStakeholderPrefill] =
     useState<QuickAddStakeholderPrefill | null>(null);
-
-  const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
-  const [planStakeholderId, setPlanStakeholderId] = useState<string | undefined>(undefined);
 
   const [isLogDialogOpen, setIsLogDialogOpen] = useState(false);
   const [logPrefill, setLogPrefill] = useState<{
@@ -87,15 +113,10 @@ export function CommunicationView({
     handleTabChange("relatorios");
   };
 
-  const handleOpenPlanDialog = (stakeholderId: string) => {
-    setPlanStakeholderId(stakeholderId);
-    setIsCreatePlanOpen(true);
-  };
-
   return (
     <DashboardShell
-      title="Mapa Organizacional & Comunicação"
-      subtitle="Árvore hierárquica de parceiros e stakeholders por nível de Poder e Interesse, réguas ativas e relatórios automatizados"
+      title={currentHeader.title}
+      subtitle={currentHeader.subtitle}
       currentUser={dashboardMetrics.currentUser}
       activeTeam={dashboardMetrics.activeTeam}
       availableTeams={dashboardMetrics.availableTeams}
@@ -122,7 +143,6 @@ export function CommunicationView({
             stakeholders={stakeholders}
             onOpenCreateStakeholder={handleOpenCreateStakeholder}
             onSelectStakeholderForReport={handleSelectStakeholderForReport}
-            onOpenPlanDialog={handleOpenPlanDialog}
             onOpenLogForStakeholder={(st) => {
               setLogPrefill({
                 stakeholderId: st.id,
@@ -149,7 +169,6 @@ export function CommunicationView({
             stakeholders={stakeholders}
             sponsors={sponsors}
             onOpenCreateDialog={() => handleOpenCreateStakeholder()}
-            onOpenPlanDialog={handleOpenPlanDialog}
             onSelectForReport={handleSelectStakeholderForReport}
           />
         </TabsContent>
@@ -173,13 +192,6 @@ export function CommunicationView({
         sponsors={sponsors}
         existingStakeholders={stakeholders}
         prefill={stakeholderPrefill}
-      />
-
-      <CreateCommunicationPlanDialog
-        open={isCreatePlanOpen}
-        onOpenChange={setIsCreatePlanOpen}
-        stakeholders={stakeholders}
-        defaultStakeholderId={planStakeholderId}
       />
 
       <LogCommunicationDialog

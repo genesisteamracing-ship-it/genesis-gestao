@@ -21,6 +21,7 @@ export function DashboardView({ initialMetrics }: DashboardViewProps) {
   return (
     <DashboardShell
       title="Dashboard"
+      subtitle="Visão geral financeira, métricas consolidadas e fluxo de caixa da temporada"
       currentUser={data.currentUser}
       activeTeam={data.activeTeam}
       availableTeams={data.availableTeams}

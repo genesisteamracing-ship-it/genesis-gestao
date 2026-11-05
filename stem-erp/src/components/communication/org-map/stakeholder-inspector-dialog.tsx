@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowRight, CalendarPlus, FileText, Mail, MessageSquarePlus, Phone, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, FileText, Mail, MessageSquarePlus, Phone, Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ interface StakeholderInspectorDialogProps {
   stakeholder: StakeholderWithRelations | null;
   onOpenChange: (open: boolean) => void;
   onGenerateReport: (stakeholderId: string) => void;
-  onCreatePlan: (stakeholderId: string) => void;
+  onCreatePlan?: (stakeholderId: string) => void;
   onAddSubordinate: (stakeholder: StakeholderWithRelations) => void;
   onLogCommunication: (stakeholder: StakeholderWithRelations) => void;
 }
@@ -127,10 +127,9 @@ export function StakeholderInspectorDialog({
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
             <Button type="button" size="sm" onClick={() => (onOpenChange(false), onAddSubordinate(stakeholder))} className="gap-1.5 text-xs"><Plus className="h-3.5 w-3.5" />Adicionar Subordinado</Button>
             <Button type="button" variant="secondary" size="sm" onClick={() => (onOpenChange(false), onGenerateReport(stakeholder.id))} className="gap-1.5 text-xs"><FileText className="h-3.5 w-3.5" />Gerar Relatório</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => (onOpenChange(false), onCreatePlan(stakeholder.id))} className="gap-1.5 text-xs"><CalendarPlus className="h-3.5 w-3.5" />Nova Régua / Plano</Button>
             <Button type="button" variant="outline" size="sm" onClick={() => (onOpenChange(false), onLogCommunication(stakeholder))} className="gap-1.5 text-xs"><MessageSquarePlus className="h-3.5 w-3.5" />Registrar Interação</Button>
           </div>
         </div>

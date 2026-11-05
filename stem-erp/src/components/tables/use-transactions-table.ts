@@ -31,7 +31,7 @@ export function useTransactionsTable(
     initialState: {
       pagination: {
         pageIndex: 0,
-        pageSize: 9,
+        pageSize: 10,
       },
     },
     state: {

@@ -98,7 +98,7 @@ interface StakeholderOrgMapProps {
   stakeholders: StakeholderWithRelations[];
   onOpenCreateStakeholder: (prefill?: QuickAddStakeholderPrefill) => void;
   onSelectStakeholderForReport: (stakeholderId: string) => void;
-  onOpenPlanDialog: (stakeholderId: string) => void;
+  onOpenPlanDialog?: (stakeholderId: string) => void;
   onOpenLogForStakeholder: (stakeholder: StakeholderWithRelations) => void;
 }
 
