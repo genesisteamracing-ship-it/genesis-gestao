@@ -1,14 +1,16 @@
 import { Suspense } from "react";
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
+import { getWbsTreeAction } from "@/actions/wbs.actions";
 import { requireModuleAccess } from "@/services/auth-service";
 import { WbsView } from "@/components/wbs/wbs-view";
 
 export const dynamic = "force-dynamic";
 
 export default async function DocumentosPage() {
-  const [currentUser, dashboardMetrics] = await Promise.all([
+  const [currentUser, dashboardMetrics, wbsResult] = await Promise.all([
     requireModuleAccess("documents"),
     getDashboardMetricsAction(),
+    getWbsTreeAction(),
   ]);
 
   return (
@@ -22,6 +24,7 @@ export default async function DocumentosPage() {
       <WbsView
         currentUser={currentUser}
         dashboardMetrics={dashboardMetrics}
+        initialWbsData={wbsResult.data}
       />
     </Suspense>
   );

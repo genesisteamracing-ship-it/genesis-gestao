@@ -25,14 +25,19 @@ import { WbsHeaderMetrics } from "./wbs-header-metrics";
 import { WbsTreeTable, DISCIPLINE_LABELS } from "./wbs-tree-table";
 import { WbsNodeModal } from "./wbs-node-modal";
 import { WbsPresentationView } from "./wbs-presentation-view";
-import type { DeliveryGroup } from "@/types/wbs";
+import type { DeliveryGroup, WbsTreeDataResult } from "@/types/wbs";
 
 interface WbsViewProps {
   currentUser: AuthenticatedUserDTO;
   dashboardMetrics: DashboardMetricsDTO;
+  initialWbsData?: WbsTreeDataResult;
 }
 
-export function WbsView({ currentUser, dashboardMetrics }: WbsViewProps) {
+export function WbsView({
+  currentUser,
+  dashboardMetrics,
+  initialWbsData,
+}: WbsViewProps) {
   const activeTeam = dashboardMetrics.activeTeam;
 
   const {
@@ -60,7 +65,7 @@ export function WbsView({ currentUser, dashboardMetrics }: WbsViewProps) {
     closeModal,
     handleSaveNode,
     confirmDeleteNode,
-  } = useWbs(activeTeam.id);
+  } = useWbs(activeTeam.id, initialWbsData);
 
   const isAuditor = currentUser.role === "AUDITOR";
 

@@ -23,7 +23,7 @@ import {
 } from "@/lib/validations/wbs.schema";
 import type { DeliveryGroup, WbsNodeStatus, WbsTreeNode } from "@/types/wbs";
 import { DISCIPLINE_LABELS, STATUS_LABELS } from "./wbs-tree-table";
-import { formatCentsToReais, parseReaisToCents } from "@/lib/utils";
+import { formatCentsToReais } from "@/lib/utils";
 
 interface WbsNodeModalProps {
   isOpen: boolean;
@@ -45,14 +45,13 @@ export function WbsNodeModal({
   onSubmit,
 }: WbsNodeModalProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [currencyDisplay, setCurrencyDisplay] = React.useState("0,00");
-
   const isEditing = Boolean(editingNode);
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors },
   } = useForm<CreateWbsNodeFormInput, unknown, CreateWbsNodeInput>({
@@ -72,6 +71,11 @@ export function WbsNodeModal({
     },
   });
 
+  const estimatedCostCents = watch("estimatedCostCents") || 0;
+  const currencyDisplay = formatCentsToReais(estimatedCostCents)
+    .replace("R$\u00A0", "")
+    .replace("R$ ", "");
+
   // Carrega dados para edição ou define sugestão de código ao adicionar sub-entregável
   React.useEffect(() => {
     if (editingNode) {
@@ -88,7 +92,6 @@ export function WbsNodeModal({
         estimatedHours: editingNode.estimatedHours,
         sortOrder: editingNode.sortOrder,
       });
-      setCurrencyDisplay(formatCentsToReais(editingNode.estimatedCostCents).replace("R$\u00A0", "").replace("R$ ", ""));
     } else if (parentNode) {
       // Sugere o próximo código filho (ex: pai 1.2 -> filho 1.2.1)
       const nextChildIndex = parentNode.children.length + 1;
@@ -107,7 +110,6 @@ export function WbsNodeModal({
         estimatedHours: 0,
         sortOrder: parentNode.children.length,
       });
-      setCurrencyDisplay("0,00");
     } else {
       reset({
         teamId,
@@ -122,7 +124,6 @@ export function WbsNodeModal({
         estimatedHours: 0,
         sortOrder: 0,
       });
-      setCurrencyDisplay("0,00");
     }
   }, [editingNode, parentNode, teamId, reset]);
 
@@ -130,7 +131,6 @@ export function WbsNodeModal({
     const rawDigits = e.target.value.replace(/\D/g, "");
     const cents = Number.parseInt(rawDigits || "0", 10);
     setValue("estimatedCostCents", cents, { shouldValidate: true });
-    setCurrencyDisplay(formatCentsToReais(cents).replace("R$\u00A0", "").replace("R$ ", ""));
   };
 
   const onFormSubmit = async (data: CreateWbsNodeInput) => {

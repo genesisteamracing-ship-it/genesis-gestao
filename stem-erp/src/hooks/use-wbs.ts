@@ -12,6 +12,7 @@ import type { CreateWbsNodeInput, UpdateWbsNodeInput } from "@/lib/validations/w
 import type {
   DeliveryGroup,
   WbsSummaryMetrics,
+  WbsTreeDataResult,
   WbsTreeNode,
 } from "@/types/wbs";
 
@@ -21,9 +22,25 @@ interface ModalState {
   parentNode: WbsTreeNode | null;
 }
 
-export function useWbs(initialTeamId?: string) {
-  const [tree, setTree] = React.useState<WbsTreeNode[]>([]);
-  const [metrics, setMetrics] = React.useState<WbsSummaryMetrics>({
+function buildInitialExpanded(tree: WbsTreeNode[]): Set<string> {
+  const initialExpanded = new Set<string>();
+  function markExpanded(list: WbsTreeNode[]) {
+    for (const item of list) {
+      if (item.depth <= 2 && item.children.length > 0) {
+        initialExpanded.add(item.id);
+      }
+      if (item.children.length > 0) {
+        markExpanded(item.children);
+      }
+    }
+  }
+  markExpanded(tree);
+  return initialExpanded;
+}
+
+export function useWbs(initialTeamId?: string, initialData?: WbsTreeDataResult) {
+  const [tree, setTree] = React.useState<WbsTreeNode[]>(() => initialData?.tree ?? []);
+  const [metrics, setMetrics] = React.useState<WbsSummaryMetrics>(() => initialData?.metrics ?? {
     totalDeliverables: 0,
     totalWorkPackages: 0,
     totalRollupCostCents: 0,
@@ -33,16 +50,16 @@ export function useWbs(initialTeamId?: string) {
   });
   const [members, setMembers] = React.useState<
     { id: string; name: string; jobTitle: string | null }[]
-  >([]);
-  const [expandedNodeIds, setExpandedNodeIds] = React.useState<Set<string>>(
-    new Set()
+  >(() => initialData?.members ?? []);
+  const [expandedNodeIds, setExpandedNodeIds] = React.useState<Set<string>>(() =>
+    initialData?.tree ? buildInitialExpanded(initialData.tree) : new Set()
   );
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedDiscipline, setSelectedDiscipline] = React.useState<
     DeliveryGroup | "ALL"
   >("ALL");
   const [isPresentationMode, setIsPresentationMode] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(!initialData);
   const [deleteConfirmNode, setDeleteConfirmNode] =
     React.useState<WbsTreeNode | null>(null);
 
@@ -60,21 +77,7 @@ export function useWbs(initialTeamId?: string) {
         setTree(res.data.tree);
         setMetrics(res.data.metrics);
         setMembers(res.data.members);
-
-        // Expande inicialmente nós de Nível 1 e Nível 2
-        const initialExpanded = new Set<string>();
-        function markExpanded(list: WbsTreeNode[]) {
-          for (const item of list) {
-            if (item.depth <= 2 && item.children.length > 0) {
-              initialExpanded.add(item.id);
-            }
-            if (item.children.length > 0) {
-              markExpanded(item.children);
-            }
-          }
-        }
-        markExpanded(res.data.tree);
-        setExpandedNodeIds(initialExpanded);
+        setExpandedNodeIds(buildInitialExpanded(res.data.tree));
       } else {
         toast.error(res.message || "Não foi possível carregar a WBS");
       }
@@ -86,8 +89,32 @@ export function useWbs(initialTeamId?: string) {
   }, [initialTeamId]);
 
   React.useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (!initialData) {
+      let isCancelled = false;
+      getWbsTreeAction(initialTeamId)
+        .then((res) => {
+          if (isCancelled) return;
+          setIsLoading(false);
+          if (res.success && res.data) {
+            setTree(res.data.tree);
+            setMetrics(res.data.metrics);
+            setMembers(res.data.members);
+            setExpandedNodeIds(buildInitialExpanded(res.data.tree));
+          } else {
+            toast.error(res.message || "Não foi possível carregar a WBS");
+          }
+        })
+        .catch(() => {
+          if (isCancelled) return;
+          setIsLoading(false);
+          toast.error("Erro inesperado ao consultar a árvore da WBS");
+        });
+
+      return () => {
+        isCancelled = true;
+      };
+    }
+  }, [initialData, initialTeamId]);
 
   const toggleExpand = React.useCallback((nodeId: string) => {
     setExpandedNodeIds((prev) => {
