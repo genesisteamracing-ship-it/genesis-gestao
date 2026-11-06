@@ -214,13 +214,25 @@ Check if `.specify/extensions.yml` exists in the project root.
     To execute: `/{command}`
     ```
 
+## Mandatory Remote Sync (Git Commit & Push)
+
+**You MUST execute this step before reporting completion to the user.**
+
+Once all tasks in `tasks.md` are completed and all tests/quality gates pass:
+1. Verify working tree status: `git status`.
+2. Stage all implementation files: `git add .` (or specific files associated with the spec).
+3. Commit with semantic message: `git commit -m "feat(<spec-name>): <brief summary>"`.
+4. Push to remote repository: `git push origin <current-branch>`.
+5. Ensure the push succeeded without errors.
+
 ## Completion Report
 
-Report final status with summary of completed work.
+Report final status with summary of completed work and the commit SHA pushed to remote.
 
 ## Done When
 
 - [ ] All tasks in tasks.md completed and marked `[X]`
 - [ ] Implementation validated against specification, plan, and test coverage
 - [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
+- [ ] Git commit and git push completed successfully to remote repository
 - [ ] Completion reported to user with summary of completed work

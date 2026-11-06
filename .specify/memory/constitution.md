@@ -1,12 +1,12 @@
 <!--
 Sync Impact Report:
-- Version Change: 1.0.0 -> 1.1.0
+- Version Change: 1.1.0 -> 1.2.0
 - Ratification Date: 2026-10-26
-- Last Amended Date: 2026-11-03
+- Last Amended Date: 2026-11-06
 - Modified Principles:
-  - V. Mobile-First, Acessibilidade & Estados Completos de UI -> V. Layout Shell Padronizado (Barra Lateral Fixa), Mobile-First & Estados de UI
+  - Fluxo de Desenvolvimento, Quality Gates & CI/CD: Adicionada obrigatoriedade estrita de commit e push remoto após finalização de specs/features.
 - Added Requirements:
-  - Uso obrigatório de `<DashboardShell>` (`src/components/layout/dashboard-shell.tsx`) em todas as páginas e rotas autenticadas do sistema, garantindo `<AppSidebar />` fixa em todas as telas desktop, `<AppHeader />` no topo e `<MobileNavDrawer />` em dispositivos móveis.
+  - Ao finalizar qualquer especificação ou conjunto de tarefas de spec (`tasks.md`), o agente ou desenvolvedor DEVE obrigatoriamente realizar o `git commit` com mensagem semântica e o `git push origin <branch>`, garantindo sincronização remota antes de encerrar o ciclo.
 - Removed Sections: None
 - Follow-up TODOs: None
 -->
@@ -73,6 +73,7 @@ Todas as alterações na base de código devem passar por validações automatiz
 - **Verificação de Tipagem Estática**: Execução do compilador TypeScript (`tsc --noEmit`) sem qualquer erro ou tipo implícito.
 - **Padronização e Linting**: `eslint` configurado com regras de React e TypeScript, mantendo a árvore limpa de dead-code ou práticas inseguras.
 - **Execução da Bateria de Testes**: Validação contínua com `npm test` (`tsx --test`), garantindo que todos os testes passem de forma determinística em menos de 3 segundos.
+- **Sincronização Remota Obrigatória (Commit & Push)**: Ao concluir a implementação de qualquer especificação (`tasks.md`), após a validação completa de testes, tipos e lint, o agente/desenvolvedor DEVE obrigatoriamente realizar o commit com mensagem convencional descritiva e o push para a branch remota (`git push origin <branch>`). Nenhuma entrega de spec pode ser finalizada ou reportada sem sincronização remota concluída.
 - **Pipeline de Integração Contínua (CI)**: Pipeline configurado no GitHub Actions (`.github/workflows/ci.yml`) que bloqueia pull requests ou commits que não atinjam os critérios de compilação, lint e teste.
 - **Deploy Contínuo**: Sincronização automática para a plataforma de produção (Render) após aprovação do pipeline.
 
@@ -86,4 +87,4 @@ A Constituição do projeto é o documento soberano que rege a arquitetura, padr
   - **PATCH**: Ajustes redacionais, correções pontuais de texto ou refinamentos não estruturais.
 - O arquivo `.specify/memory/constitution.md` deve ser mantido atualizado como fonte primária da verdade para orientar desenvolvedores e agentes autônomos de IA durante todo o ciclo de vida do projeto.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-26 | **Last Amended**: 2026-11-03
+**Version**: 1.2.0 | **Ratified**: 2026-10-26 | **Last Amended**: 2026-11-06

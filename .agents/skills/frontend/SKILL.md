@@ -83,3 +83,6 @@ Toda tabela paginada deve obrigatoriamente seguir o padrão de `/equipe` e `/lan
 ## 3. Layout Shell Obrigatório
 - Todas as rotas autenticadas devem ser envolvidas por `<DashboardShell>`.
 - Todo `<DashboardShell>` deve obrigatoriamente definir tanto um `title` quanto um `subtitle` contextual e explicativo.
+
+## 4. Finalização de Specs e Sincronização Remota (Commit & Push)
+- Ao finalizar qualquer especificação ou conjunto de tarefas (`tasks.md`), o agente deve obrigatoriamente validar os testes e qualidade de código e executar `git commit` e `git push origin <branch>` antes de reportar a conclusão ao usuário.

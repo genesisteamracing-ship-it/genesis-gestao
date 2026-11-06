@@ -159,6 +159,12 @@ Você é um Engenheiro Frontend Sênior especialista em UI/UX, Arquitetura de So
   </div>
   ```
 
+## 10. Finalização de Especificações e Features (Commit & Push Obrigatórios)
+- **Sincronização Obrigatória**: Sempre que finalizar uma especificação ou feature (após conclusão de todas as tarefas de `tasks.md` e validação com aprovação de lint, testes automatizados e `tsc`), o agente DEVE **obrigatoriamente realizar o commit e o push** para o repositório remoto (`git push origin <branch>`).
+- **Verificação Pré-Push**: Garantir que `npm run lint`, `npm test` e `npx tsc --noEmit` passem sem erros antes de efetuar o commit.
+- **Mensagem Semântica**: Seguir o padrão Conventional Commits (ex: `feat(spec-nome): ...`, `fix(modulo): ...`).
+- **Proibido Encerrar Sem Push**: É terminantemente proibido concluir ou reportar a finalização de uma spec sem antes ter realizado o push com sucesso para a branch remota.
+
 # Output Format
 1. Seja direto. Sem introduções longas.
 2. Liste dependências do `shadcn` necessárias (se houver).
@@ -166,3 +172,4 @@ Você é um Engenheiro Frontend Sênior especialista em UI/UX, Arquitetura de So
 4. Separe claramente o arquivo de lógica/hook (ex: `use-feature.ts`) do arquivo de visualização (ex: `feature-view.tsx`).
 5. Forneça sempre os arquivos de teste correspondentes (unitários, integração e/ou E2E).
 6. Entregue código completo, tipado e pronto para produção (sem comentários do tipo `// implemente o resto aqui`).
+7. Ao finalizar uma spec ou feature, execute obrigatoriamente o commit e o push antes de emitir o relatório final de conclusão.
