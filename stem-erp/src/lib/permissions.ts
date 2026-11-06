@@ -33,12 +33,19 @@ export const SYSTEM_MODULES_META: Record<SystemModuleKey, SystemModuleMetadata> 
     description: "Gestão de Equipes, Integrantes e Permissões de Acesso",
     defaultRoute: "/equipe",
   },
+  documents: {
+    key: "documents",
+    label: "Documentos",
+    description: "Estrutura Analítica do Projeto (WBS / EAP) e Governança de Escopo",
+    defaultRoute: "/documentos",
+  },
 };
 
 export const SYSTEM_MODULE_KEYS: SystemModuleKey[] = [
   "finance",
   "roi",
   "communication",
+  "documents",
   "team",
 ];
 
@@ -51,6 +58,7 @@ export function getDefaultModulePermissionsByRole(
       roi: true,
       communication: true,
       team: true,
+      documents: true,
     };
   }
 
@@ -59,6 +67,7 @@ export function getDefaultModulePermissionsByRole(
     roi: true,
     communication: true,
     team: false,
+    documents: true,
   };
 }
 
@@ -94,6 +103,7 @@ export function getFirstAllowedRoute(
   if (permissions.finance) return "/dashboard";
   if (permissions.roi) return "/roi";
   if (permissions.communication) return "/comunicacao";
+  if (permissions.documents) return "/documentos";
   if (permissions.team) return "/equipe";
 
   return "/dashboard";

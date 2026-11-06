@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Pencil, Settings, Trash2 } from "lucide-react";
+import { KeyRound, Pencil, Settings, Trash2 } from "lucide-react";
 import type { TeamDTO, TeamMemberDTO } from "@/types/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EditMemberDialog } from "@/components/modals/edit-member-dialog";
+import { ResetMemberPasswordDialog } from "@/components/modals/reset-member-password-dialog";
 import { DeleteMemberDialog } from "@/components/modals/delete-member-dialog";
 
 interface MemberRowActionsProps {
@@ -21,6 +22,7 @@ interface MemberRowActionsProps {
 
 export function MemberRowActions({ member, teams }: MemberRowActionsProps) {
   const [isEditOpen, setIsEditOpen] = React.useState(false);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = React.useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
 
   const isSuperAdmin = member.role === "SUPER_ADMIN";
@@ -35,17 +37,25 @@ export function MemberRowActions({ member, teams }: MemberRowActionsProps) {
             className="h-8 w-8 rounded-lg border-border/80 bg-card hover:bg-muted/80 hover:text-foreground"
             aria-label={`Ações de gerenciamento para ${member.name}`}
           >
-            <Settings className="h-4 w-4 text-white transition-transform duration-200 hover:rotate-45" />
+            <Settings className="h-4 w-4 text-foreground transition-transform duration-200 hover:rotate-45" />
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem
             onClick={() => setIsEditOpen(true)}
             className="cursor-pointer gap-2 text-xs font-medium"
           >
             <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>Editar</span>
+            <span>Editar Dados</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => setIsResetPasswordOpen(true)}
+            className="cursor-pointer gap-2 text-xs font-medium"
+          >
+            <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Redefinir Senha</span>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
@@ -56,7 +66,7 @@ export function MemberRowActions({ member, teams }: MemberRowActionsProps) {
             className="cursor-pointer gap-2 text-xs font-medium text-destructive focus:bg-destructive/10 focus:text-destructive"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            <span>Excluir</span>
+            <span>Excluir Integrante</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -66,6 +76,12 @@ export function MemberRowActions({ member, teams }: MemberRowActionsProps) {
         teams={teams}
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
+      />
+
+      <ResetMemberPasswordDialog
+        member={member}
+        open={isResetPasswordOpen}
+        onOpenChange={setIsResetPasswordOpen}
       />
 
       <DeleteMemberDialog

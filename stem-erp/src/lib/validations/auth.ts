@@ -87,12 +87,34 @@ export const createMemberSchema = z.object({
 
 export const updateMemberAccessSchema = z.object({
   userId: z.string().min(1, "ID do usuário é obrigatório"),
+  name: z.string().trim().min(3, "O nome deve ter no mínimo 3 caracteres"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Informe um e-mail corporativo válido"),
   teamId: z.string().min(1, "Selecione a equipe"),
   role: z.enum(userRoleValues),
   deliveryGroup: z.enum(deliveryGroupValues),
   jobTitle: z.string().trim().min(2, "Informe o cargo no setor"),
   isActive: z.boolean(),
 });
+
+export const resetMemberPasswordSchema = z
+  .object({
+    userId: z.string().min(1, "ID do integrante é obrigatório"),
+    password: z
+      .string()
+      .min(8, "A senha deve ter no mínimo 8 caracteres")
+      .regex(/[A-Z]/, "Deve conter ao menos uma letra maiúscula")
+      .regex(/[a-z]/, "Deve conter ao menos uma letra minúscula")
+      .regex(/[0-9]/, "Deve conter ao menos um número"),
+    confirmPassword: z.string().min(1, "Confirme a nova senha"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
 
 export const deleteTeamSchema = z.object({
   teamId: z.string().min(1, "ID da equipe é obrigatório"),
@@ -112,6 +134,7 @@ export const systemModuleKeySchema = z.enum([
   "finance",
   "roi",
   "communication",
+  "documents",
   "team",
 ]);
 
@@ -127,12 +150,14 @@ export const updateAllUserPermissionsSchema = z.object({
   roi: z.boolean(),
   communication: z.boolean(),
   team: z.boolean(),
+  documents: z.boolean().optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type UpdateMemberAccessInput = z.infer<typeof updateMemberAccessSchema>;
+export type ResetMemberPasswordInput = z.infer<typeof resetMemberPasswordSchema>;
 export type DeleteTeamInput = z.infer<typeof deleteTeamSchema>;
 export type DeleteMemberInput = z.infer<typeof deleteMemberSchema>;
 export type ToggleUserModulePermissionInput = z.infer<

@@ -21,6 +21,7 @@ import type {
   ToggleUserModulePermissionInput,
   UpdateAllUserPermissionsInput,
   UpdateMemberAccessInput,
+  ResetMemberPasswordInput,
 } from "@/lib/validations/auth";
 import type {
   AuthenticatedUserDTO,
@@ -374,6 +375,7 @@ export async function getCurrentUserFromSession(): Promise<AuthenticatedUserDTO 
         roi: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessRoi,
         communication: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessCommunication,
         team: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessTeam,
+        documents: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessDocuments,
       },
     };
   } catch {
@@ -501,6 +503,7 @@ export async function createTeamMemberService(
         canAccessRoi: defaultPermissions.roi,
         canAccessCommunication: defaultPermissions.communication,
         canAccessTeam: defaultPermissions.team,
+        canAccessDocuments: defaultPermissions.documents,
         createdById: superAdmin.id,
       },
     });
@@ -541,6 +544,17 @@ export async function updateTeamMemberAccessService(
     throw new Error("Equipe selecionada não encontrada.");
   }
 
+  // Verifica unicidade de e-mail corporativo caso tenha sido alterado
+  const normalizedEmail = input.email.toLowerCase().trim();
+  if (normalizedEmail !== targetUser.email.toLowerCase()) {
+    const existingEmail = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+    if (existingEmail && existingEmail.id !== targetUser.id) {
+      throw new Error("Este e-mail corporativo já está sendo utilizado por outro integrante.");
+    }
+  }
+
   // Impede que o último SuperAdmin se desative ou remova seu próprio perfil de SuperAdmin
   if (
     targetUser.id === superAdmin.id &&
@@ -566,10 +580,12 @@ export async function updateTeamMemberAccessService(
     const updated = await tx.user.update({
       where: { id: input.userId },
       data: {
+        name: input.name.trim(),
+        email: normalizedEmail,
         teamId: targetTeam.id,
         role: input.role,
         deliveryGroup: input.deliveryGroup,
-        jobTitle: input.jobTitle,
+        jobTitle: input.jobTitle.trim(),
         isActive: input.isActive,
       },
     });
@@ -592,7 +608,58 @@ export async function updateTeamMemberAccessService(
         event: AuthEventType.USER_ROLE_UPDATED,
         ipAddress,
         userAgent,
-        details: `Equipe: ${targetTeam.name} | Setor: ${input.deliveryGroup} | Permissão: ${input.role} | Ativo: ${input.isActive}.`,
+        details: `Nome: ${updated.name} | E-mail: ${updated.email} | Equipe: ${targetTeam.name} | Setor: ${input.deliveryGroup} | Permissão: ${input.role} | Ativo: ${input.isActive}.`,
+      },
+    });
+
+    return updated;
+  });
+}
+
+export async function resetMemberPasswordService(
+  superAdmin: AuthenticatedUserDTO,
+  input: ResetMemberPasswordInput
+) {
+  const targetUser = await prisma.user.findUnique({
+    where: { id: input.userId },
+  });
+
+  if (!targetUser) {
+    throw new Error("Integrante não encontrado.");
+  }
+
+  const passwordHash = await bcrypt.hash(input.password, 12);
+  const { ipAddress, userAgent } = await getRequestMetadata();
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.user.update({
+      where: { id: input.userId },
+      data: {
+        passwordHash,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
+    });
+
+    // Revoga sessões ativas para exigir novo login com a nova credencial
+    await tx.session.updateMany({
+      where: {
+        userId: updated.id,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    await tx.authAuditLog.create({
+      data: {
+        userId: superAdmin.id,
+        emailAttempt: updated.email,
+        event: AuthEventType.USER_ROLE_UPDATED,
+        ipAddress,
+        userAgent,
+        details: `Senha de acesso redefinida pelo SuperAdmin ${superAdmin.name}. Sessões ativas revogadas por segurança.`,
       },
     });
 
@@ -727,6 +794,7 @@ export async function getTeamManagementMetricsService(): Promise<TeamManagementM
       roi: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessRoi,
       communication: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessCommunication,
       team: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessTeam,
+      documents: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessDocuments,
     },
     failedLoginAttempts: u.failedLoginAttempts,
     lockedUntil: u.lockedUntil ? u.lockedUntil.toISOString() : null,
@@ -935,6 +1003,7 @@ export async function toggleUserModulePermissionService(
     roi: "canAccessRoi",
     communication: "canAccessCommunication",
     team: "canAccessTeam",
+    documents: "canAccessDocuments",
   };
 
   const dbField = fieldMap[input.moduleKey];
@@ -970,6 +1039,7 @@ export async function toggleUserModulePermissionService(
     roi: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessRoi,
     communication: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessCommunication,
     team: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessTeam,
+    documents: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessDocuments,
   };
 }
 
@@ -1009,6 +1079,7 @@ export async function updateAllUserPermissionsService(
         canAccessRoi: input.roi,
         canAccessCommunication: input.communication,
         canAccessTeam: input.team,
+        canAccessDocuments: input.documents ?? true,
       },
     });
 
@@ -1031,5 +1102,6 @@ export async function updateAllUserPermissionsService(
     roi: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessRoi,
     communication: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessCommunication,
     team: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessTeam,
+    documents: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessDocuments,
   };
 }

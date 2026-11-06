@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
+  FolderGit2,
   Layers,
   LayoutDashboard,
   ListOrdered,
@@ -34,6 +35,7 @@ import {
   FINANCE_SUB_ITEMS,
   ROI_SUB_ITEMS,
   COMMUNICATION_SUB_ITEMS,
+  DOCUMENTS_SUB_ITEMS,
   TEAM_SUB_ITEMS,
 } from "@/components/layout/app-sidebar";
 import { useSidebar } from "@/providers/sidebar-provider";
@@ -72,10 +74,15 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
     pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
   const [isComunicacaoOpen, setIsComunicacaoOpen] = React.useState<boolean>(false);
 
+  const isDocumentosRouteActive =
+    pathname === "/documentos" || pathname.startsWith("/documentos/");
+  const [isDocumentosOpen, setIsDocumentosOpen] = React.useState<boolean>(false);
+
   const permissions = currentUser.permissions ?? {
     finance: true,
     roi: true,
     communication: true,
+    documents: true,
     team: isSuperAdmin,
   };
 
@@ -241,6 +248,54 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
                     const isActive =
                       pathname === "/comunicacao" &&
                       (currentTab === item.tabKey || (!currentTab && item.tabKey === "mapa"));
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsMobileOpen(false)}
+                        className={sidebarItemStyles({
+                          isActive,
+                          isSubItem: true,
+                        })}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Grupo: Documentos com Submódulos */}
+          {permissions.documents && (
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setIsDocumentosOpen((prev) => !prev)}
+                aria-expanded={isDocumentosOpen}
+                className={sidebarItemStyles({
+                  isActive: isDocumentosRouteActive && !isDocumentosOpen,
+                })}
+              >
+                <FolderGit2 className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">Documentos</span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                    isDocumentosOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isDocumentosOpen && (
+                <div className="ml-4 space-y-1 border-l border-border pl-2.5">
+                  {DOCUMENTS_SUB_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      pathname === item.href ||
+                      pathname.startsWith(`${item.href}/`);
 
                     return (
                       <Link

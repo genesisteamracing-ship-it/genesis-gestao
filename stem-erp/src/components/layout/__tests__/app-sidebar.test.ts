@@ -4,6 +4,7 @@ import {
   FINANCE_SUB_ITEMS,
   ROI_SUB_ITEMS,
   COMMUNICATION_SUB_ITEMS,
+  DOCUMENTS_SUB_ITEMS,
   TEAM_SUB_ITEMS,
   sidebarItemStyles,
 } from "../app-sidebar";
@@ -29,11 +30,27 @@ describe("Sidebar Submodules Contracts", () => {
     assert.equal(COMMUNICATION_SUB_ITEMS.length, 5);
   });
 
+  it("deve exportar a lista de submódulos de documentos com a WBS / EAP", () => {
+    assert.equal(DOCUMENTS_SUB_ITEMS.length, 1);
+    assert.deepEqual(
+      DOCUMENTS_SUB_ITEMS.map((item) => item.href),
+      ["/documentos"]
+    );
+    assert.deepEqual(
+      DOCUMENTS_SUB_ITEMS.map((item) => item.label),
+      ["WBS / EAP"]
+    );
+  });
+
   it("deve exportar a lista de submódulos de Equipe & Acessos corretamente", () => {
-    assert.equal(TEAM_SUB_ITEMS.length, 2);
+    assert.equal(TEAM_SUB_ITEMS.length, 3);
     assert.deepEqual(
       TEAM_SUB_ITEMS.map((item) => item.href),
-      ["/equipe", "/permissoes"]
+      ["/equipe", "/integrantes", "/permissoes"]
+    );
+    assert.deepEqual(
+      TEAM_SUB_ITEMS.map((item) => item.label),
+      ["Equipes", "Integrantes", "Permissões de Acesso"]
     );
   });
 

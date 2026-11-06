@@ -6,6 +6,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   CalendarClock,
   ChevronDown,
+  Flag,
+  FolderGit2,
   Grid3X3,
   Layers,
   LayoutDashboard,
@@ -105,10 +107,23 @@ export const COMMUNICATION_SUB_ITEMS = [
   },
 ] as const;
 
+export const DOCUMENTS_SUB_ITEMS = [
+  {
+    href: "/documentos",
+    label: "WBS / EAP",
+    icon: FolderGit2,
+  },
+] as const;
+
 export const TEAM_SUB_ITEMS = [
   {
     href: "/equipe",
-    label: "Equipes & Integrantes",
+    label: "Equipes",
+    icon: Flag,
+  },
+  {
+    href: "/integrantes",
+    label: "Integrantes",
     icon: Users,
   },
   {
@@ -143,10 +158,15 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
     pathname === "/comunicacao" || pathname.startsWith("/comunicacao/");
   const [isComunicacaoOpen, setIsComunicacaoOpen] = React.useState<boolean>(false);
 
+  const isDocumentosRouteActive =
+    pathname === "/documentos" || pathname.startsWith("/documentos/");
+  const [isDocumentosOpen, setIsDocumentosOpen] = React.useState<boolean>(false);
+
   const permissions = currentUser.permissions ?? {
     finance: true,
     roi: true,
     communication: true,
+    documents: true,
     team: isSuperAdmin,
   };
 
@@ -322,6 +342,60 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
                     const isActive =
                       pathname === "/comunicacao" &&
                       (currentTab === item.tabKey || (!currentTab && item.tabKey === "mapa"));
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={sidebarItemStyles({
+                          isActive,
+                          isSubItem: true,
+                        })}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Combo / Grupo: Documentos */}
+          {permissions.documents && (
+            <div className="relative px-5">
+              {isDocumentosRouteActive && !isDocumentosOpen && (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
+                />
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsDocumentosOpen((prev) => !prev)}
+                aria-expanded={isDocumentosOpen}
+                className={sidebarItemStyles({
+                  isActive: isDocumentosRouteActive && !isDocumentosOpen,
+                })}
+              >
+                <FolderGit2 className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">Documentos</span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                    isDocumentosOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isDocumentosOpen && (
+                <div className="mt-1 ml-4 space-y-1 border-l border-border pl-2.5">
+                  {DOCUMENTS_SUB_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      pathname === item.href ||
+                      pathname.startsWith(`${item.href}/`);
 
                     return (
                       <Link

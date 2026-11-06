@@ -1,9 +1,11 @@
 import Link from "next/link";
 import {
+  ArrowRight,
   Flag,
   KeyRound,
   ShieldAlert,
   ShieldCheck,
+  UserCheck,
   Users,
 } from "lucide-react";
 import { getTeamManagementMetricsAction } from "@/actions/auth-actions";
@@ -11,9 +13,7 @@ import { getDashboardMetricsAction } from "@/actions/financial-actions";
 import { requireModuleAccess } from "@/services/auth-service";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { CreateTeamDialog } from "@/components/modals/create-team-dialog";
-import { CreateMemberDialog } from "@/components/modals/create-member-dialog";
 import { DeleteTeamDialog } from "@/components/modals/delete-team-dialog";
-import { TeamMembersDataTable } from "@/components/tables/team-members-data-table";
 import { SecurityAuditTable } from "@/components/tables/security-audit-table";
 import { TeamSenderEmailCard } from "@/components/forms/team-sender-email-card";
 import { Badge } from "@/components/ui/badge";
@@ -31,8 +31,8 @@ export default async function EquipePage() {
 
   return (
     <DashboardShell
-      title="Equipes & Integrantes"
-      subtitle="Gestão de membros, permissões e governança multi-equipe da temporada"
+      title="Equipes"
+      subtitle="Gestão de escuderias, isolamento de dados e governança multi-equipe da temporada"
       currentUser={financialMetrics.currentUser}
       activeTeam={financialMetrics.activeTeam}
       availableTeams={financialMetrics.availableTeams}
@@ -41,6 +41,15 @@ export default async function EquipePage() {
       seasonMonths={financialMetrics.seasonMonths}
       headerAction={
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <Link href="/integrantes">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto gap-2 text-xs sm:text-sm font-semibold border-border hover:bg-muted"
+            >
+              <Users className="h-4 w-4 text-primary" />
+              <span>Gerenciar Integrantes</span>
+            </Button>
+          </Link>
           <Link href="/permissoes">
             <Button
               variant="outline"
@@ -51,7 +60,6 @@ export default async function EquipePage() {
             </Button>
           </Link>
           <CreateTeamDialog />
-          <CreateMemberDialog teams={teamMetrics.teams} />
         </div>
       }
     >
@@ -142,6 +150,31 @@ export default async function EquipePage() {
         </Card>
       </section>
 
+      {/* Banner / Atalho para o Submódulo de Integrantes */}
+      <Card className="rounded-2xl border border-primary/20 bg-primary/5 shadow-2xs">
+        <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <UserCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-foreground">
+                Submódulo de Integrantes & Gestão de Credenciais
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Gerencie os membros de cada equipe, redefina senhas, altere nomes, e-mails, permissões RBAC e status de login.
+              </p>
+            </div>
+          </div>
+          <Link href="/integrantes" className="w-full sm:w-auto shrink-0">
+            <Button className="w-full sm:w-auto gap-2 font-semibold text-xs sm:text-sm">
+              <span>Acessar Integrantes</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
       {/* Configuração do E-mail de Envio da Equipe Ativa */}
       <TeamSenderEmailCard
         teamId={financialMetrics.activeTeam.id}
@@ -202,17 +235,24 @@ export default async function EquipePage() {
                     <div className="text-[11px] text-muted-foreground">Lançamentos</div>
                   </div>
                 </div>
+
+                <div className="pt-1">
+                  <Link href={`/integrantes?team=${team.id}`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-xs font-semibold text-primary hover:bg-primary/10 gap-1.5"
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                      <span>Ver integrantes desta equipe</span>
+                    </Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </section>
-
-      {/* Tabela de Integrantes */}
-      <TeamMembersDataTable
-        teams={teamMetrics.teams}
-        members={teamMetrics.members}
-      />
 
       {/* Trilha de Auditoria de Segurança */}
       <SecurityAuditTable logs={teamMetrics.auditLogs} />

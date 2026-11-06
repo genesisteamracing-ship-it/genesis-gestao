@@ -91,6 +91,7 @@ model Team {
   stakeholders    Stakeholder[]
   communicationPlans CommunicationPlan[]
   communicationLogs  CommunicationLog[]
+  wbsNodes           WbsNode[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -176,6 +177,7 @@ model User {
   canAccessRoi           Boolean         @default(true)
   canAccessCommunication Boolean         @default(true)
   canAccessTeam          Boolean         @default(false)
+  canAccessDocuments     Boolean         @default(true)
 
   failedLoginAttempts Int             @default(0)
   lockedUntil         DateTime?       // Bloqueio automático anti-força bruta
@@ -183,6 +185,7 @@ model User {
   createdById         String?
   sessions            Session[]
   auditLogs           AuthAuditLog[]
+  wbsNodes            WbsNode[]
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
@@ -405,4 +408,49 @@ model CommunicationFeedback {
   updatedAt                   DateTime          @updatedAt
 
   @@index([communicationLogId])
+}
+
+// ==========================================
+// MÓDULO: DOCUMENTOS & WBS (ESTRUTURA ANALÍTICA DO PROJETO)
+// ==========================================
+
+enum WbsNodeStatus {
+  PLANNED      // Planejado no escopo inicial
+  IN_PROGRESS  // Em construção / execução
+  COMPLETED    // Entregável finalizado
+  AUDITED      // Validado perante banca de escrutínio / PM
+}
+
+// 13. Entregáveis e Pacotes de Trabalho da WBS / EAP (Isolados por Equipe)
+model WbsNode {
+  id                 String         @id @default(cuid())
+  teamId             String
+  team               Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  parentId           String?
+  parent             WbsNode?       @relation("WbsHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children           WbsNode[]      @relation("WbsHierarchy")
+  
+  code               String         // Código EAP (ex: "1.0", "1.2", "1.2.3")
+  title              String         // Nome do Entregável
+  description        String?        // Descrição do escopo específico ("o que precisa ser construído")
+  discipline         DeliveryGroup  // Setor: Engenharia, Manufatura, Pit Display, Marketing, Gestão, Social
+  
+  ownerId            String?
+  owner              User?          @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerName          String?        // Nome em cache do responsável para renderização rápida
+  
+  status             WbsNodeStatus  @default(PLANNED)
+  estimatedCostCents Int            @default(0) // Custo direto de fabricação em centavos (folhas)
+  estimatedHours     Int            @default(0) // Esforço direto estimado em horas (folhas)
+  
+  sortOrder          Int            @default(0) // Ordem de apresentação entre nós irmãos
+  depth              Int            @default(1) // 1 = Raiz/Projeto, 2 = Subsistema, 3 = Pacote de Trabalho
+  
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@unique([teamId, code])
+  @@index([teamId, parentId])
+  @@index([teamId, discipline])
+  @@index([teamId, depth])
 }

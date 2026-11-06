@@ -1,12 +1,13 @@
 import type { AuthEventType, DeliveryGroup, UserRole } from "@prisma/client";
 
-export type SystemModuleKey = "finance" | "roi" | "communication" | "team";
+export type SystemModuleKey = "finance" | "roi" | "communication" | "team" | "documents";
 
 export interface UserModulePermissionsDTO {
   finance: boolean;       // Módulo Financeiro (/dashboard, /planejamento, /lancamentos)
   roi: boolean;           // Módulo ROI & Patrocínio (/roi, /roi/acoes)
   communication: boolean; // Módulo Comunicação (/comunicacao)
   team: boolean;          // Módulo Equipe & Acessos (/equipe, /permissoes)
+  documents?: boolean;    // Módulo Documentos & WBS (/documentos)
 }
 
 export interface TeamDTO {

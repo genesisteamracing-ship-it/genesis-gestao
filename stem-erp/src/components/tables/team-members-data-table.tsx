@@ -15,7 +15,7 @@ import {
 import { DELIVERY_GROUP_LABELS, USER_ROLE_LABELS } from "@/lib/constants";
 import { userRoleValues } from "@/lib/validations/auth";
 import { deliveryGroupValues } from "@/lib/validations/financial";
-import { formatDateBR } from "@/lib/utils";
+import { cn, formatDateBR } from "@/lib/utils";
 import type { TeamDTO, TeamMemberDTO } from "@/types/auth";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -233,6 +233,64 @@ export function TeamMembersDataTable({
 
   return (
     <div className="space-y-4">
+      {/* 0. Seletor Rápido de Gestão por Equipe */}
+      {teams.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => table.getColumn("teamId")?.setFilterValue(undefined)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
+              selectedTeamId === "ALL"
+                ? "border-primary bg-primary text-primary-foreground shadow-2xs"
+                : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            <span>Todas as Equipes</span>
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                selectedTeamId === "ALL"
+                  ? "bg-primary-foreground/20 text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              {members.length}
+            </span>
+          </button>
+
+          {teams.map((t) => {
+            const count = members.filter((m) => m.teamId === t.id).length;
+            const isSelected = selectedTeamId === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => table.getColumn("teamId")?.setFilterValue(t.id)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
+                  isSelected
+                    ? "border-primary bg-primary text-primary-foreground shadow-2xs"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <span>{t.name}</span>
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                    isSelected
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* 1. Busca rápida */}
       <div className="relative w-full">
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />

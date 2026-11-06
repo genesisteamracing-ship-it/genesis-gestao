@@ -34,12 +34,20 @@ export default async function PermissoesPage() {
       budgetResources={dashboardMetrics.budgetResources}
       seasonMonths={dashboardMetrics.seasonMonths}
       headerAction={
-        <Link href="/equipe">
-          <Button variant="outline" className="gap-2 text-xs sm:text-sm font-semibold border-border">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Voltar para Equipes</span>
-          </Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <Link href="/integrantes">
+            <Button variant="outline" className="w-full sm:w-auto gap-2 text-xs sm:text-sm font-semibold border-border hover:bg-muted">
+              <Users className="h-4 w-4 text-primary" />
+              <span>Ver Integrantes</span>
+            </Button>
+          </Link>
+          <Link href="/equipe">
+            <Button variant="outline" className="w-full sm:w-auto gap-2 text-xs sm:text-sm font-semibold border-border hover:bg-muted">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Voltar para Equipes</span>
+            </Button>
+          </Link>
+        </div>
       }
     >
       {/* 4 Cards de Resumo de Acesso por Módulo */}

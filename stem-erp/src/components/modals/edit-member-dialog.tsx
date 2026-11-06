@@ -73,6 +73,8 @@ export function EditMemberDialog({
     resolver: zodResolver(updateMemberAccessSchema),
     defaultValues: {
       userId: member.id,
+      name: member.name,
+      email: member.email,
       teamId: member.teamId ?? teams[0]?.id ?? "",
       role: member.role,
       deliveryGroup: member.deliveryGroup ?? "PROJECT_MANAGEMENT",
@@ -85,6 +87,8 @@ export function EditMemberDialog({
     if (open) {
       form.reset({
         userId: member.id,
+        name: member.name,
+        email: member.email,
         teamId: member.teamId ?? teams[0]?.id ?? "",
         role: member.role,
         deliveryGroup: member.deliveryGroup ?? "PROJECT_MANAGEMENT",
@@ -112,16 +116,50 @@ export function EditMemberDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Acesso: {member.name}</DialogTitle>
-          <DialogDescription className="sr-only">
-            Editar permissões e dados de acesso de {member.name}
+          <DialogTitle>Editar Integrante: {member.name}</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Altere dados cadastrais, e-mail corporativo, equipe e permissões de acesso
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome Completo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Felipe Bastos" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>E-mail Corporativo</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="felipe@equipegenesis.com"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="teamId"

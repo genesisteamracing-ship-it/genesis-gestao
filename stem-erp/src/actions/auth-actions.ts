@@ -24,6 +24,8 @@ import {
   type ToggleUserModulePermissionInput,
   type UpdateAllUserPermissionsInput,
   type UpdateMemberAccessInput,
+  resetMemberPasswordSchema,
+  type ResetMemberPasswordInput,
 } from "@/lib/validations/auth";
 import {
   authenticateUserService,
@@ -35,6 +37,7 @@ import {
   logoutUserService,
   requireAuthUser,
   requireSuperAdmin,
+  resetMemberPasswordService,
   toggleUserModulePermissionService,
   unlockUserAccountService,
   updateAllUserPermissionsService,
@@ -184,6 +187,7 @@ export async function createTeamMemberAction(
   try {
     const created = await createTeamMemberService(superAdmin, parsed.data);
 
+    revalidatePath("/integrantes");
     revalidatePath("/equipe");
     revalidatePath("/dashboard");
 
@@ -220,6 +224,7 @@ export async function updateTeamMemberAccessAction(
   try {
     const updated = await updateTeamMemberAccessService(superAdmin, parsed.data);
 
+    revalidatePath("/integrantes");
     revalidatePath("/equipe");
     revalidatePath("/dashboard");
 
@@ -247,6 +252,7 @@ export async function unlockUserAccountAction(
   try {
     const unlocked = await unlockUserAccountService(superAdmin, userId);
 
+    revalidatePath("/integrantes");
     revalidatePath("/equipe");
 
     return {
@@ -318,6 +324,7 @@ export async function deleteTeamMemberAction(
   try {
     const deleted = await deleteTeamMemberService(superAdmin, parsed.data);
 
+    revalidatePath("/integrantes");
     revalidatePath("/equipe");
     revalidatePath("/dashboard");
 
@@ -328,6 +335,41 @@ export async function deleteTeamMemberAction(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Erro ao excluir integrante.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}
+
+export async function resetMemberPasswordAction(
+  rawData: ResetMemberPasswordInput
+): Promise<ActionResponse> {
+  const superAdmin = await requireSuperAdmin();
+
+  const parsed = resetMemberPasswordSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Verifique os requisitos da nova senha.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const updated = await resetMemberPasswordService(superAdmin, parsed.data);
+
+    revalidatePath("/integrantes");
+    revalidatePath("/equipe");
+    revalidatePath("/dashboard");
+
+    return {
+      success: true,
+      message: `Senha de ${updated.name} redefinida com sucesso!`,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Erro ao redefinir senha do integrante.";
     return {
       success: false,
       message,
