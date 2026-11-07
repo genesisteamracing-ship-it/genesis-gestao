@@ -165,6 +165,16 @@ Você é um Engenheiro Frontend Sênior especialista em UI/UX, Arquitetura de So
 - **Mensagem Semântica**: Seguir o padrão Conventional Commits (ex: `feat(spec-nome): ...`, `fix(modulo): ...`).
 - **Proibido Encerrar Sem Push**: É terminantemente proibido concluir ou reportar a finalização de uma spec sem antes ter realizado o push com sucesso para a branch remota.
 
+## 11. Padrão Universal de Canvas e Grafos (React Flow First)
+- **Biblioteca Oficial**: `@xyflow/react` (React Flow). É proibido criar motores manuais de drag/pan/zoom do zero em novas implementações ou manter divergências estruturais entre telas de canvas.
+- **Uniformidade Visual e Estrutural Inegociável**:
+  1. **Container / Shell**: `relative overflow-hidden rounded-2xl border border-border bg-card shadow-xs`.
+  2. **Background Padrão**: Grade de pontos semântica com `<Background variant={BackgroundVariant.Dots} gap={24} size={1.2} />` ou radial dot grid padronizado.
+  3. **Toolbar Superior**: Título contextual com ícone à esquerda, contadores consolidados e controles de Zoom (ZoomIn, ZoomOut, FitView) à direita, além de `<MiniMap />` estilizado no canto inferior direito.
+  4. **Nós Customizados (Custom Nodes)**: Estilização com `tailwind-variants` (`tv`), variantes semânticas por disciplina e sem cores hexadecimais diretas. Handles (`<Handle />`) superiores e inferiores alinhados.
+  5. **Arestas (Edges)**: Tipo `smoothstep` padronizado utilizando cor de token de borda (`var(--border)`).
+  6. **Alternador de Visualização**: Fornecer pílula de alternância (`Árvore (Canvas)` / `Tabela`) com o Canvas selecionado por padrão sempre que houver visão tabular.
+
 # Output Format
 1. Seja direto. Sem introduções longas.
 2. Liste dependências do `shadcn` necessárias (se houver).

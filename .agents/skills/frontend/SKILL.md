@@ -86,3 +86,21 @@ Toda tabela paginada deve obrigatoriamente seguir o padrão de `/equipe` e `/lan
 
 ## 4. Finalização de Specs e Sincronização Remota (Commit & Push)
 - Ao finalizar qualquer especificação ou conjunto de tarefas (`tasks.md`), o agente deve obrigatoriamente validar os testes e qualidade de código e executar `git commit` e `git push origin <branch>` antes de reportar a conclusão ao usuário.
+
+## 5. Padrão Universal de Canvas e Grafos (React Flow First)
+Sempre que o sistema exigir visualizações em canvas, diagramas de árvore hierárquica, grafos de relacionamento ou organogramas (como o Mapa de Stakeholders e a WBS / EAP de Documentos), deve-se obrigatoriamente utilizar o **React Flow** (`@xyflow/react`):
+- **Biblioteca Oficial**: `@xyflow/react`. PROIBIDO construir motores manuais de drag/pan/zoom do zero em novas implementações ou manter divergência entre telas de canvas.
+- **Uniformidade Visual e Estrutural Inegociável**:
+  1. **Container / Shell**: `relative overflow-hidden rounded-2xl border border-border bg-card shadow-xs`.
+  2. **Background Padrão**: Fundo com grade de pontos semântica usando `<Background variant={BackgroundVariant.Dots} gap={24} size={1.2} />` ou radial dot grid semântico.
+  3. **Barra Superior de Controles (Toolbar)**:
+     - Esquerda: Ícone semântico do domínio + Título do Canvas + Contadores/Métricas consolidadas.
+     - Direita: Controles de navegação (ZoomIn, ZoomOut, FitView) padronizados e `<MiniMap />` estilizado no canto inferior direito com `backdrop-blur` e borda suave.
+  4. **Nós Customizados (Custom Node Types)**:
+     - Todo nó deve ser registrado em `nodeTypes`.
+     - Estilização obrigatória com `tailwind-variants` (`tv`), definindo slots (`card`, `topRow`, `title`, `meta`, `chips`) e variantes semânticas por disciplina/categoria (`ENGINEERING_CAD`, `FINANCE`, `MARKETING`, etc.).
+     - ZERO cores hexadecimais diretas; utilizar apenas tokens semânticos (`border-primary`, `bg-card`, `text-foreground`, `text-muted-foreground`, etc.).
+     - Conectores / Handles: `<Handle type="target" position={Position.Top} />` e `<Handle type="source" position={Position.Bottom} />` discretos e alinhados.
+  5. **Arestas / Conexões (Edges)**:
+     - Tipo `smoothstep` padronizado com stroke suave utilizando a variável do token de borda (`var(--border)`).
+  6. **Alternador de Visualização Padrão**: Sempre que houver visualização tabular complementar, fornecer no topo um alternador padronizado em pílula (`Árvore (Canvas)` / `Tabela`) com o Canvas ativo por padrão.

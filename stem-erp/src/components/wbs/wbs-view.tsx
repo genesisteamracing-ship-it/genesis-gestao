@@ -4,8 +4,10 @@ import * as React from "react";
 import {
   AlertTriangle,
   Filter,
+  Network,
   Plus,
   Search,
+  TableProperties,
 } from "lucide-react";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { DashboardMetricsDTO } from "@/types/financial";
@@ -23,6 +25,7 @@ import {
 import { useWbs } from "@/hooks/use-wbs";
 import { WbsHeaderMetrics } from "./wbs-header-metrics";
 import { WbsTreeTable, DISCIPLINE_LABELS } from "./wbs-tree-table";
+import { WbsFlowCanvas } from "./wbs-flow-canvas";
 import { WbsNodeModal } from "./wbs-node-modal";
 import { WbsPresentationView } from "./wbs-presentation-view";
 import type { DeliveryGroup, WbsTreeDataResult } from "@/types/wbs";
@@ -68,6 +71,7 @@ export function WbsView({
   } = useWbs(activeTeam.id, initialWbsData);
 
   const isAuditor = currentUser.role === "AUDITOR";
+  const [viewMode, setViewMode] = React.useState<"canvas" | "table">("canvas");
 
   const headerAction = !isPresentationMode && !isAuditor ? (
     <Button
@@ -140,9 +144,40 @@ export function WbsView({
             </div>
           </div>
 
-          {/* Gatilho do Modo Apresentação (quando não ativo) */}
-          {!isPresentationMode && (
-            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+          {/* Controles do Lado Direito: Alternador de Visualização & Modo Apresentação */}
+          <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto shrink-0">
+            {/* Alternador Canvas vs Tabela */}
+            <div className="inline-flex items-center rounded-lg border border-border bg-card p-0.5 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setViewMode("canvas")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                  viewMode === "canvas"
+                    ? "bg-primary text-primary-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Visualização em Árvore Interativa (Canvas)"
+              >
+                <Network className="h-3.5 w-3.5" />
+                <span>Árvore (Canvas)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                  viewMode === "table"
+                    ? "bg-primary text-primary-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Visualização em Tabela Tabular"
+              >
+                <TableProperties className="h-3.5 w-3.5" />
+                <span>Tabela</span>
+              </button>
+            </div>
+
+            {/* Gatilho do Modo Apresentação (quando não ativo) */}
+            {!isPresentationMode && (
               <WbsPresentationView
                 isPresentationMode={isPresentationMode}
                 onTogglePresentationMode={() => setIsPresentationMode(true)}
@@ -150,20 +185,35 @@ export function WbsView({
                 onExpandAll={expandAll}
                 onCollapseAll={collapseAll}
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Tabela Hierárquica da WBS */}
-        <WbsTreeTable
-          nodes={tree}
-          expandedNodeIds={expandedNodeIds}
-          onToggleExpand={toggleExpand}
-          isPresentationMode={isPresentationMode}
-          onAddChild={openCreateChild}
-          onEdit={openEdit}
-          onDelete={(node) => setDeleteConfirmNode(node)}
-        />
+        {/* Visualização da WBS: React Flow Canvas ou Tabela */}
+        {viewMode === "canvas" ? (
+          <WbsFlowCanvas
+            nodes={tree}
+            expandedNodeIds={expandedNodeIds}
+            isPresentationMode={isPresentationMode}
+            onToggleExpand={toggleExpand}
+            onAddChild={openCreateChild}
+            onEdit={openEdit}
+            onDelete={(node) => setDeleteConfirmNode(node)}
+            onOpenCreateRoot={openCreateRoot}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
+        ) : (
+          <WbsTreeTable
+            nodes={tree}
+            expandedNodeIds={expandedNodeIds}
+            onToggleExpand={toggleExpand}
+            isPresentationMode={isPresentationMode}
+            onAddChild={openCreateChild}
+            onEdit={openEdit}
+            onDelete={(node) => setDeleteConfirmNode(node)}
+          />
+        )}
       </div>
 
       {/* Modal de Criação / Edição de Entregáveis */}
