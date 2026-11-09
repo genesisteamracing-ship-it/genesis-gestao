@@ -56,6 +56,14 @@ export const DISCIPLINE_SELECT_OPTIONS: DisciplineSelectOption[] = [
 ];
 
 /**
+ * Interface estrita para nós da árvore ao extrair códigos EAP.
+ */
+export interface WbsCodeNode {
+  code: string;
+  children?: WbsCodeNode[];
+}
+
+/**
  * Normaliza códigos legados (como "1.0") para "1", mantendo consistência na hierarquia.
  */
 export function normalizeWbsCode(code: string): string {
@@ -68,10 +76,10 @@ export function normalizeWbsCode(code: string): string {
 /**
  * Coleta recursivamente todos os códigos existentes em uma lista de nós da WBS.
  */
-export function collectAllWbsCodes(nodes: Array<{ code: string; children?: Array<any> }>): string[] {
+export function collectAllWbsCodes(nodes: WbsCodeNode[]): string[] {
   const codes: string[] = [];
 
-  function walk(list: Array<{ code: string; children?: Array<any> }>) {
+  function walk(list: WbsCodeNode[]) {
     for (const item of list) {
       if (item.code) {
         codes.push(item.code);
