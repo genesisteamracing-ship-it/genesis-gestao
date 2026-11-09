@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test",
+    "test": "node scripts/run-tests.mjs",
     "seed": "tsx prisma/seed.ts",
     "db:backup": "tsx scripts/db-backup-sync.ts",
     "db:restore": "tsx scripts/db-restore-snapshot.ts",
