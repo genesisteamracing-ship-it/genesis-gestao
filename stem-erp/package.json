@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "db:backup": "tsx scripts/db-backup-sync.ts",
+    "db:restore": "tsx scripts/db-restore-snapshot.ts",
+    "db:safe-push": "tsx scripts/db-safe-migrate.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

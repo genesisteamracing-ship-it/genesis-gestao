@@ -54,7 +54,7 @@ async function ensureTeamCategories(teamId: string): Promise<Map<string, string>
 }
 
 async function main() {
-  console.log("🌱 Iniciando seed Multi-Equipe: Gênesis ZERADA e Alpha com dados...");
+  console.log("🌱 Iniciando seed seguro Multi-Equipe (Idempotente / Zero Deleção de Dados)...");
 
   // 1. Criar ou garantir as Equipes: Equipe Gênesis e Equipe Alpha
   const genesisTeam = await prisma.team.upsert({
@@ -85,20 +85,8 @@ async function main() {
   await ensureTeamCategories(genesisTeam.id);
   const alphaCats = await ensureTeamCategories(alphaTeam.id);
 
-  // 3. LIMPEZA TOTAL DA EQUIPE GÊNESIS (deixar banco da Gênesis 100% zerado)
-  await prisma.transaction.deleteMany({
-    where: { teamId: genesisTeam.id },
-  });
-  await prisma.budgetResource.deleteMany({
-    where: { teamId: genesisTeam.id },
-  });
-  await prisma.user.deleteMany({
-    where: {
-      teamId: genesisTeam.id,
-      email: { not: "superadmin@genesisracing.com" },
-    },
-  });
-  console.log("🧹 Equipe Gênesis 100% zerada (0 recursos, 0 transações, sem outros integrantes).");
+  // 3. GUARDRAIL DE SEGURANÇA: Jamais apagar transações, orçamentos ou usuários existentes da Equipe Gênesis!
+  console.log("🛡️ Guardrail ativo: Dados existentes da Equipe Gênesis preservados integralmente.");
 
   // 4. SuperAdmin único da plataforma
   const defaultPasswordHash = await bcrypt.hash("Genesis@2026", 12);

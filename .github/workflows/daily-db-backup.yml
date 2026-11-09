@@ -1,0 +1,46 @@
+name: Daily Neon Database Backup & Branch Sync
+
+on:
+  schedule:
+    # Executa todos os dias às 03:00 UTC (00:00 Horário de Brasília)
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup-and-sync:
+    name: Sync Neon Recovery Branch & Export Snapshot
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: stem-erp
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: stem-erp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Neon CLI
+        run: npm install -g neonctl
+
+      - name: Sync Neon Child Branch (backup-daily-recovery) & Create Snapshot
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: npm run db:backup
+
+      - name: Upload Database Snapshot Artifact (90 days retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-db-snapshot-${{ github.run_number }}
+          path: stem-erp/prisma/backups/latest-snapshot.json
+          retention-days: 90

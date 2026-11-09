@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .neon
+
+# database snapshots (keep local, do not push password hashes to git)
+/prisma/backups/*.json

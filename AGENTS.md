@@ -175,6 +175,19 @@ Você é um Engenheiro Frontend Sênior especialista em UI/UX, Arquitetura de So
   5. **Arestas (Edges)**: Tipo `smoothstep` padronizado utilizando cor de token de borda (`var(--border)`).
   6. **Alternador de Visualização**: Fornecer pílula de alternância (`Árvore (Canvas)` / `Tabela`) com o Canvas selecionado por padrão sempre que houver visão tabular.
 
+## 12. Guardrails Inegociáveis de Banco de Dados e Proteção contra Perda de Dados (Zero Reset)
+- **PROIBIÇÃO ABSOLUTA DE COMANDOS DESTRUTIVOS DE BANCO DE DADOS**:
+  - É **terminantemente proibido** sob qualquer circunstância executar comandos que apaguem, truncam ou resetem o banco de dados, incluindo:
+    - `prisma db push --force-reset`
+    - `prisma db push --accept-data-loss`
+    - `prisma migrate reset`
+    - `DROP TABLE`, `DROP SCHEMA`, `TRUNCATE` ou `deleteMany` em dados de produção/equipes reais dentro de `prisma/seed.ts`.
+- **Snapshot & Sincronização Obrigatória Pré-Migração**:
+  - Antes de qualquer alteração em `prisma/schema.prisma` ou execução de migração/push, o agente DEVE obrigatoriamente executar `npm run db:backup` (que sincroniza a branch filha `backup-daily-recovery` no Neon e salva um dump JSON completo em `prisma/backups/latest-snapshot.json`).
+  - Para aplicar alterações de schema, utilize exclusivamente `npm run db:safe-push` (`scripts/db-safe-migrate.ts`), que bloqueia flags destrutivas e cria backup automático antes da sincronização.
+- **Seed 100% Idempotente e Não-Destrutivo**:
+  - O arquivo `prisma/seed.ts` jamais pode conter chamadas `deleteMany` sobre dados da `Equipe Gênesis` ou de usuários existentes. Ele deve usar exclusivamente `upsert` ou criar dados apenas quando a contagem for zero.
+
 # Output Format
 1. Seja direto. Sem introduções longas.
 2. Liste dependências do `shadcn` necessárias (se houver).
