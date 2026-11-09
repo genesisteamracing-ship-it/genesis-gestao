@@ -22,6 +22,7 @@ export default async function DocumentosPage() {
       }
     >
       <WbsView
+        key={dashboardMetrics.activeTeam.id}
         currentUser={currentUser}
         dashboardMetrics={dashboardMetrics}
         initialWbsData={wbsResult.data}

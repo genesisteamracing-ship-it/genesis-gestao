@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/services/auth-service";
 import { resolveActiveTeam } from "@/services/financial-service";
 import { buildWbsTree } from "@/services/wbs-rollup.service";
+import { loadWbsWithDefaults } from "@/services/wbs-defaults.service";
 import {
   createWbsNodeSchema,
   updateWbsNodeSchema,
@@ -23,23 +24,29 @@ export interface ActionResponse<T = unknown> {
   fieldErrors?: Record<string, string[] | undefined>;
 }
 
+function canAccessWbsTeam(user: Awaited<ReturnType<typeof requireAuthUser>>, teamId: string) {
+  return Boolean(user.permissions.documents) &&
+    (user.role === UserRole.SUPER_ADMIN || user.teamId === teamId);
+}
+
 export async function getWbsTreeAction(
   targetTeamId?: string
 ): Promise<ActionResponse<WbsTreeDataResult>> {
   try {
     const user = await requireAuthUser();
-    const { activeTeam } = await resolveActiveTeam(user);
+    const { activeTeam, availableTeams } = await resolveActiveTeam(user);
 
     const teamId =
       user.role === UserRole.SUPER_ADMIN && targetTeamId
         ? targetTeamId
         : activeTeam.id;
 
+    if (!canAccessWbsTeam(user, teamId) || !availableTeams.some((team) => team.id === teamId)) {
+      return { success: false, message: "Você não tem acesso à WBS desta equipe." };
+    }
+
     const [rawNodes, members] = await Promise.all([
-      prisma.wbsNode.findMany({
-        where: { teamId },
-        orderBy: [{ sortOrder: "asc" }, { code: "asc" }],
-      }),
+      loadWbsWithDefaults(teamId, user.role !== UserRole.AUDITOR),
       prisma.user.findMany({
         where: { teamId, isActive: true },
         select: {
@@ -127,6 +134,10 @@ export async function createWbsNodeAction(
       sortOrder,
     } = parsed.data;
 
+    if (!canAccessWbsTeam(user, teamId)) {
+      return { success: false, message: "Você não tem acesso à WBS desta equipe." };
+    }
+
     // Verifica se já existe um nó com esse código na mesma equipe
     const existing = await prisma.wbsNode.findUnique({
       where: {
@@ -150,22 +161,24 @@ export async function createWbsNodeAction(
     // Calcula profundidade baseada no nó pai
     let depth = 1;
     if (parentId) {
-      const parent = await prisma.wbsNode.findUnique({
-        where: { id: parentId },
+      const parent = await prisma.wbsNode.findFirst({
+        where: { id: parentId, teamId },
       });
-      if (parent) {
-        depth = parent.depth + 1;
+      if (!parent) {
+        return { success: false, message: "Entregável pai não encontrado nesta equipe." };
       }
+      depth = parent.depth + 1;
     }
 
     // Busca nome do responsável se ownerId for informado
     let ownerName: string | null = null;
     if (ownerId) {
-      const ownerUser = await prisma.user.findUnique({
-        where: { id: ownerId },
+      const ownerUser = await prisma.user.findFirst({
+        where: { id: ownerId, teamId },
         select: { name: true },
       });
-      ownerName = ownerUser?.name ?? null;
+      if (!ownerUser) return { success: false, message: "Responsável não encontrado nesta equipe." };
+      ownerName = ownerUser.name;
     }
 
     const created = await prisma.wbsNode.create({
@@ -230,7 +243,7 @@ export async function updateWbsNodeAction(
       where: { id },
     });
 
-    if (!existing) {
+    if (!existing || !canAccessWbsTeam(user, existing.teamId)) {
       return {
         success: false,
         message: "Entregável não encontrado.",
@@ -262,11 +275,12 @@ export async function updateWbsNodeAction(
     let ownerName = existing.ownerName;
     if (ownerId !== undefined) {
       if (ownerId) {
-        const ownerUser = await prisma.user.findUnique({
-          where: { id: ownerId },
+        const ownerUser = await prisma.user.findFirst({
+          where: { id: ownerId, teamId: existing.teamId },
           select: { name: true },
         });
-        ownerName = ownerUser?.name ?? null;
+        if (!ownerUser) return { success: false, message: "Responsável não encontrado nesta equipe." };
+        ownerName = ownerUser.name;
       } else {
         ownerName = null;
       }
@@ -318,6 +332,9 @@ export async function deleteWbsNodeAction(
     }
 
     const { id, teamId } = parsed.data;
+    if (!canAccessWbsTeam(user, teamId)) {
+      return { success: false, message: "Você não tem acesso à WBS desta equipe." };
+    }
 
     const existing = await prisma.wbsNode.findFirst({
       where: { id, teamId },
