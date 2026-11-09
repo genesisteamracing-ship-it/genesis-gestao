@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   createWbsNodeSchema,
   type CreateWbsNodeInput,
@@ -313,26 +312,7 @@ export function WbsNodeModal({
             </div>
           </div>
 
-          {/* Linha 2: Descrição do Escopo */}
-          <div className="space-y-1.5">
-            <Label htmlFor="description" className="text-xs font-semibold">
-              Descrição do Escopo
-            </Label>
-            <Textarea
-              id="description"
-              placeholder="Descreva as especificações técnicas, materiais ou escopo deste pacote de trabalho..."
-              rows={2}
-              className="text-xs resize-none"
-              {...register("description")}
-            />
-            {errors.description && (
-              <p className="text-[11px] font-medium text-destructive">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
-
-          {/* Linha 3: Entregável Pai e Disciplina (Setor) */}
+          {/* Linha 2: Entregável Pai e Disciplina (Setor) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col justify-between space-y-1.5">
               <Label
