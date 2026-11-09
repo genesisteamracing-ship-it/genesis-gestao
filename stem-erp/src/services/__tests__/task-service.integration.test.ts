@@ -46,5 +46,17 @@ test("keeps A, enforces tenant boundaries and serializes reciprocal edges", { sk
   await changeDependency(scope, { teamId: team.id, ...edge }, false);
   assert.deepEqual((await getTaskWorkspace(scope)).paths[0].missing, [edge]);
   assert.equal((await resolveTaskScope({ ...user, role: "AUDITOR" }))?.canEdit, false);
+  assert.equal(await resolveTaskScope({ ...user, teamId: other.id }), null);
+
+  const admin = await prisma.user.update({ where: { id: outsider.id }, data: { role: "SUPER_ADMIN" } });
+  const adminScope = await resolveTaskScope({ ...user, id: admin.id, role: admin.role });
+  assert.ok(adminScope?.canEdit);
+  const created = await saveTask(adminScope, { ...input, title: "Tarefa da equipe ativa" });
+  const adminTask = (await getTaskWorkspace(scope)).tasks.find(({ id }) => id === created);
+  assert.deepEqual(adminTask?.roles, [{ role: "A", person: { key: admin.id, name: admin.name, available: true } }]);
+  await assert.rejects(saveTask(adminScope, { ...input, teamId: other.id }), /equipe ativa mudou/);
+  await assert.rejects(saveTask(adminScope, { ...input, assignments: [{ memberKey: admin.id, role: "R" }] }), /integrante ativo/);
+  await prisma.user.update({ where: { id: admin.id }, data: { role: "TEAM_LEAD" } });
+  await assert.rejects(saveTask(adminScope, input), /acesso à equipe mudou/);
   await prisma.$disconnect();
 });

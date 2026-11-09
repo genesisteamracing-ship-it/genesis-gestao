@@ -84,7 +84,7 @@ export function AppHeader({
             variant="outline"
             size="icon"
             onClick={toggleSidebar}
-            className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-lg border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors"
+            className="hidden h-9 w-9 shrink-0 rounded-lg border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors lg:inline-flex"
             aria-label={isOpen ? "Recolher barra lateral" : "Expandir barra lateral"}
             title={isOpen ? "Recolher barra lateral" : "Expandir barra lateral"}
           >
@@ -94,8 +94,8 @@ export function AppHeader({
           {/* Seletor de Equipe ou Badge de Isolamento Multi-Equipe */}
           <div className="flex items-center min-w-0">
             {isSuperAdmin && availableTeams.length > 0 ? (
-              <div className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-border bg-muted px-2 sm:px-3 py-1 min-w-0">
-                <Flag className="h-3.5 w-3.5 text-primary shrink-0" />
+              <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-muted px-1 py-1 sm:px-3">
+                <Flag className="hidden h-3.5 w-3.5 shrink-0 text-primary sm:block" />
                 <span className="hidden sm:inline text-xs font-bold text-muted-foreground shrink-0">
                   Equipe:
                 </span>
@@ -104,7 +104,7 @@ export function AppHeader({
                   onValueChange={handleTeamChange}
                   disabled={isSwitchingTeam}
                 >
-                  <SelectTrigger className="h-7 w-[130px] sm:w-[170px] border-0 bg-card px-2 text-xs font-bold text-foreground shadow-none truncate">
+                  <SelectTrigger aria-label="Selecionar equipe" className="h-7 w-[130px] min-w-0 truncate border-0 bg-card px-2 text-xs font-bold text-foreground shadow-none sm:w-[170px] [&>svg]:shrink-0">
                     <SelectValue placeholder="Equipe" />
                   </SelectTrigger>
                   <SelectContent>

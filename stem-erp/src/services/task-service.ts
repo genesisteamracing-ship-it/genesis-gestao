@@ -22,7 +22,7 @@ export async function resolveTaskScope(user: AuthenticatedUserDTO | null): Promi
   return {
     teamId: team.id,
     actorId: actor.id,
-    canEdit: actor.role !== UserRole.AUDITOR && user.role !== UserRole.AUDITOR && actor.teamId === team.id,
+    canEdit: actor.role !== UserRole.AUDITOR && user.role !== UserRole.AUDITOR,
   };
 }
 
@@ -32,25 +32,29 @@ function requireWrite(scope: Scope, teamId: string) {
 }
 
 async function requireActiveEditor(tx: Prisma.TransactionClient, scope: Scope) {
-  const actor = await tx.user.findFirst({
-    where: {
-      id: scope.actorId,
-      teamId: scope.teamId,
-      isActive: true,
-      team: { isActive: true },
-      OR: [{ role: UserRole.SUPER_ADMIN }, { role: { not: UserRole.AUDITOR }, canAccessTasks: true }],
-    },
-    select: { name: true },
-  });
-  if (!actor) throw new TaskError("Seu acesso à equipe mudou. Recarregue a página.");
+  const [team, actor] = await Promise.all([
+    tx.team.findFirst({ where: { id: scope.teamId, isActive: true }, select: { id: true } }),
+    tx.user.findFirst({
+      where: {
+        id: scope.actorId,
+        isActive: true,
+        OR: [
+          { role: UserRole.SUPER_ADMIN },
+          { teamId: scope.teamId, role: { not: UserRole.AUDITOR }, canAccessTasks: true },
+        ],
+      },
+      select: { name: true },
+    }),
+  ]);
+  if (!team || !actor) throw new TaskError("Seu acesso à equipe mudou. Recarregue a página.");
   return actor;
 }
 
 const memberSelect = { id: true, name: true, isActive: true, teamId: true } as const;
 type LiveMember = Prisma.UserGetPayload<{ select: typeof memberSelect }>;
 
-function person(teamId: string, key: string, name: string, live: LiveMember | null): TaskPerson {
-  const current = live?.teamId === teamId ? live : null;
+function person(teamId: string, key: string, name: string, live: LiveMember | null, isGlobalAuthor = false): TaskPerson {
+  const current = live && (isGlobalAuthor || live.teamId === teamId) ? live : null;
   return { key, name: current?.name ?? name, available: current?.isActive ?? false };
 }
 
@@ -60,7 +64,7 @@ export async function getTaskWorkspace({ teamId, canEdit }: Scope): Promise<Task
     prisma.task.findMany({
       where: { teamId }, orderBy: [{ startDate: "asc" }, { title: "asc" }, { id: "asc" }],
       include: {
-        creator: { select: memberSelect },
+        creator: { select: { ...memberSelect, role: true } },
         assignments: { include: { user: { select: memberSelect } }, orderBy: [{ role: "asc" }, { memberKey: "asc" }] },
       },
     }),
@@ -75,7 +79,13 @@ export async function getTaskWorkspace({ teamId, canEdit }: Scope): Promise<Task
       startDate: task.startDate.toISOString().slice(0, 10), endDate: task.endDate.toISOString().slice(0, 10),
       status: task.status, revision: task.revision,
       roles: [
-        { role: "A", person: person(teamId, task.creatorKey, task.creatorName, task.creator) },
+        {
+          role: "A",
+          person: person(
+            teamId, task.creatorKey, task.creatorName, task.creator,
+            task.creator?.role === UserRole.SUPER_ADMIN,
+          ),
+        },
         ...task.assignments.map((row) => ({ role: row.role, person: person(teamId, row.memberKey, row.memberName, row.user) })),
       ],
     })),

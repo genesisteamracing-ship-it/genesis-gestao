@@ -161,6 +161,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
 
   const isDocumentosRouteActive =
     pathname === "/documentos" || pathname.startsWith("/documentos/");
+  const isTasksRouteActive = pathname === "/tarefas";
   const [isDocumentosOpen, setIsDocumentosOpen] = React.useState<boolean>(false);
 
   const permissions = currentUser.permissions ?? {
@@ -363,14 +364,26 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
             </div>
           )}
 
-          {/* Combo / Grupo: Documentos */}
           {permissions.tasks && (
-            <Link href="/tarefas" className={sidebarItemStyles({ isActive: pathname === "/tarefas" })} aria-current={pathname === "/tarefas" ? "page" : undefined}>
-              <ListTodo className="h-4 w-4 shrink-0" />
-              <span>Tarefas</span>
-            </Link>
+            <div className="relative px-5">
+              {isTasksRouteActive && (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
+                />
+              )}
+              <Link
+                href="/tarefas"
+                className={sidebarItemStyles({ isActive: isTasksRouteActive })}
+                aria-current={isTasksRouteActive ? "page" : undefined}
+              >
+                <ListTodo className="h-4 w-4 shrink-0" />
+                <span>Tarefas</span>
+              </Link>
+            </div>
           )}
 
+          {/* Combo / Grupo: Documentos */}
           {permissions.documents && (
             <div className="relative px-5">
               {isDocumentosRouteActive && !isDocumentosOpen && (
