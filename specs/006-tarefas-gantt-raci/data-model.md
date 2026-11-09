@@ -12,7 +12,7 @@
 | `creatorKey`, `creatorName`, `creatorUserId?` | ID histórico e nome do autor, com relação opcional ao usuário ativo ou inativo. A relação pode ficar nula após exclusão. O papel A vem sempre deste vínculo histórico. |
 | `createdAt`, `updatedAt` | Datas de auditoria. Usar revisão da tarefa na edição para detectar formulário desatualizado, inclusive quando só mudam atribuições. |
 
-Indexar equipe e setor para lista e matriz. Autoria é preenchida no servidor, a partir do usuário autenticado da equipe, e fica fora do contrato de edição.
+Indexar equipe e setor para lista e matriz. O servidor registra como autor o usuário autenticado com acesso de escrita à equipe ativa, inclusive o superadministrador que a selecionou. A autoria fica fora do contrato de edição.
 
 ## TaskAssignment
 

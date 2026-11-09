@@ -1,6 +1,6 @@
 import { expect, test as base } from "@playwright/test";
 
-type TaskTestRole = "editor" | "auditor" | "denied";
+type TaskTestRole = "editor" | "auditor" | "denied" | "admin";
 
 export const test = base.extend<{
   loginAs: (role: TaskTestRole) => Promise<void>;

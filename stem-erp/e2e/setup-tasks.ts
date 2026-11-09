@@ -16,6 +16,15 @@ export default async function setupTaskFixtures() {
     for (const project of ["desktop", "mobile"]) {
       const key = randomUUID();
       const team = await prisma.team.create({ data: { name: key, slug: key } });
+      const adminTeam = await prisma.team.create({ data: { name: key + "-admin", slug: key + "-admin" } });
+      const adminEmail = key + "-admin@test.local";
+      await prisma.user.create({ data: {
+        teamId: adminTeam.id, email: adminEmail, passwordHash, name: "Superadmin teste", role: "SUPER_ADMIN",
+      } });
+      const adminPrefix = "TASKS_TEST_" + project.toUpperCase() + "_ADMIN";
+      process.env[adminPrefix + "_EMAIL"] = adminEmail;
+      process.env[adminPrefix + "_PASSWORD"] = password;
+      process.env[adminPrefix + "_TARGET_TEAM"] = team.name;
       for (const role of ["editor", "auditor", "denied"] as const) {
         const email = key + "-" + role + "@test.local";
         await prisma.user.create({ data: {

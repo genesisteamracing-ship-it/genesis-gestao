@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -39,12 +40,23 @@ export function TasksView({ shell, workspace }: { shell: Shell; workspace: TaskW
   const openTask = (id: string) => setPanel({ type: "detail", id });
   const editTask = (id: string) => setPanel({ type: "task", id });
   const editRisk = (item?: TaskRisk) => setPanel({ type: "risk", id: item?.id });
-  const saved = () => setPanel(null);
+  const saved = () => {
+    if (panel?.type === "task" && !panel.id) {
+      setTab("tasks");
+      setSector("all");
+    }
+    setPanel(null);
+  };
   const label = panel?.type === "risk" ? (risk ? "Editar caminho" : "Novo caminho") :
     panel?.type === "detail" ? task?.title : task ? "Editar tarefa" : "Nova tarefa";
   const empty = <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">Nenhuma tarefa neste setor.</p>;
 
-  return <DashboardShell {...shell} {...tabs[tab]}>
+  return <DashboardShell {...shell} {...tabs[tab]} headerAction={workspace?.canEdit && (
+    <Button type="button" className="w-full sm:w-auto" onClick={() => setPanel({ type: "task" })}>
+      <Plus aria-hidden="true" />
+      Nova tarefa
+    </Button>
+  )}>
     {!workspace ? <p className="rounded-lg border border-border bg-card p-4 text-sm">Selecione uma equipe ativa à qual você tem acesso.</p> : (
       <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="min-w-0 gap-4">
         <div className="overflow-x-auto">
@@ -55,7 +67,6 @@ export function TasksView({ shell, workspace }: { shell: Shell; workspace: TaskW
             <TaskSelect label="Filtrar por setor" value={sector} onChange={setSector}
               options={[{ value: "all", label: "Todos os setores" }, ...sectorOptions]} />
           </div>
-          {tab === "tasks" && workspace.canEdit && <Button onClick={() => setPanel({ type: "task" })}>Nova tarefa</Button>}
           {tab === "gantt" && highlighted && <Button variant="outline" onClick={() => setHighlightId(undefined)}>Limpar destaque</Button>}
         </div>}
         <TabsContent value="tasks">{visible.length ? <TaskList key={sector} tasks={visible} canEdit={workspace.canEdit} open={openTask} edit={editTask} /> : empty}</TabsContent>

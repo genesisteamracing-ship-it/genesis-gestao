@@ -44,3 +44,32 @@ test("denies mutation UI to auditor and the module to a user without access", as
   await page.goto("/tarefas");
   await expect(page).not.toHaveURL(/\/tarefas(?:[/?#]|$)/);
 });
+
+test("aligns the menu and creates a task as superadmin in the selected team", async ({ page, loginAs }, info) => {
+  const team = process.env[`TASKS_TEST_${info.project.name.toUpperCase()}_ADMIN_TARGET_TEAM`]!;
+  await loginAs("admin");
+  await page.goto("/tarefas");
+  const teamSelector = page.getByRole("combobox", { name: "Selecionar equipe" });
+  await teamSelector.click();
+  await page.getByRole("option", { name: team, exact: true }).click();
+  await expect(teamSelector).toHaveText(team);
+  await expect(page.getByRole("row").filter({ hasText: "Protótipo inicial" })).toBeVisible();
+
+  const mobile = info.project.name === "mobile";
+  if (mobile) await page.getByRole("button", { name: "Abrir menu de navegação" }).click();
+  const menu = mobile ? page.getByRole("dialog") : page.getByRole("complementary", { name: "Menu Lateral" });
+  const tasks = menu.getByRole("link", { name: "Tarefas", exact: true });
+  const finance = menu.getByRole("button", { name: "Finanças", exact: true });
+  await expect(tasks).toHaveAttribute("aria-current", "page");
+  await expect(finance).toBeVisible();
+  await expect.poll(async () => {
+    const [taskBounds, financeBounds] = await Promise.all([tasks.boundingBox(), finance.boundingBox()]);
+    return taskBounds && financeBounds ? Math.abs(taskBounds.x - financeBounds.x) : null;
+  }).toBeLessThan(1);
+  if (mobile) await tasks.click();
+
+  await page.getByRole("tab", { name: "Gantt" }).click();
+  await expect(page.getByRole("main").getByRole("button", { name: "Nova tarefa" })).toBeVisible();
+  await createTaskThroughForm(page, "Tarefa do superadmin", "Engenharia & CAD", "2026-11-08");
+  await expect(page.getByRole("tab", { name: "Tarefas" })).toHaveAttribute("aria-selected", "true");
+});
