@@ -104,3 +104,30 @@ Sempre que o sistema exigir visualizações em canvas, diagramas de árvore hier
   5. **Arestas / Conexões (Edges)**:
      - Tipo `smoothstep` padronizado com stroke suave utilizando a variável do token de borda (`var(--border)`).
   6. **Alternador de Visualização Padrão**: Sempre que houver visualização tabular complementar, fornecer no topo um alternador padronizado em pílula (`Árvore (Canvas)` / `Tabela`) com o Canvas ativo por padrão.
+
+## 6. Padrão de Alinhamento Perfeito de Labels e Inputs em Formulários
+- **Zero desnível horizontal**: Em qualquer grid de formulário (`grid-cols-2`, `grid-cols-3`, `grid-cols-4`), os inputs vizinhos NUNCA devem ficar desalinhados horizontalmente devido ao tamanho do texto do label.
+- **Padrão Obrigatório de Estrutura:**
+  - Container de coluna: `flex flex-col justify-between space-y-1.5`.
+  - Label: `text-xs font-semibold leading-tight min-h-[2rem] flex items-end`.
+  - Campo/Input wrapper: `mt-auto`.
+  ```tsx
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className="flex flex-col justify-between space-y-1.5">
+      <Label htmlFor="custo" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+        Custo de Fabricação (R$)
+      </Label>
+      <div className="mt-auto">
+        <Input id="custo" ... />
+      </div>
+    </div>
+    <div className="flex flex-col justify-between space-y-1.5">
+      <Label htmlFor="status" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+        Status de Entrega
+      </Label>
+      <div className="mt-auto">
+        <Select id="status" ... />
+      </div>
+    </div>
+  </div>
+  ```

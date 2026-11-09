@@ -188,6 +188,44 @@ Você é um Engenheiro Frontend Sênior especialista em UI/UX, Arquitetura de So
 - **Seed 100% Idempotente e Não-Destrutivo**:
   - O arquivo `prisma/seed.ts` jamais pode conter chamadas `deleteMany` sobre dados da `Equipe Gênesis` ou de usuários existentes. Ele deve usar exclusivamente `upsert` ou criar dados apenas quando a contagem for zero.
 
+## 13. Padrão de Alinhamento Perfeito de Labels e Inputs em Formulários (Zero Desalinhamento)
+- **PROIBIDO desnível horizontal entre inputs vizinhos:** Em formulários dispostos em colunas (`grid-cols-2`, `grid-cols-3`, `grid-cols-4`, etc.), NUNCA renderize campos onde um input/select fica mais alto ou mais baixo que os vizinhos devido a títulos com quantidade diferente de linhas (ex: um label de 1 linha ao lado de um label de 2 linhas quebrando).
+- **Estrutura Obrigatória de Nivelamento (Labels no Topo, Inputs na Base):**
+  - Cada coluna do formulário em uma grid DEVE utilizar `flex flex-col justify-between space-y-1.5`.
+  - O `<Label>` DEVE utilizar altura mínima padronizada e alinhamento de base (`min-h-[2rem] flex items-end leading-tight text-xs font-semibold`) para absorver títulos de 1 ou 2 linhas sem deslocar verticalmente o campo vizinho.
+  - O container do `<Input>`, `<Select>`, `<textarea>` ou campo customizado DEVE utilizar `mt-auto` (ou ancoragem na base), garantindo alinhamento horizontal pixel-perfect de todos os inputs da mesma linha da grid.
+  - **Snippet Padrão:**
+  ```tsx
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className="flex flex-col justify-between space-y-1.5">
+      <Label htmlFor="custo" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+        Custo de Fabricação (R$)
+      </Label>
+      <div className="mt-auto">
+        <Input id="custo" ... />
+      </div>
+    </div>
+
+    <div className="flex flex-col justify-between space-y-1.5">
+      <Label htmlFor="horas" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+        Esforço Estimado (Horas)
+      </Label>
+      <div className="mt-auto">
+        <Input id="horas" ... />
+      </div>
+    </div>
+
+    <div className="flex flex-col justify-between space-y-1.5">
+      <Label htmlFor="status" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+        Status de Entrega
+      </Label>
+      <div className="mt-auto">
+        <Select id="status" ... />
+      </div>
+    </div>
+  </div>
+  ```
+
 # Output Format
 1. Seja direto. Sem introduções longas.
 2. Liste dependências do `shadcn` necessárias (se houver).

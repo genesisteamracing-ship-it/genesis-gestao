@@ -213,19 +213,24 @@ export function WbsNodeModal({
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-2">
           {/* Linha 1: Código EAP e Nome do Entregável */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="code" className="text-xs font-semibold">
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label
+                htmlFor="code"
+                className="text-xs font-semibold leading-tight min-h-[1.25rem] flex items-end"
+              >
                 Código EAP *
               </Label>
-              <Input
-                id="code"
-                placeholder="Ex: 1, 1.1, 1.1.1"
-                disabled
-                readOnly
-                aria-disabled="true"
-                className="font-mono text-xs cursor-not-allowed bg-muted/60 text-muted-foreground select-none"
-                {...register("code")}
-              />
+              <div className="mt-auto">
+                <Input
+                  id="code"
+                  placeholder="Ex: 1, 1.1, 1.1.1"
+                  disabled
+                  readOnly
+                  aria-disabled="true"
+                  className="font-mono text-xs cursor-not-allowed bg-muted/60 text-muted-foreground select-none h-9"
+                  {...register("code")}
+                />
+              </div>
               <p className="text-[10px] text-muted-foreground">
                 Código hierárquico gerado automaticamente
               </p>
@@ -236,16 +241,21 @@ export function WbsNodeModal({
               )}
             </div>
 
-            <div className="sm:col-span-2 space-y-1.5">
-              <Label htmlFor="title" className="text-xs font-semibold">
+            <div className="sm:col-span-2 flex flex-col justify-between space-y-1.5">
+              <Label
+                htmlFor="title"
+                className="text-xs font-semibold leading-tight min-h-[1.25rem] flex items-end"
+              >
                 Nome do Entregável *
               </Label>
-              <Input
-                id="title"
-                placeholder="Ex: Fixação do Eixo Traseiro"
-                className="text-xs"
-                {...register("title")}
-              />
+              <div className="mt-auto">
+                <Input
+                  id="title"
+                  placeholder="Ex: Fixação do Eixo Traseiro"
+                  className="text-xs h-9"
+                  {...register("title")}
+                />
+              </div>
               {errors.title && (
                 <p className="text-[11px] font-medium text-destructive">
                   {errors.title.message}
@@ -281,91 +291,114 @@ export function WbsNodeModal({
 
           {/* Linha 3: Disciplina (Setor) e Responsável Técnico */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="discipline" className="text-xs font-semibold">
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label
+                htmlFor="discipline"
+                className="text-xs font-semibold leading-tight min-h-[1.25rem] flex items-end"
+              >
                 Setor / Disciplina *
               </Label>
-              <select
-                id="discipline"
-                className="w-full h-9 rounded-md border border-border bg-background px-3 py-1 text-xs shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
-                {...register("discipline")}
-                onChange={handleDisciplineChange}
-              >
-                {DISCIPLINE_SELECT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-auto">
+                <select
+                  id="discipline"
+                  className="w-full h-9 rounded-md border border-border bg-background px-3 py-1 text-xs shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                  {...register("discipline")}
+                  onChange={handleDisciplineChange}
+                >
+                  {DISCIPLINE_SELECT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="ownerId" className="text-xs font-semibold">
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label
+                htmlFor="ownerId"
+                className="text-xs font-semibold leading-tight min-h-[1.25rem] flex items-end"
+              >
                 Responsável Técnico Único
               </Label>
-              <select
-                id="ownerId"
-                className="w-full h-9 rounded-md border border-border bg-background px-3 py-1 text-xs shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                {...register("ownerId")}
-              >
-                <option value="">Nenhum (Definir depois)</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name} {member.jobTitle ? `(${member.jobTitle})` : ""}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-auto">
+                <select
+                  id="ownerId"
+                  className="w-full h-9 rounded-md border border-border bg-background px-3 py-1 text-xs shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  {...register("ownerId")}
+                >
+                  <option value="">Nenhum (Definir depois)</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name} {member.jobTitle ? `(${member.jobTitle})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Linha 4: Custo Estimado, Horas e Status */}
+          {/* Linha 4: Custo Estimado, Horas e Status com Alinhamento Perfeito */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="currencyDisplay" className="text-xs font-semibold">
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label
+                htmlFor="currencyDisplay"
+                className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end"
+              >
                 Custo de Fabricação (R$)
               </Label>
-              <div className="relative">
-                <span className="absolute left-2.5 top-2 text-xs text-muted-foreground font-medium">
+              <div className="relative mt-auto">
+                <span className="absolute left-2.5 top-2.5 text-xs text-muted-foreground font-medium">
                   R$
                 </span>
                 <Input
                   id="currencyDisplay"
                   value={currencyDisplay}
                   onChange={handleCurrencyChange}
-                  className="pl-8 text-xs font-mono"
+                  className="pl-8 text-xs font-mono h-9"
                   placeholder="0,00"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="estimatedHours" className="text-xs font-semibold">
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label
+                htmlFor="estimatedHours"
+                className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end"
+              >
                 Esforço Estimado (Horas)
               </Label>
-              <Input
-                id="estimatedHours"
-                type="number"
-                min="0"
-                className="text-xs font-mono"
-                {...register("estimatedHours", { valueAsNumber: true })}
-              />
+              <div className="mt-auto">
+                <Input
+                  id="estimatedHours"
+                  type="number"
+                  min="0"
+                  className="text-xs font-mono h-9"
+                  {...register("estimatedHours", { valueAsNumber: true })}
+                />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="status" className="text-xs font-semibold">
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label
+                htmlFor="status"
+                className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end"
+              >
                 Status de Entrega
               </Label>
-              <select
-                id="status"
-                className="w-full h-9 rounded-md border border-border bg-background px-3 py-1 text-xs shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                {...register("status")}
-              >
-                {(Object.keys(STATUS_LABELS) as WbsNodeStatus[]).map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_LABELS[status]}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-auto">
+                <select
+                  id="status"
+                  className="w-full h-9 rounded-md border border-border bg-background px-3 py-1 text-xs shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                  {...register("status")}
+                >
+                  {(Object.keys(STATUS_LABELS) as WbsNodeStatus[]).map((status) => (
+                    <option key={status} value={status}>
+                      {STATUS_LABELS[status]}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
