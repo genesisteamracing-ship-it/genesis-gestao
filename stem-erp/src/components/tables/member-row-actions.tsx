@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { KeyRound, Pencil, Settings, Trash2 } from "lucide-react";
+import { KeyRound, Pencil, Settings, Trash2, Unlock } from "lucide-react";
+import { toast } from "sonner";
+import { unlockUserAccountAction } from "@/actions/auth-actions";
 import type { TeamDTO, TeamMemberDTO } from "@/types/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,14 +20,41 @@ import { DeleteMemberDialog } from "@/components/modals/delete-member-dialog";
 interface MemberRowActionsProps {
   member: TeamMemberDTO;
   teams: TeamDTO[];
+  onUnlock?: (memberId: string) => void | Promise<void>;
 }
 
-export function MemberRowActions({ member, teams }: MemberRowActionsProps) {
+export function MemberRowActions({
+  member,
+  teams,
+  onUnlock,
+}: MemberRowActionsProps) {
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = React.useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
+  const [isUnlocking, setIsUnlocking] = React.useState(false);
 
   const isSuperAdmin = member.role === "SUPER_ADMIN";
+  const isLockedOrFailed = member.isLocked || member.failedLoginAttempts > 0;
+
+  const handleUnlock = async () => {
+    setIsUnlocking(true);
+    try {
+      if (onUnlock) {
+        await onUnlock(member.id);
+      } else {
+        const res = await unlockUserAccountAction(member.id);
+        if (!res.success) {
+          toast.error(res.message);
+          return;
+        }
+        toast.success(res.message);
+      }
+    } catch {
+      toast.error("Erro inesperado ao desbloquear conta.");
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
 
   return (
     <>
@@ -57,6 +86,19 @@ export function MemberRowActions({ member, teams }: MemberRowActionsProps) {
             <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
             <span>Redefinir Senha</span>
           </DropdownMenuItem>
+
+          {isLockedOrFailed && (
+            <DropdownMenuItem
+              disabled={isUnlocking}
+              onClick={handleUnlock}
+              className="cursor-pointer gap-2 text-xs font-medium text-success focus:bg-success/10 focus:text-success"
+            >
+              <Unlock className="h-3.5 w-3.5 text-success" />
+              <span>
+                {isUnlocking ? "Desbloqueando..." : "Desbloquear Conta"}
+              </span>
+            </DropdownMenuItem>
+          )}
 
           <DropdownMenuSeparator />
 

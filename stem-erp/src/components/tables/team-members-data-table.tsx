@@ -10,7 +10,6 @@ import {
   Filter,
   RotateCcw,
   Search,
-  Unlock,
 } from "lucide-react";
 import { DELIVERY_GROUP_LABELS, USER_ROLE_LABELS } from "@/lib/constants";
 import { userRoleValues } from "@/lib/validations/auth";
@@ -18,7 +17,6 @@ import { deliveryGroupValues } from "@/lib/validations/financial";
 import { cn, formatDateBR } from "@/lib/utils";
 import type { TeamDTO, TeamMemberDTO } from "@/types/auth";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -65,23 +63,6 @@ export function TeamMembersDataTable({
   members,
   isLoading = false,
 }: TeamMembersDataTableProps) {
-  const [unlockingId, setUnlockingId] = React.useState<string | null>(null);
-
-  const {
-    table,
-    globalFilter,
-    setGlobalFilter,
-    selectedTeamId,
-    selectedDeliveryGroup,
-    selectedRole,
-    selectedStatus,
-    totalFiltered,
-    startRow,
-    formattedEndRow,
-    handleUnlock,
-    resetFilters,
-  } = useTeamMembersTable(members, []);
-
   const columns = React.useMemo<ColumnDef<TeamMemberDTO>[]>(
     () => [
       {
@@ -190,42 +171,28 @@ export function TeamMembersDataTable({
       },
       {
         id: "actions",
-        header: "AÇÕES DO SUPERADMIN",
+        header: "AÇÕES",
         cell: ({ row }) => (
-          <div className="flex flex-wrap items-center gap-2">
-            <MemberRowActions member={row.original} teams={teams} />
-            {(row.original.isLocked || row.original.failedLoginAttempts > 0) && (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={unlockingId === row.original.id}
-                onClick={async () => {
-                  setUnlockingId(row.original.id);
-                  try {
-                    await handleUnlock(row.original.id);
-                  } finally {
-                    setUnlockingId(null);
-                  }
-                }}
-                className="h-8 gap-1 border-success text-xs text-success hover:bg-success/10"
-              >
-                <Unlock className="h-3.5 w-3.5" />
-                <span>Desbloquear</span>
-              </Button>
-            )}
-          </div>
+          <MemberRowActions member={row.original} teams={teams} />
         ),
       },
     ],
-    [unlockingId, teams, handleUnlock]
+    [teams]
   );
 
-  React.useEffect(() => {
-    table.setOptions((prev) => ({
-      ...prev,
-      columns,
-    }));
-  }, [table, columns]);
+  const {
+    table,
+    globalFilter,
+    setGlobalFilter,
+    selectedTeamId,
+    selectedDeliveryGroup,
+    selectedRole,
+    selectedStatus,
+    totalFiltered,
+    startRow,
+    formattedEndRow,
+    resetFilters,
+  } = useTeamMembersTable(members, columns);
 
   if (isLoading) {
     return <StateView state="loading" />;
