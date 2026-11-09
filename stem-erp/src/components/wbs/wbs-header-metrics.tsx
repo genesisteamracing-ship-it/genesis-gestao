@@ -6,11 +6,9 @@ import {
   Boxes,
   CheckCircle2,
   Clock,
-  DollarSign,
   Layers,
 } from "lucide-react";
 import type { WbsSummaryMetrics } from "@/types/wbs";
-import { formatCentsToReais } from "@/lib/utils";
 
 const metricCardStyles = tv({
   slots: {
@@ -62,8 +60,8 @@ export function WbsHeaderMetrics({ metrics, isLoading = false }: WbsHeaderMetric
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        {[1, 2, 3].map((i) => (
           <div
             key={i}
             className="h-28 rounded-xl border border-border bg-card animate-pulse p-4"
@@ -74,7 +72,7 @@ export function WbsHeaderMetrics({ metrics, isLoading = false }: WbsHeaderMetric
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
       {/* 1. Total de Entregáveis / Pacotes */}
       <div className={styles.card()}>
         <div className={styles.header()}>
@@ -87,28 +85,12 @@ export function WbsHeaderMetrics({ metrics, isLoading = false }: WbsHeaderMetric
         <div className={styles.footer()}>
           <Layers className="h-3.5 w-3.5 shrink-0" />
           <span>
-            {metrics.totalWorkPackages} pacotes de trabalho folha
+            {metrics.totalWorkPackages} pacotes de trabalho
           </span>
         </div>
       </div>
 
-      {/* 2. Custo Consolidado da EAP (Regra dos 100%) */}
-      <div className={styles.card()}>
-        <div className={styles.header()}>
-          <span className={styles.title()}>Custo Previsto EAP</span>
-          <div className={metricCardStyles({ intent: "warning" }).iconWrapper()}>
-            <DollarSign className="h-4 w-4" />
-          </div>
-        </div>
-        <div className={styles.value()}>
-          {formatCentsToReais(metrics.totalRollupCostCents)}
-        </div>
-        <div className={styles.footer()}>
-          <span>Soma consolidada 100% da árvore</span>
-        </div>
-      </div>
-
-      {/* 3. Horas Totais Estimadas */}
+      {/* 2. Horas Totais Estimadas */}
       <div className={styles.card()}>
         <div className={styles.header()}>
           <span className={styles.title()}>Esforço Estimado</span>
@@ -120,14 +102,14 @@ export function WbsHeaderMetrics({ metrics, isLoading = false }: WbsHeaderMetric
           {metrics.totalRollupHours}h
         </div>
         <div className={styles.footer()}>
-          <span>Dedicação técnica estimada</span>
+          <span>Horas estimadas</span>
         </div>
       </div>
 
-      {/* 4. Conclusão & Auditoria */}
+      {/* 3. Conclusão & Auditoria */}
       <div className={styles.card()}>
         <div className={styles.header()}>
-          <span className={styles.title()}>Concluídos / Auditados</span>
+          <span className={styles.title()}>Concluídos</span>
           <div className={metricCardStyles({ intent: "success" }).iconWrapper()}>
             <CheckCircle2 className="h-4 w-4" />
           </div>
@@ -139,7 +121,7 @@ export function WbsHeaderMetrics({ metrics, isLoading = false }: WbsHeaderMetric
           </span>
         </div>
         <div className={styles.footer()}>
-          <span>Status auditado de escopo</span>
+          <span>Entregáveis finalizados</span>
         </div>
       </div>
     </div>

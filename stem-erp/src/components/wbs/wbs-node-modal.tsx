@@ -23,7 +23,6 @@ import {
 } from "@/lib/validations/wbs.schema";
 import type { DeliveryGroup, WbsNodeStatus, WbsTreeNode } from "@/types/wbs";
 import { STATUS_LABELS } from "./wbs-tree-table";
-import { formatCentsToReais } from "@/lib/utils";
 import {
   DISCIPLINE_SELECT_OPTIONS,
   collectAllWbsCodes,
@@ -84,11 +83,6 @@ export function WbsNodeModal({
       sortOrder: 0,
     },
   });
-
-  const estimatedCostCents = watch("estimatedCostCents") || 0;
-  const currencyDisplay = formatCentsToReais(estimatedCostCents)
-    .replace("R$\u00A0", "")
-    .replace("R$ ", "");
 
   // Carrega dados para edição ou define sugestão de código ao adicionar sub-entregável / nó raiz
   React.useEffect(() => {
@@ -169,19 +163,16 @@ export function WbsNodeModal({
     }
   };
 
-  const handleCurrencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawDigits = e.target.value.replace(/\D/g, "");
-    const cents = Number.parseInt(rawDigits || "0", 10);
-    setValue("estimatedCostCents", cents, { shouldValidate: true });
-  };
-
   const onFormSubmit = async (data: CreateWbsNodeInput) => {
     try {
       setIsSubmitting(true);
-      // Garante que o código EAP gerado automaticamente seja repassado mesmo com o campo desabilitado
       const resolvedCode = data.code || getValues("code");
       const success = await onSubmit(
-        { ...data, code: resolvedCode },
+        {
+          ...data,
+          code: resolvedCode,
+          estimatedCostCents: editingNode?.estimatedCostCents ?? 0,
+        },
         isEditing,
         editingNode?.id
       );
@@ -202,12 +193,8 @@ export function WbsNodeModal({
               ? `Editar Entregável: ${editingNode?.code}`
               : parentNode
               ? `Adicionar Sub-entregável em "${parentNode.code} - ${parentNode.title}"`
-              : "Novo Entregável Raiz (Escopo Geral da Temporada)"}
+              : "Novo Entregável"}
           </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            A WBS decompõe o escopo total em entregáveis concretos (&quot;o que precisa ser construído&quot;)
-            seguindo a Regra dos 100%.
-          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-2">
@@ -231,9 +218,6 @@ export function WbsNodeModal({
                   {...register("code")}
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                Código hierárquico gerado automaticamente
-              </p>
               {errors.code && (
                 <p className="text-[11px] font-medium text-destructive">
                   {errors.code.message}
@@ -264,20 +248,14 @@ export function WbsNodeModal({
             </div>
           </div>
 
-          {/* Dica didática da padronização de códigos por setor */}
-          <div className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-            <span className="font-semibold text-foreground">Padronização de Códigos STEM: </span>
-            <span>1 Gestão • 2 Engenharia • 3 Empreendimento & Mkt • 4 Projeto Social</span>
-          </div>
-
           {/* Linha 2: Descrição do Escopo */}
           <div className="space-y-1.5">
             <Label htmlFor="description" className="text-xs font-semibold">
-              Descrição do Escopo (O que precisa ser construído)
+              Descrição do Escopo
             </Label>
             <Textarea
               id="description"
-              placeholder="Descreva as especificações técnicas, materiais ou escopo físico deste pacote de trabalho..."
+              placeholder="Descreva as especificações técnicas, materiais ou escopo deste pacote de trabalho..."
               rows={2}
               className="text-xs resize-none"
               {...register("description")}
@@ -338,33 +316,12 @@ export function WbsNodeModal({
             </div>
           </div>
 
-          {/* Linha 4: Custo Estimado, Horas e Status com Alinhamento Perfeito */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="flex flex-col justify-between space-y-1.5">
-              <Label
-                htmlFor="currencyDisplay"
-                className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end"
-              >
-                Custo de Fabricação (R$)
-              </Label>
-              <div className="relative mt-auto">
-                <span className="absolute left-2.5 top-2.5 text-xs text-muted-foreground font-medium">
-                  R$
-                </span>
-                <Input
-                  id="currencyDisplay"
-                  value={currencyDisplay}
-                  onChange={handleCurrencyChange}
-                  className="pl-8 text-xs font-mono h-9"
-                  placeholder="0,00"
-                />
-              </div>
-            </div>
-
+          {/* Linha 4: Horas e Status com Alinhamento Perfeito */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col justify-between space-y-1.5">
               <Label
                 htmlFor="estimatedHours"
-                className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end"
+                className="text-xs font-semibold leading-tight min-h-[1.25rem] flex items-end"
               >
                 Esforço Estimado (Horas)
               </Label>
@@ -382,7 +339,7 @@ export function WbsNodeModal({
             <div className="flex flex-col justify-between space-y-1.5">
               <Label
                 htmlFor="status"
-                className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end"
+                className="text-xs font-semibold leading-tight min-h-[1.25rem] flex items-end"
               >
                 Status de Entrega
               </Label>

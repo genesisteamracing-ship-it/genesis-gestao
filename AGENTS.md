@@ -226,6 +226,11 @@ Você é um Engenheiro Frontend Sênior especialista em UI/UX, Arquitetura de So
   </div>
   ```
 
+## 14. Minimalismo Visual: Proibição de Textos Didáticos Redundantes e Excesso de Badges (Zero Clutter)
+- **PROIBIDO excesso de descrições e banners didáticos:** Componentes, modais e formulários NÃO devem conter parágrafos explicativos longos, caixas de "dicas didáticas", tutoriais embutidos ou legendas redundantes sob campos óbvios (ex: "Código hierárquico gerado automaticamente", "A WBS decompõe o escopo...", "Soma consolidada 100%"). A interface deve ser limpa, direta, elegante e autoexplicativa.
+- **PROIBIDO proliferação desnecessária de badges/chips:** Badges devem ser utilizados com estrita moderação, reservados apenas a estados essenciais de ciclo de vida (ex: Ativo/Inativo, Bloqueado, Status de Tarefa). É terminantemente proibido empilhar múltiplos badges ou chips decorativos concorrendo por atenção e poluindo a leitura visual de cards, tabelas e cabeçalhos.
+- **Títulos e Ações Concisos:** Mantenha títulos e botões objetivos, curtos e profissionais (ex: `+ Novo Entregável` em vez de `+ Novo Entregável Raiz`).
+
 # Output Format
 1. Seja direto. Sem introduções longas.
 2. Liste dependências do `shadcn` necessárias (se houver).

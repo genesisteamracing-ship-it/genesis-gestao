@@ -131,3 +131,8 @@ Sempre que o sistema exigir visualizações em canvas, diagramas de árvore hier
     </div>
   </div>
   ```
+
+## 7. Minimalismo Visual: Proibição de Textos Didáticos Redundantes e Excesso de Badges (Zero Clutter)
+- **Zero poluição textual**: Nunca poluir telas, modais e formulários com descrições teóricas, legendas didáticas ou tutoriais integrados. A interface deve ser direta e autoexplicativa.
+- **Uso estrito de badges**: Proibido empilhar múltiplos badges ou chips decorativos. Badges são restritos a status funcionais e de ciclo de vida (ex: Ativo/Inativo, Bloqueado, Status de Tarefa).
+- **Rótulos e Botões Concisos**: Utilizar termos curtos e objetivos (ex: `+ Novo Entregável` em vez de `+ Novo Entregável Raiz`).

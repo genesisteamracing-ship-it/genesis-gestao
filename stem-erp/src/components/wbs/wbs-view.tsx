@@ -27,7 +27,6 @@ import { WbsHeaderMetrics } from "./wbs-header-metrics";
 import { WbsTreeTable, DISCIPLINE_LABELS } from "./wbs-tree-table";
 import { WbsFlowCanvas } from "./wbs-flow-canvas";
 import { WbsNodeModal } from "./wbs-node-modal";
-import { WbsPresentationView } from "./wbs-presentation-view";
 import type { DeliveryGroup, WbsTreeDataResult } from "@/types/wbs";
 
 interface WbsViewProps {
@@ -73,13 +72,13 @@ export function WbsView({
   const isAuditor = currentUser.role === "AUDITOR";
   const [viewMode, setViewMode] = React.useState<"canvas" | "table">("canvas");
 
-  const headerAction = !isPresentationMode && !isAuditor ? (
+  const headerAction = !isAuditor ? (
     <Button
       onClick={openCreateRoot}
       className="gap-2 text-xs font-semibold cursor-pointer shrink-0 shadow-2xs"
     >
       <Plus className="h-4 w-4" />
-      <span>Novo Entregável Raiz</span>
+      <span>Novo Entregável</span>
     </Button>
   ) : undefined;
 
@@ -96,18 +95,7 @@ export function WbsView({
       headerAction={headerAction}
     >
       <div className="space-y-5">
-        {/* Banner do Modo Apresentação para Juízes de Project Management */}
-        {isPresentationMode && (
-          <WbsPresentationView
-            isPresentationMode={isPresentationMode}
-            onTogglePresentationMode={() => setIsPresentationMode(false)}
-            onExpandToDepth={expandToDepth}
-            onExpandAll={expandAll}
-            onCollapseAll={collapseAll}
-          />
-        )}
-
-        {/* Cartões de Métricas Consolidadas (Regra dos 100%) */}
+        {/* Cartões de Métricas Consolidadas */}
         <WbsHeaderMetrics metrics={metrics} isLoading={isLoading} />
 
         {/* Barra de Filtros e Busca */}
@@ -175,17 +163,6 @@ export function WbsView({
                 <span>Tabela</span>
               </button>
             </div>
-
-            {/* Gatilho do Modo Apresentação (quando não ativo) */}
-            {!isPresentationMode && (
-              <WbsPresentationView
-                isPresentationMode={isPresentationMode}
-                onTogglePresentationMode={() => setIsPresentationMode(true)}
-                onExpandToDepth={expandToDepth}
-                onExpandAll={expandAll}
-                onCollapseAll={collapseAll}
-              />
-            )}
           </div>
         </div>
 
@@ -194,7 +171,7 @@ export function WbsView({
           <WbsFlowCanvas
             nodes={tree}
             expandedNodeIds={expandedNodeIds}
-            isPresentationMode={isPresentationMode}
+            isPresentationMode={false}
             onToggleExpand={toggleExpand}
             onAddChild={openCreateChild}
             onEdit={openEdit}
@@ -208,7 +185,7 @@ export function WbsView({
             nodes={tree}
             expandedNodeIds={expandedNodeIds}
             onToggleExpand={toggleExpand}
-            isPresentationMode={isPresentationMode}
+            isPresentationMode={false}
             onAddChild={openCreateChild}
             onEdit={openEdit}
             onDelete={(node) => setDeleteConfirmNode(node)}
