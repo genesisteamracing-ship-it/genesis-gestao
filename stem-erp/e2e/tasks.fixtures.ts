@@ -1,4 +1,4 @@
-import { expect, test as base } from "@playwright/test";
+import { expect, test as base, type Page } from "@playwright/test";
 
 type TaskTestRole = "editor" | "auditor" | "denied" | "admin";
 
@@ -25,3 +25,19 @@ export const test = base.extend<{
 });
 
 export { expect };
+
+export async function openTaskMenu(page: Page) {
+  const drawer = page.getByRole("button", { name: "Abrir menu de navegação" });
+  const mobile = test.info().project.use.isMobile === true;
+  if (mobile) await drawer.click();
+  const menu = mobile ? page.getByRole("dialog") : page.getByRole("complementary", { name: "Menu Lateral" });
+  const group = menu.getByRole("button", { name: "Tarefas", exact: true });
+  await expect(group).toBeVisible();
+  if (await group.getAttribute("aria-expanded") === "false") await group.click();
+  return menu;
+}
+
+export async function openTaskView(page: Page, name: string) {
+  const menu = await openTaskMenu(page);
+  await menu.getByRole("link", { name, exact: true }).click();
+}

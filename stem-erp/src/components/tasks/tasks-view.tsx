@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getTaskView, type TaskViewId } from "@/lib/task-navigation";
 import type { ComponentProps } from "react";
 import type { TaskRisk, TaskWorkspace } from "@/types/tasks";
 import { TaskDetail } from "./task-detail";
@@ -17,18 +18,12 @@ import { TaskRaci } from "./task-raci";
 import { TaskRiskForm } from "./task-risk-form";
 import { TaskRiskView } from "./task-risk-view";
 
-const tabs = {
-  tasks: { title: "Tarefas", subtitle: "Organize as atividades e os responsáveis de cada setor." },
-  gantt: { title: "Gantt", subtitle: "Acompanhe prazos e dependências na linha do tempo." },
-  risks: { title: "Caminhos de risco", subtitle: "Mostre quais atividades podem ser afetadas por um atraso." },
-  raci: { title: "Matriz RACI", subtitle: "Consulte quem responde, executa, é consultado ou informado." },
-};
-type Tab = keyof typeof tabs;
 type Panel = { type: "task" | "detail" | "risk"; id?: string };
 type Shell = Omit<ComponentProps<typeof DashboardShell>, "title" | "subtitle" | "children">;
 
-export function TasksView({ shell, workspace }: { shell: Shell; workspace: TaskWorkspace | null }) {
-  const [tab, setTab] = useState<Tab>("tasks");
+export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspace: TaskWorkspace | null; viewId: TaskViewId }) {
+  const router = useRouter();
+  const { title, subtitle } = getTaskView(viewId);
   const [sector, setSector] = useState("all");
   const [panel, setPanel] = useState<Panel | null>(null);
   const [selectedRisk, setSelectedRisk] = useState<string>();
@@ -42,8 +37,8 @@ export function TasksView({ shell, workspace }: { shell: Shell; workspace: TaskW
   const editRisk = (item?: TaskRisk) => setPanel({ type: "risk", id: item?.id });
   const saved = () => {
     if (panel?.type === "task" && !panel.id) {
-      setTab("tasks");
       setSector("all");
+      if (viewId !== "tasks") router.push(getTaskView("tasks").href);
     }
     setPanel(null);
   };
@@ -51,31 +46,28 @@ export function TasksView({ shell, workspace }: { shell: Shell; workspace: TaskW
     panel?.type === "detail" ? task?.title : task ? "Editar tarefa" : "Nova tarefa";
   const empty = <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">Nenhuma tarefa neste setor.</p>;
 
-  return <DashboardShell {...shell} {...tabs[tab]} headerAction={workspace?.canEdit && (
+  return <DashboardShell {...shell} title={title} subtitle={subtitle} headerAction={workspace?.canEdit && (
     <Button type="button" className="w-full sm:w-auto" onClick={() => setPanel({ type: "task" })}>
       <Plus aria-hidden="true" />
       Nova tarefa
     </Button>
   )}>
     {!workspace ? <p className="rounded-lg border border-border bg-card p-4 text-sm">Selecione uma equipe ativa à qual você tem acesso.</p> : (
-      <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="min-w-0 gap-4">
-        <div className="overflow-x-auto">
-          <TabsList>{Object.entries(tabs).map(([key, item]) => <TabsTrigger key={key} value={key}>{item.title}</TabsTrigger>)}</TabsList>
-        </div>
-        {tab !== "risks" && <div className="flex flex-wrap items-end gap-2">
+      <div className="min-w-0 space-y-4">
+        {viewId !== "risks" && <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-44 flex-1 sm:max-w-72">
             <TaskSelect label="Filtrar por setor" value={sector} onChange={setSector}
               options={[{ value: "all", label: "Todos os setores" }, ...sectorOptions]} />
           </div>
-          {tab === "gantt" && highlighted && <Button variant="outline" onClick={() => setHighlightId(undefined)}>Limpar destaque</Button>}
+          {viewId === "gantt" && highlighted && <Button variant="outline" onClick={() => setHighlightId(undefined)}>Limpar destaque</Button>}
         </div>}
-        <TabsContent value="tasks">{visible.length ? <TaskList key={sector} tasks={visible} canEdit={workspace.canEdit} open={openTask} edit={editTask} /> : empty}</TabsContent>
-        <TabsContent value="gantt">{visible.length ? <TaskGantt visible={visible} tasks={workspace.tasks} edges={workspace.edges}
-          path={highlighted} open={openTask} /> : empty}</TabsContent>
-        <TabsContent value="risks"><TaskRiskView workspace={workspace} selectedId={selectedRisk} select={setSelectedRisk}
-          edit={editRisk} highlight={(id) => { setHighlightId(id); setSector("all"); setTab("gantt"); }} /></TabsContent>
-        <TabsContent value="raci">{visible.length ? <TaskRaci key={sector} tasks={visible} members={workspace.members} /> : empty}</TabsContent>
-      </Tabs>
+        {viewId === "tasks" && (visible.length ? <TaskList key={sector} tasks={visible} canEdit={workspace.canEdit} open={openTask} edit={editTask} /> : empty)}
+        {viewId === "gantt" && (visible.length ? <TaskGantt visible={visible} tasks={workspace.tasks} edges={workspace.edges}
+          path={highlighted} open={openTask} /> : empty)}
+        {viewId === "risks" && <TaskRiskView workspace={workspace} selectedId={selectedRisk} select={setSelectedRisk}
+          edit={editRisk} highlight={(id) => { setHighlightId(id); setSector("all"); router.push(getTaskView("gantt").href); }} />}
+        {viewId === "raci" && (visible.length ? <TaskRaci key={sector} tasks={visible} members={workspace.members} /> : empty)}
+      </div>
     )}
     {workspace && <Dialog open={Boolean(panel)} onOpenChange={(open) => { if (!open) setPanel(null); }}>
       {panel && <DialogContent className="max-h-[90dvh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-lg">
