@@ -64,6 +64,7 @@ export function WbsNodeModal({
     register,
     handleSubmit,
     setValue,
+    getValues,
     watch,
     reset,
     formState: { errors },
@@ -177,7 +178,13 @@ export function WbsNodeModal({
   const onFormSubmit = async (data: CreateWbsNodeInput) => {
     try {
       setIsSubmitting(true);
-      const success = await onSubmit(data, isEditing, editingNode?.id);
+      // Garante que o código EAP gerado automaticamente seja repassado mesmo com o campo desabilitado
+      const resolvedCode = data.code || getValues("code");
+      const success = await onSubmit(
+        { ...data, code: resolvedCode },
+        isEditing,
+        editingNode?.id
+      );
       if (success) {
         onClose();
       }
@@ -213,9 +220,15 @@ export function WbsNodeModal({
               <Input
                 id="code"
                 placeholder="Ex: 1, 1.1, 1.1.1"
-                className="font-mono text-xs"
+                disabled
+                readOnly
+                aria-disabled="true"
+                className="font-mono text-xs cursor-not-allowed bg-muted/60 text-muted-foreground select-none"
                 {...register("code")}
               />
+              <p className="text-[10px] text-muted-foreground">
+                Código hierárquico gerado automaticamente
+              </p>
               {errors.code && (
                 <p className="text-[11px] font-medium text-destructive">
                   {errors.code.message}
