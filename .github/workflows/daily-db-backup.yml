@@ -38,9 +38,4 @@ jobs:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: npm run db:backup
 
-      - name: Upload Database Snapshot Artifact (90 days retention)
-        uses: actions/upload-artifact@v4
-        with:
-          name: neon-db-snapshot-${{ github.run_number }}
-          path: stem-erp/prisma/backups/latest-snapshot.json
-          retention-days: 90
+      # O snapshot contém dados de produção. A cópia persistente fica no Neon.

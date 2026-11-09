@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
   FolderGit2,
+  ListTodo,
   Layers,
   LayoutDashboard,
   ListOrdered,
@@ -270,6 +271,13 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
           )}
 
           {/* Grupo: Documentos com Submódulos */}
+          {permissions.tasks && (
+            <Link href="/tarefas" onClick={() => setIsMobileOpen(false)} className={sidebarItemStyles({ isActive: pathname === "/tarefas" })} aria-current={pathname === "/tarefas" ? "page" : undefined}>
+              <ListTodo className="h-4 w-4 shrink-0" />
+              <span>Tarefas</span>
+            </Link>
+          )}
+
           {permissions.documents && (
             <div className="space-y-1">
               <button

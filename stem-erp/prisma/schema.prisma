@@ -92,6 +92,8 @@ model Team {
   communicationPlans CommunicationPlan[]
   communicationLogs  CommunicationLog[]
   wbsNodes           WbsNode[]
+  tasks              Task[]
+  riskPaths          RiskPath[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -178,6 +180,7 @@ model User {
   canAccessCommunication Boolean         @default(true)
   canAccessTeam          Boolean         @default(false)
   canAccessDocuments     Boolean         @default(true)
+  canAccessTasks         Boolean         @default(false)
 
   failedLoginAttempts Int             @default(0)
   lockedUntil         DateTime?       // Bloqueio automático anti-força bruta
@@ -186,6 +189,8 @@ model User {
   sessions            Session[]
   auditLogs           AuthAuditLog[]
   wbsNodes            WbsNode[]
+  authoredTasks       Task[]
+  taskAssignments     TaskAssignment[]
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
@@ -453,4 +458,94 @@ model WbsNode {
   @@index([teamId, parentId])
   @@index([teamId, discipline])
   @@index([teamId, depth])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskAssignmentRole {
+  R
+  C
+  I
+}
+
+model Task {
+  id            String           @id @default(cuid())
+  teamId        String
+  team          Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  deliveryGroup DeliveryGroup
+  title         String
+  description   String?
+  startDate     DateTime         @db.Date
+  endDate       DateTime         @db.Date
+  status        TaskStatus       @default(TODO)
+  creatorKey    String
+  creatorName   String
+  creatorUserId String?
+  creator       User?            @relation(fields: [creatorUserId], references: [id], onDelete: SetNull)
+  revision      Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  assignments   TaskAssignment[]
+  outgoing      TaskDependency[] @relation("TaskPredecessor")
+  incoming      TaskDependency[] @relation("TaskSuccessor")
+  riskSteps     RiskPathStep[]
+
+  @@unique([teamId, id])
+  @@index([teamId, deliveryGroup])
+}
+
+model TaskAssignment {
+  teamId     String
+  taskId     String
+  task       Task               @relation(fields: [teamId, taskId], references: [teamId, id], onDelete: Cascade)
+  memberKey  String
+  memberName String
+  userId     String?
+  user       User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role       TaskAssignmentRole
+
+  @@id([teamId, taskId, memberKey, role])
+  @@index([userId])
+}
+
+model TaskDependency {
+  teamId        String
+  predecessorId String
+  successorId   String
+  predecessor   Task     @relation("TaskPredecessor", fields: [teamId, predecessorId], references: [teamId, id], onDelete: Cascade)
+  successor     Task     @relation("TaskSuccessor", fields: [teamId, successorId], references: [teamId, id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@id([teamId, predecessorId, successorId])
+  @@index([teamId, successorId])
+}
+
+model RiskPath {
+  id        String         @id @default(cuid())
+  teamId    String
+  team      Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  name      String
+  reason    String
+  revision  Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  steps     RiskPathStep[]
+
+  @@unique([teamId, id])
+}
+
+model RiskPathStep {
+  teamId   String
+  pathId   String
+  position Int
+  taskId   String
+  path     RiskPath @relation(fields: [teamId, pathId], references: [teamId, id], onDelete: Cascade)
+  task     Task     @relation(fields: [teamId, taskId], references: [teamId, id], onDelete: Cascade)
+
+  @@id([teamId, pathId, position])
+  @@unique([teamId, pathId, taskId])
 }

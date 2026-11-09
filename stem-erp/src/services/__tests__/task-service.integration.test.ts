@@ -1,0 +1,50 @@
+import { strict as assert } from "node:assert";
+import { randomUUID } from "node:crypto";
+import { test } from "node:test";
+
+const database = process.env.TASKS_TEST_DATABASE_URL;
+test("keeps A, enforces tenant boundaries and serializes reciprocal edges", { skip: !database }, async () => {
+  const url = new URL(database!);
+  assert.ok(["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) && url.pathname === "/tasks_test");
+  process.env.DATABASE_URL = database;
+  process.env.DATABASE_URL_UNPOOLED = database;
+  const { prisma } = await import("../../lib/prisma");
+  const { resolveTaskScope, saveTask, getTaskWorkspace, changeDependency, saveRiskPath } = await import("../task-service");
+  const key = randomUUID();
+  const team = await prisma.team.create({ data: { name: key, slug: key } });
+  const other = await prisma.team.create({ data: { name: key + "-other", slug: key + "-other" } });
+  const actor = await prisma.user.create({ data: { name: "Autora", email: key + "@test.local", passwordHash: "unused", teamId: team.id, canAccessTasks: true } });
+  const member = await prisma.user.create({ data: { name: "Execução", email: key + "-member@test.local", passwordHash: "unused", teamId: team.id } });
+  const outsider = await prisma.user.create({ data: { name: "Externo", email: key + "-outside@test.local", passwordHash: "unused", teamId: other.id } });
+  const user = {
+    id: actor.id, sessionId: "test", name: actor.name, email: actor.email, role: actor.role,
+    teamId: team.id, teamName: team.name, deliveryGroup: null, jobTitle: null,
+    permissions: { tasks: true, finance: false, roi: false, communication: false, team: false },
+  };
+  const scope = await resolveTaskScope(user);
+  assert.ok(scope);
+  const input = {
+    teamId: team.id, title: "Projeto", deliveryGroup: "ENGINEERING_CAD" as const,
+    startDate: "2026-11-09", endDate: "2026-11-09", assignments: [],
+  };
+  await assert.rejects(saveTask(scope, { ...input, assignments: [{ memberKey: outsider.id, role: "R" }] }), /integrante ativo/);
+  const a = await saveTask(scope, input);
+  const b = await saveTask(scope, { ...input, title: "Usinagem", deliveryGroup: "MANUFACTURING_CNC" });
+  await saveTask(scope, { ...input, id: a, revision: 0, status: "IN_PROGRESS", assignments: [{ memberKey: member.id, role: "R" }] });
+  await prisma.user.update({ where: { id: member.id }, data: { isActive: false } });
+  const workspace = await getTaskWorkspace(scope);
+  const roles = workspace.tasks.find((item) => item.id === a)?.roles;
+  assert.deepEqual(roles?.map(({ person, role }) => [person.key, person.available, role]), [[actor.id, true, "A"], [member.id, false, "R"]]);
+  await assert.rejects(saveTask(scope, { ...input, id: a, revision: 0, status: "DONE" }), /atualizada/);
+  const edits = await Promise.allSettled([
+    changeDependency(scope, { teamId: team.id, predecessorId: a, successorId: b }, true),
+    changeDependency(scope, { teamId: team.id, predecessorId: b, successorId: a }, true),
+  ]);
+  assert.equal(edits.filter((result) => result.status === "fulfilled").length, 1);
+  const [edge] = (await getTaskWorkspace(scope)).edges;
+  await saveRiskPath(scope, { teamId: team.id, name: "Risco", reason: "Prazo", taskIds: [edge.predecessorId, edge.successorId] });
+  await changeDependency(scope, { teamId: team.id, ...edge }, false);
+  assert.deepEqual((await getTaskWorkspace(scope)).paths[0].missing, [edge]);
+  assert.equal((await resolveTaskScope({ ...user, role: "AUDITOR" }))?.canEdit, false);
+  await prisma.$disconnect();
+});

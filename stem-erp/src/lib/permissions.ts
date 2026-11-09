@@ -33,6 +33,12 @@ export const SYSTEM_MODULES_META: Record<SystemModuleKey, SystemModuleMetadata> 
     description: "Gestão de Equipes, Integrantes e Permissões de Acesso",
     defaultRoute: "/equipe",
   },
+  tasks: {
+    key: "tasks",
+    label: "Tarefas",
+    description: "Tarefas por setor, Gantt, riscos e RACI",
+    defaultRoute: "/tarefas",
+  },
   documents: {
     key: "documents",
     label: "Documentos",
@@ -46,6 +52,7 @@ export const SYSTEM_MODULE_KEYS: SystemModuleKey[] = [
   "roi",
   "communication",
   "documents",
+  "tasks",
   "team",
 ];
 
@@ -59,6 +66,7 @@ export function getDefaultModulePermissionsByRole(
       communication: true,
       team: true,
       documents: true,
+      tasks: true,
     };
   }
 
@@ -68,6 +76,7 @@ export function getDefaultModulePermissionsByRole(
     communication: true,
     team: false,
     documents: true,
+    tasks: false,
   };
 }
 
@@ -104,6 +113,7 @@ export function getFirstAllowedRoute(
   if (permissions.roi) return "/roi";
   if (permissions.communication) return "/comunicacao";
   if (permissions.documents) return "/documentos";
+  if (permissions.tasks) return "/tarefas";
   if (permissions.team) return "/equipe";
 
   return "/dashboard";

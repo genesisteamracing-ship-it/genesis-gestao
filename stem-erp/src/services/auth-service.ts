@@ -375,6 +375,7 @@ export async function getCurrentUserFromSession(): Promise<AuthenticatedUserDTO 
         roi: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessRoi,
         communication: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessCommunication,
         team: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessTeam,
+        tasks: session.user.role === UserRole.SUPER_ADMIN || session.user.canAccessTasks,
         documents: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessDocuments,
       },
     };
@@ -504,6 +505,7 @@ export async function createTeamMemberService(
         canAccessCommunication: defaultPermissions.communication,
         canAccessTeam: defaultPermissions.team,
         canAccessDocuments: defaultPermissions.documents,
+        canAccessTasks: defaultPermissions.tasks,
         createdById: superAdmin.id,
       },
     });
@@ -794,6 +796,7 @@ export async function getTeamManagementMetricsService(): Promise<TeamManagementM
       roi: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessRoi,
       communication: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessCommunication,
       team: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessTeam,
+      tasks: u.role === UserRole.SUPER_ADMIN || u.canAccessTasks,
       documents: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessDocuments,
     },
     failedLoginAttempts: u.failedLoginAttempts,
@@ -967,6 +970,12 @@ export async function requireModuleAccess(
   return user;
 }
 
+function assertTasksPermissionManager(admin: AuthenticatedUserDTO, targetTeamId: string | null) {
+  if (admin.role === UserRole.AUDITOR || (admin.role !== UserRole.SUPER_ADMIN && (!admin.teamId || admin.teamId !== targetTeamId))) {
+    throw new Error("Permissão negada para alterar o acesso a Tarefas deste integrante.");
+  }
+}
+
 export async function toggleUserModulePermissionService(
   adminUser: AuthenticatedUserDTO,
   input: ToggleUserModulePermissionInput
@@ -1004,7 +1013,12 @@ export async function toggleUserModulePermissionService(
     communication: "canAccessCommunication",
     team: "canAccessTeam",
     documents: "canAccessDocuments",
+    tasks: "canAccessTasks",
   };
+
+  if (input.moduleKey === "tasks") {
+    assertTasksPermissionManager(adminUser, targetUser.teamId);
+  }
 
   const dbField = fieldMap[input.moduleKey];
   const { ipAddress, userAgent } = await getRequestMetadata();
@@ -1039,6 +1053,7 @@ export async function toggleUserModulePermissionService(
     roi: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessRoi,
     communication: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessCommunication,
     team: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessTeam,
+    tasks: updatedUser.role === UserRole.SUPER_ADMIN || updatedUser.canAccessTasks,
     documents: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessDocuments,
   };
 }
@@ -1069,6 +1084,10 @@ export async function updateAllUserPermissionsService(
     throw new Error("Usuário não encontrado.");
   }
 
+  if (input.tasks !== undefined) {
+    assertTasksPermissionManager(adminUser, targetUser.teamId);
+  }
+
   const { ipAddress, userAgent } = await getRequestMetadata();
 
   const updatedUser = await prisma.$transaction(async (tx) => {
@@ -1080,6 +1099,7 @@ export async function updateAllUserPermissionsService(
         canAccessCommunication: input.communication,
         canAccessTeam: input.team,
         canAccessDocuments: input.documents ?? true,
+        canAccessTasks: input.tasks,
       },
     });
 
@@ -1102,6 +1122,7 @@ export async function updateAllUserPermissionsService(
     roi: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessRoi,
     communication: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessCommunication,
     team: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessTeam,
+    tasks: updatedUser.role === UserRole.SUPER_ADMIN || updatedUser.canAccessTasks,
     documents: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessDocuments,
   };
 }

@@ -78,6 +78,7 @@ interface FlowCanvasShellProps<NodeType extends Node = Node, EdgeType extends Ed
   children?: React.ReactNode;
   onInit?: (instance: ReactFlowInstance<NodeType, EdgeType>) => void;
   onFitView?: () => void;
+  hideAttribution?: boolean;
   className?: string;
 }
 
@@ -97,6 +98,7 @@ export function FlowCanvasShell<NodeType extends Node = Node, EdgeType extends E
   children,
   onInit,
   onFitView,
+  hideAttribution = true,
   className,
 }: FlowCanvasShellProps<NodeType, EdgeType>) {
   const styles = flowShellStyles();
@@ -275,7 +277,7 @@ export function FlowCanvasShell<NodeType extends Node = Node, EdgeType extends E
               type: "smoothstep",
               style: { stroke: "var(--border)", strokeWidth: 1.5 },
             }}
-            proOptions={{ hideAttribution: true }}
+            proOptions={{ hideAttribution }}
           >
             {showDots && (
               <Background

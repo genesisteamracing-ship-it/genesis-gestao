@@ -27,6 +27,11 @@ export interface DatabaseSnapshotMetadata {
     communicationPlans: number;
     communicationLogs: number;
     wbsNodes: number;
+    tasks?: number;
+    taskAssignments?: number;
+    taskDependencies?: number;
+    riskPaths?: number;
+    riskPathSteps?: number;
   };
 }
 
@@ -44,6 +49,11 @@ export interface DatabaseSnapshotPayload {
     communicationPlans: unknown[];
     communicationLogs: unknown[];
     wbsNodes: unknown[];
+    tasks?: unknown[];
+    taskAssignments?: unknown[];
+    taskDependencies?: unknown[];
+    riskPaths?: unknown[];
+    riskPathSteps?: unknown[];
   };
 }
 
@@ -91,11 +101,18 @@ export function syncNeonRecoveryBranch(): { synced: boolean; message: string } {
  * Exporta todas as tabelas críticas do banco de produção para um arquivo JSON versionado em `prisma/backups/`.
  */
 export async function createLocalDatabaseSnapshot(
-  backupsDir = path.resolve(process.cwd(), "prisma", "backups")
+  backupsDir = path.resolve(process.cwd(), "prisma", "backups"),
+  allowEmptyDatabase = false
 ): Promise<{ filePath: string; metadata: DatabaseSnapshotMetadata }> {
   if (!fs.existsSync(backupsDir)) {
     fs.mkdirSync(backupsDir, { recursive: true });
   }
+
+  const [schema] = await prisma.$queryRaw<{ hasTasks: boolean; hasTeams: boolean }[]>`
+    SELECT to_regclass('"Task"') IS NOT NULL AS "hasTasks",
+           to_regclass('"Team"') IS NOT NULL AS "hasTeams"
+  `;
+  if (!schema.hasTeams && !allowEmptyDatabase) throw new Error("O banco não contém o schema do ERP.");
 
   const [
     teams,
@@ -109,9 +126,9 @@ export async function createLocalDatabaseSnapshot(
     communicationPlans,
     communicationLogs,
     wbsNodes,
-  ] = await Promise.all([
+  ] = schema.hasTeams ? await Promise.all([
     prisma.team.findMany(),
-    prisma.user.findMany(),
+    prisma.$queryRaw<unknown[]>`SELECT * FROM "User"`,
     prisma.category.findMany(),
     prisma.budgetResource.findMany(),
     prisma.transaction.findMany(),
@@ -121,7 +138,17 @@ export async function createLocalDatabaseSnapshot(
     prisma.communicationPlan.findMany(),
     prisma.communicationLog.findMany(),
     prisma.wbsNode.findMany(),
-  ]);
+  ]) : [[], [], [], [], [], [], [], [], [], [], []];
+
+  const taskData: Record<string, unknown[]> = schema.hasTasks
+    ? await prisma.$transaction(async (tx) => ({
+        tasks: await tx.task.findMany(),
+        taskAssignments: await tx.taskAssignment.findMany(),
+        taskDependencies: await tx.taskDependency.findMany(),
+        riskPaths: await tx.riskPath.findMany(),
+        riskPathSteps: await tx.riskPathStep.findMany(),
+      }), { isolationLevel: "RepeatableRead" })
+    : {};
 
   const metadata: DatabaseSnapshotMetadata = {
     createdAt: new Date().toISOString(),
@@ -140,6 +167,7 @@ export async function createLocalDatabaseSnapshot(
       communicationPlans: communicationPlans.length,
       communicationLogs: communicationLogs.length,
       wbsNodes: wbsNodes.length,
+      ...Object.fromEntries(Object.entries(taskData).map(([table, rows]) => [table, rows.length])),
     },
   };
 
@@ -157,6 +185,7 @@ export async function createLocalDatabaseSnapshot(
       communicationPlans,
       communicationLogs,
       wbsNodes,
+      ...taskData,
     },
   };
 
@@ -188,6 +217,7 @@ export async function createLocalDatabaseSnapshot(
 async function runCli() {
   console.log("🛡️ Iniciando rotina de Backup Diário & Sincronização de Branch de Restauração...");
   const neonSync = syncNeonRecoveryBranch();
+  if (!neonSync.synced) throw new Error(neonSync.message);
   console.log(`☁️  Neon Branch Sync: ${neonSync.message}`);
 
   const snapshot = await createLocalDatabaseSnapshot();
