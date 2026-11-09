@@ -9,6 +9,7 @@ import {
   updateWbsNodeAction,
 } from "@/actions/wbs.actions";
 import type { CreateWbsNodeInput, UpdateWbsNodeInput } from "@/lib/validations/wbs.schema";
+import { expandWbsAncestors } from "@/lib/wbs-expansion";
 import type {
   DeliveryGroup,
   WbsSummaryMetrics,
@@ -69,7 +70,7 @@ export function useWbs(initialTeamId?: string, initialData?: WbsTreeDataResult) 
     parentNode: null,
   });
 
-  const loadData = React.useCallback(async () => {
+  const loadData = React.useCallback(async (revealNodeId?: string) => {
     try {
       setIsLoading(true);
       const res = await getWbsTreeAction(initialTeamId);
@@ -77,7 +78,12 @@ export function useWbs(initialTeamId?: string, initialData?: WbsTreeDataResult) 
         setTree(res.data.tree);
         setMetrics(res.data.metrics);
         setMembers(res.data.members);
-        setExpandedNodeIds(buildInitialExpanded(res.data.tree));
+        if (revealNodeId) {
+          const refreshedTree = res.data.tree;
+          setExpandedNodeIds((previous) =>
+            expandWbsAncestors(refreshedTree, revealNodeId, previous)
+          );
+        }
       } else {
         toast.error(res.message || "Não foi possível carregar a WBS");
       }
@@ -230,11 +236,7 @@ export function useWbs(initialTeamId?: string, initialData?: WbsTreeDataResult) 
         const res = await createWbsNodeAction(data);
         if (res.success) {
           toast.success(res.message);
-          // Expande o nó pai caso tenha sido adicionado um filho
-          if (data.parentId) {
-            setExpandedNodeIds((prev) => new Set(prev).add(data.parentId!));
-          }
-          await loadData();
+          await loadData(res.data?.id);
           return true;
         } else {
           toast.error(res.message);
