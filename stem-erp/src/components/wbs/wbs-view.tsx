@@ -44,6 +44,7 @@ export function WbsView({
 
   const {
     tree,
+    rawTree,
     metrics,
     members,
     expandedNodeIds,
@@ -166,7 +167,7 @@ export function WbsView({
           <WbsFlowCanvas
             nodes={tree}
             expandedNodeIds={expandedNodeIds}
-            isPresentationMode={false}
+            isPresentationMode={isAuditor}
             onToggleExpand={toggleExpand}
             onAddChild={openCreateChild}
             onEdit={openEdit}
@@ -180,7 +181,7 @@ export function WbsView({
             nodes={tree}
             expandedNodeIds={expandedNodeIds}
             onToggleExpand={toggleExpand}
-            isPresentationMode={false}
+            isPresentationMode={isAuditor}
             onAddChild={openCreateChild}
             onEdit={openEdit}
             onDelete={(node) => setDeleteConfirmNode(node)}
@@ -197,7 +198,7 @@ export function WbsView({
           members={members}
           editingNode={modalState.editingNode}
           parentNode={modalState.parentNode}
-          existingNodes={tree}
+          existingNodes={rawTree}
           onSubmit={handleSaveNode}
         />
       )}
