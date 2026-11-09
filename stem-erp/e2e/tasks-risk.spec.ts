@@ -18,9 +18,10 @@ test("renders the saved risk path and disables its highlight when a link disappe
   await page.getByRole("combobox", { name: "Caminho salvo" }).click();
   await page.getByRole("option", { name: "Impacto no cronograma", exact: true }).click();
   await expect(page.getByText("Prazo do protótipo")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Ajustar à Tela" })).toBeVisible();
-  await page.getByRole("button", { name: "Sequência textual" }).click();
-  await expect(page.getByText(/Protótipo inicial.*Origem/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Diagrama", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("list", { name: "Sequência do caminho" }).getByRole("listitem")).toHaveText([
+    /Protótipo inicial.*Origem/, /Usinagem de teste/, /Validação de pista/,
+  ]);
   await page.getByRole("button", { name: "Destacar no Gantt" }).click();
   await expect(page.getByText("Caminho em destaque · Impacto no cronograma")).toBeVisible();
   await page.getByRole("region", { name: "Cronograma de Gantt" }).getByRole("button", { name: /Validação de pista · .*Em destaque/ }).click();

@@ -45,11 +45,11 @@ Como integrante autorizado, quero montar uma sequência de tarefas dependentes a
 
 **Why this priority**: O caminho torna visível como o problema em uma tarefa pode afetar atividades de outros setores.
 
-**Independent Test**: Configurar A → B → C e A → D, salvar A → B → C como caminho de risco e verificar o diagrama e seu destaque no Gantt.
+**Independent Test**: Configurar A → B → C e A → D, salvar A → B → C como caminho de risco e verificar a sequência salva e seu destaque no Gantt.
 
 **Acceptance Scenarios**:
 
-1. **Given** a cadeia A → B → C, **When** um editor nomeia o caminho, escolhe A como origem, informa o motivo e seleciona B e C na ordem das dependências, **Then** a sequência é salva e pode ser reaberta como um diagrama com setas da origem até a última tarefa.
+1. **Given** a cadeia A → B → C, **When** um editor nomeia o caminho, escolhe A como origem, informa o motivo e seleciona B e C na ordem das dependências, **Then** a sequência é salva e pode ser reaberta como uma lista ordenada da origem até a última tarefa.
 2. **Given** um caminho salvo e outras tarefas fora dele, **When** o usuário ativa o destaque no Gantt sem filtro de setor, **Then** somente as tarefas e ligações do caminho recebem o destaque e as demais continuam visíveis como contexto.
 3. **Given** um caminho salvo, **When** uma dependência do caminho é removida, **Then** a sequência fica marcada como incompleta, identifica a ligação ausente e perde o destaque até ser corrigida.
 4. **Given** A → B → C, **When** um editor tenta salvar C → A ou uma sequência com tarefas sem dependência direta entre si, **Then** o sistema explica a inconsistência e mantém a configuração anterior.
@@ -60,7 +60,7 @@ Como integrante autorizado, quero montar uma sequência de tarefas dependentes a
 - O mesmo membro não pode ser incluído duas vezes no mesmo papel. Um integrante de outra equipe ou inativo não pode receber nova atribuição. A desativação de um integrante preserva as atribuições existentes e sinaliza sua condição.
 - Dependências para a própria tarefa, duplicadas, entre equipes ou que fechem um ciclo são rejeitadas. Se as datas planejadas violarem uma dependência válida, a ligação permanece visível e o Gantt sinaliza o conflito de datas.
 - Em um setor sem tarefas, o módulo explica que a seleção está vazia e oferece criação a quem pode editar. Sem dependências disponíveis, a visão de risco explica que é necessário vincular pelo menos duas tarefas.
-- Em telas estreitas, a escala e os diagramas podem ser navegados dentro da própria visualização. O usuário também pode consultar tarefas e a sequência do caminho em formato textual por teclado.
+- Em telas estreitas, a escala do Gantt pode ser navegada dentro da própria visualização. O usuário também pode consultar tarefas e a sequência do caminho em formato textual por teclado.
 
 ## Requirements *(mandatory)*
 
@@ -90,7 +90,7 @@ Como integrante autorizado, quero montar uma sequência de tarefas dependentes a
 - **SC-001** — Em teste com pelo menos cinco integrantes, quatro conseguem cadastrar uma tarefa no setor correto e atribuir dois executores em até dois minutos, sem ajuda.
 - **SC-002** — Em todos os cenários de criação e edição, a matriz mostra exatamente um A correspondente ao criador e todos os R salvos. Tarefas sem R são identificáveis na lista e na matriz.
 - **SC-003** — Em um cronograma de 50 tarefas distribuídas em cinco setores, as barras, datas e dependências coincidem com os dados salvos, e o filtro ou a troca de escala responde em até dois segundos em pelo menos 95% das interações em condições normais de uso.
-- **SC-004** — Em teste com pelo menos cinco integrantes, quatro identificam em até 30 segundos a origem do risco e quais tarefas compõem um caminho de quatro etapas, usando o diagrama ou o Gantt. O mesmo caminho pode ser consultado por teclado e em uma tela de 375 px de largura.
+- **SC-004** — Em teste com pelo menos cinco integrantes, quatro identificam em até 30 segundos a origem do risco e quais tarefas compõem um caminho de quatro etapas, usando a sequência textual ou o Gantt. O mesmo caminho pode ser consultado por teclado e em uma tela de 375 px de largura.
 
 ## Assumptions
 
