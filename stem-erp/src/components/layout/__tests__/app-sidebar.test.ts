@@ -6,10 +6,20 @@ import {
   COMMUNICATION_SUB_ITEMS,
   DOCUMENTS_SUB_ITEMS,
   TEAM_SUB_ITEMS,
-  sidebarItemStyles,
 } from "../app-sidebar";
+import { sidebarItemStyles } from "../sidebar-item-styles";
+import { getTaskView, TASK_VIEWS } from "@/lib/task-navigation";
 
 describe("Sidebar Submodules Contracts", () => {
+  it("maps the four task submodules and falls back to the task list", () => {
+    assert.deepEqual(TASK_VIEWS.map(({ href }) => href), [
+      "/tarefas", "/tarefas?tab=gantt", "/tarefas?tab=risks", "/tarefas?tab=raci",
+    ]);
+    assert.equal(getTaskView("raci").title, "Matriz RACI");
+    assert.equal(getTaskView("invalid").id, "tasks");
+    assert.equal(getTaskView().id, "tasks");
+  });
+
   it("deve exportar a lista de submódulos de finanças corretamente", () => {
     assert.equal(FINANCE_SUB_ITEMS.length, 3);
     assert.deepEqual(

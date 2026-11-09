@@ -8,7 +8,6 @@ import {
   ChevronDown,
   Flag,
   FolderGit2,
-  ListTodo,
   Grid3X3,
   Layers,
   LayoutDashboard,
@@ -22,27 +21,11 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import { tv } from "tailwind-variants";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import { useSidebar } from "@/providers/sidebar-provider";
 
-export const sidebarItemStyles = tv({
-  base: "flex w-full items-center gap-3.5 rounded-lg px-4 py-3 text-sm font-semibold transition-colors cursor-pointer",
-  variants: {
-    isActive: {
-      true: "bg-primary text-primary-foreground shadow-xs",
-      false: "text-foreground hover:bg-muted",
-    },
-    isSubItem: {
-      true: "py-2.5 pl-4 pr-3 text-xs",
-      false: "",
-    },
-  },
-  defaultVariants: {
-    isActive: false,
-    isSubItem: false,
-  },
-});
+import { sidebarItemStyles } from "./sidebar-item-styles";
+import { TaskNavGroup } from "./task-nav-group";
 
 export const FINANCE_SUB_ITEMS = [
   {
@@ -161,7 +144,6 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
 
   const isDocumentosRouteActive =
     pathname === "/documentos" || pathname.startsWith("/documentos/");
-  const isTasksRouteActive = pathname === "/tarefas";
   const [isDocumentosOpen, setIsDocumentosOpen] = React.useState<boolean>(false);
 
   const permissions = currentUser.permissions ?? {
@@ -366,20 +348,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
 
           {permissions.tasks && (
             <div className="relative px-5">
-              {isTasksRouteActive && (
-                <span
-                  aria-hidden="true"
-                  className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
-                />
-              )}
-              <Link
-                href="/tarefas"
-                className={sidebarItemStyles({ isActive: isTasksRouteActive })}
-                aria-current={isTasksRouteActive ? "page" : undefined}
-              >
-                <ListTodo className="h-4 w-4 shrink-0" />
-                <span>Tarefas</span>
-              </Link>
+              <TaskNavGroup />
             </div>
           )}
 

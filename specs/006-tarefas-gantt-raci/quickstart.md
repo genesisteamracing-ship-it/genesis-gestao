@@ -27,7 +27,7 @@ Abra `http://localhost:3000/tarefas`. Prepare uma equipe com permissões concedi
 | Caminho de risco | Cadastre B → C e A → D. Salve A → B → C. Destaque no Gantt, remova B → C e reabra. Restaure B → C. | O destaque ignora A → D. O caminho incompleto aponta B → C e perde o destaque. Ao restaurar a ligação, o caminho volta a ser elegível. |
 | Integridade | Tente C → A, uma sequência descontínua, uma dependência repetida e duas arestas recíprocas simultâneas em tarefas novas. | Alterações inválidas deixam a versão anterior intacta. No teste concorrente, no máximo uma das arestas é confirmada. |
 | Permissões | Consulte e tente escrever como auditor. Abra o módulo sem permissão. Tente consultar e atribuir IDs de outra equipe. | Auditor autorizado só consulta. Acesso sem permissão ou a outra equipe não revela registros. |
-| Acessibilidade | Use teclado em desktop e viewport de 375 px. Abra detalhes de uma barra e consulte a sequência textual de risco. | Foco visível e controles acessíveis. Os diagramas rolam dentro de seus limites. Estado, sentido e destaque podem ser entendidos sem cor. |
+| Acessibilidade | Use teclado em desktop e viewport de 375 px. Abra detalhes de uma barra e consulte a sequência textual de risco. | Foco visível e controles acessíveis. O Gantt rola dentro de seus limites. Estado, sentido e destaque podem ser entendidos sem cor. |
 
 ## Gates automatizados
 

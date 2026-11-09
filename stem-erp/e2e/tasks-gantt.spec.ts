@@ -1,9 +1,11 @@
-import { expect, test } from "./tasks.fixtures";
+import { expect, openTaskView, test } from "./tasks.fixtures";
 
 test("keeps dates across scales and identifies cross-sector dependencies", async ({ page, loginAs }) => {
   await loginAs("editor");
   await page.goto("/tarefas");
-  await page.getByRole("tab", { name: "Gantt", exact: true }).click();
+  await openTaskView(page, "Gantt");
+  await expect(page).toHaveURL(/\/tarefas\?tab=gantt$/);
+  await expect(page.getByRole("heading", { name: "Gantt", exact: true })).toBeVisible();
   const chart = page.getByRole("region", { name: "Cronograma de Gantt" });
   const bar = chart.getByRole("button", { name: /Protótipo inicial · 10\/11\/2026 até 10\/11\/2026/ });
   await expect(bar).toBeVisible();

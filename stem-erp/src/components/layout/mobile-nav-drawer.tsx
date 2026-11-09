@@ -6,7 +6,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
   FolderGit2,
-  ListTodo,
   Layers,
   LayoutDashboard,
   ListOrdered,
@@ -32,7 +31,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  sidebarItemStyles,
   FINANCE_SUB_ITEMS,
   ROI_SUB_ITEMS,
   COMMUNICATION_SUB_ITEMS,
@@ -40,6 +38,8 @@ import {
   TEAM_SUB_ITEMS,
 } from "@/components/layout/app-sidebar";
 import { useSidebar } from "@/providers/sidebar-provider";
+import { sidebarItemStyles } from "./sidebar-item-styles";
+import { TaskNavGroup } from "./task-nav-group";
 
 interface MobileNavDrawerProps {
   currentUser: AuthenticatedUserDTO;
@@ -270,14 +270,13 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
             </div>
           )}
 
-          {/* Grupo: Documentos com Submódulos */}
           {permissions.tasks && (
-            <Link href="/tarefas" onClick={() => setIsMobileOpen(false)} className={sidebarItemStyles({ isActive: pathname === "/tarefas" })} aria-current={pathname === "/tarefas" ? "page" : undefined}>
-              <ListTodo className="h-4 w-4 shrink-0" />
-              <span>Tarefas</span>
-            </Link>
+            <div className="relative">
+              <TaskNavGroup onSelect={() => setIsMobileOpen(false)} />
+            </div>
           )}
 
+          {/* Grupo: Documentos com Submódulos */}
           {permissions.documents && (
             <div className="space-y-1">
               <button
