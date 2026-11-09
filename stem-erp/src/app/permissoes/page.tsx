@@ -1,11 +1,9 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { ArrowLeft, CheckCircle2, ShieldCheck, Users, XCircle } from "lucide-react";
+import { CheckCircle2, ShieldCheck, Users, XCircle } from "lucide-react";
 import { getDashboardMetricsAction } from "@/actions/financial-actions";
 import { getTeamManagementMetricsService, requireModuleAccess } from "@/services/auth-service";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PermissionsTable } from "@/components/permissions/permissions-table";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -33,22 +31,7 @@ export default async function PermissoesPage() {
       categories={dashboardMetrics.categories}
       budgetResources={dashboardMetrics.budgetResources}
       seasonMonths={dashboardMetrics.seasonMonths}
-      headerAction={
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <Link href="/integrantes">
-            <Button variant="outline" className="w-full sm:w-auto gap-2 text-xs sm:text-sm font-semibold border-border hover:bg-muted">
-              <Users className="h-4 w-4 text-primary" />
-              <span>Ver Integrantes</span>
-            </Button>
-          </Link>
-          <Link href="/equipe">
-            <Button variant="outline" className="w-full sm:w-auto gap-2 text-xs sm:text-sm font-semibold border-border hover:bg-muted">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Voltar para Equipes</span>
-            </Button>
-          </Link>
-        </div>
-      }
+      headerAction={null}
     >
       {/* 4 Cards de Resumo de Acesso por Módulo */}
       <section className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4">

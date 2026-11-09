@@ -1,9 +1,6 @@
-import Link from "next/link";
 import {
-  Flag,
   KeyRound,
   ShieldAlert,
-  ShieldCheck,
   UserCheck,
   Users,
 } from "lucide-react";
@@ -13,7 +10,6 @@ import { requireModuleAccess } from "@/services/auth-service";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { CreateMemberDialog } from "@/components/modals/create-member-dialog";
 import { TeamMembersDataTable } from "@/components/tables/team-members-data-table";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -35,29 +31,7 @@ export default async function IntegrantesPage() {
       categories={financialMetrics.categories}
       budgetResources={financialMetrics.budgetResources}
       seasonMonths={financialMetrics.seasonMonths}
-      headerAction={
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <Link href="/equipe">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto gap-2 text-xs sm:text-sm font-semibold border-border hover:bg-muted"
-            >
-              <Flag className="h-4 w-4 text-primary" />
-              <span>Gerenciar Equipes</span>
-            </Button>
-          </Link>
-          <Link href="/permissoes">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto gap-2 text-xs sm:text-sm font-semibold border-border hover:bg-muted"
-            >
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              <span>Matriz de Permissões</span>
-            </Button>
-          </Link>
-          <CreateMemberDialog teams={teamMetrics.teams} />
-        </div>
-      }
+      headerAction={<CreateMemberDialog teams={teamMetrics.teams} />}
     >
       {/* 4 KPI Cards de Integrantes e Segurança */}
       <section className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4">

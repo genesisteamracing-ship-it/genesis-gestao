@@ -39,29 +39,7 @@ export default async function EquipePage() {
       categories={financialMetrics.categories}
       budgetResources={financialMetrics.budgetResources}
       seasonMonths={financialMetrics.seasonMonths}
-      headerAction={
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <Link href="/integrantes">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto gap-2 text-xs sm:text-sm font-semibold border-border hover:bg-muted"
-            >
-              <Users className="h-4 w-4 text-primary" />
-              <span>Gerenciar Integrantes</span>
-            </Button>
-          </Link>
-          <Link href="/permissoes">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto gap-2 text-xs sm:text-sm font-semibold border-border hover:bg-muted"
-            >
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              <span>Matriz de Permissões</span>
-            </Button>
-          </Link>
-          <CreateTeamDialog />
-        </div>
-      }
+      headerAction={<CreateTeamDialog />}
     >
       {/* 4 KPI Cards de Governança Multi-Equipe no padrão DashStack */}
       <section className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4">
