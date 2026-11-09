@@ -1,7 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { expandWbsAncestors } from "@/lib/wbs-expansion";
+import { buildWbsTree } from "@/services/wbs-rollup.service";
 import { wbsToFlowElements } from "../wbs-flow.adapter";
-import type { WbsTreeNode } from "@/types/wbs";
+import type { WbsNodeDTO, WbsTreeNode } from "@/types/wbs";
 
 describe("WBS React Flow Adapter (wbsToFlowElements)", () => {
   it("deve retornar coleções vazias quando a árvore não possuir nós", () => {
@@ -114,5 +116,48 @@ describe("WBS React Flow Adapter (wbsToFlowElements)", () => {
     assert.equal(edges.length, 2);
     assert.equal(edges[1].source, "parent-1");
     assert.equal(edges[1].target, "child-1");
+  });
+
+  it("deve exibir o filho de 1.1.1 após recarregar e preservar outros ramos expandidos", () => {
+    function deliverable(code: string, parentId: string | null): WbsNodeDTO {
+      return {
+        id: code,
+        code,
+        teamId: "team-1",
+        parentId,
+        title: code,
+        description: null,
+        discipline: "ENGINEERING_CAD",
+        ownerId: null,
+        ownerName: null,
+        status: "PLANNED",
+        estimatedCostCents: 0,
+        estimatedHours: 0,
+        sortOrder: 0,
+        depth: code.split(".").length,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      };
+    }
+
+    const { tree } = buildWbsTree([
+      deliverable("1", null),
+      deliverable("1.1", "1"),
+      deliverable("1.1.1", "1.1"),
+      deliverable("1.1.1.1", "1.1.1"),
+      deliverable("2", null),
+      deliverable("2.1", "2"),
+      deliverable("2.1.1", "2.1"),
+      deliverable("3", null),
+      deliverable("3.1", "3"),
+    ]);
+    const previous = new Set(["2", "2.1"]);
+    const expandedNodeIds = expandWbsAncestors(tree, "1.1.1.1", previous);
+    const { nodes, edges } = wbsToFlowElements({ tree, expandedNodeIds });
+
+    assert.ok(edges.some(({ source, target }) => source === "1.1.1" && target === "1.1.1.1"));
+    assert.ok(nodes.some(({ id }) => id === "2.1.1"));
+    assert.ok(!nodes.some(({ id }) => id === "3.1"));
+    assert.deepEqual(previous, new Set(["2", "2.1"]));
   });
 });
