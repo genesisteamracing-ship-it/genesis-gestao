@@ -24,7 +24,7 @@ export const createWbsNodeSchema = z.object({
     .min(1, "O código EAP é obrigatório")
     .regex(
       /^[0-9]+(\.[0-9]+)*$/,
-      "Formato de código EAP inválido. Use números separados por ponto (ex: 1.0, 1.2, 1.2.3)"
+      "Formato de código EAP inválido. Use números separados por ponto (ex: 1, 1.1, 1.1.1)"
     ),
   title: z
     .string()
@@ -59,7 +59,7 @@ export const updateWbsNodeSchema = z.object({
     .min(1, "O código EAP é obrigatório")
     .regex(
       /^[0-9]+(\.[0-9]+)*$/,
-      "Formato de código EAP inválido. Use números separados por ponto (ex: 1.0, 1.2, 1.2.3)"
+      "Formato de código EAP inválido. Use números separados por ponto (ex: 1, 1.1, 1.1.1)"
     )
     .optional(),
   title: z

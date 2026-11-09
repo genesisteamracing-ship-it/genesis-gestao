@@ -225,6 +225,7 @@ export function WbsView({
           members={members}
           editingNode={modalState.editingNode}
           parentNode={modalState.parentNode}
+          existingNodes={tree}
           onSubmit={handleSaveNode}
         />
       )}

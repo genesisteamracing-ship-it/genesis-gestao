@@ -22,8 +22,14 @@ import {
   type CreateWbsNodeFormInput,
 } from "@/lib/validations/wbs.schema";
 import type { DeliveryGroup, WbsNodeStatus, WbsTreeNode } from "@/types/wbs";
-import { DISCIPLINE_LABELS, STATUS_LABELS } from "./wbs-tree-table";
+import { STATUS_LABELS } from "./wbs-tree-table";
 import { formatCentsToReais } from "@/lib/utils";
+import {
+  DISCIPLINE_SELECT_OPTIONS,
+  collectAllWbsCodes,
+  getNextChildCode,
+  getSuggestedCodeForDiscipline,
+} from "@/lib/wbs-code-generator";
 
 interface WbsNodeModalProps {
   isOpen: boolean;
@@ -32,6 +38,7 @@ interface WbsNodeModalProps {
   members: { id: string; name: string; jobTitle: string | null }[];
   editingNode: WbsTreeNode | null;
   parentNode: WbsTreeNode | null;
+  existingNodes?: WbsTreeNode[];
   onSubmit: (data: CreateWbsNodeInput, isEditing: boolean, nodeId?: string) => Promise<boolean>;
 }
 
@@ -42,10 +49,16 @@ export function WbsNodeModal({
   members,
   editingNode,
   parentNode,
+  existingNodes = [],
   onSubmit,
 }: WbsNodeModalProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const isEditing = Boolean(editingNode);
+
+  // Lista unificada de códigos EAP existentes na árvore para evitar colisões
+  const existingCodes = React.useMemo(() => {
+    return collectAllWbsCodes(existingNodes);
+  }, [existingNodes]);
 
   const {
     register,
@@ -62,7 +75,7 @@ export function WbsNodeModal({
       code: "",
       title: "",
       description: "",
-      discipline: "ENGINEERING_CAD",
+      discipline: "PROJECT_MANAGEMENT",
       ownerId: null,
       status: "PLANNED",
       estimatedCostCents: 0,
@@ -76,7 +89,7 @@ export function WbsNodeModal({
     .replace("R$\u00A0", "")
     .replace("R$ ", "");
 
-  // Carrega dados para edição ou define sugestão de código ao adicionar sub-entregável
+  // Carrega dados para edição ou define sugestão de código ao adicionar sub-entregável / nó raiz
   React.useEffect(() => {
     if (editingNode) {
       reset({
@@ -93,9 +106,9 @@ export function WbsNodeModal({
         sortOrder: editingNode.sortOrder,
       });
     } else if (parentNode) {
-      // Sugere o próximo código filho (ex: pai 1.2 -> filho 1.2.1)
-      const nextChildIndex = parentNode.children.length + 1;
-      const suggestedCode = `${parentNode.code}.${nextChildIndex}`;
+      // Sugere o próximo código filho hierárquico (ex: pai 1 -> 1.1; pai 1.1 -> 1.1.1; pai 2 -> 2.1)
+      const existingChildCodes = parentNode.children.map((c) => c.code);
+      const suggestedCode = getNextChildCode(parentNode.code, existingChildCodes);
 
       reset({
         teamId,
@@ -111,13 +124,17 @@ export function WbsNodeModal({
         sortOrder: parentNode.children.length,
       });
     } else {
+      // Entregável Raiz: sugere código correspondente do setor inicial (1 para Gestão de Projetos)
+      const initialDiscipline: DeliveryGroup = "PROJECT_MANAGEMENT";
+      const suggestedCode = getSuggestedCodeForDiscipline(initialDiscipline, existingCodes);
+
       reset({
         teamId,
         parentId: null,
-        code: "1.0",
+        code: suggestedCode,
         title: "",
         description: "",
-        discipline: "PROJECT_MANAGEMENT",
+        discipline: initialDiscipline,
         ownerId: null,
         status: "PLANNED",
         estimatedCostCents: 0,
@@ -125,7 +142,31 @@ export function WbsNodeModal({
         sortOrder: 0,
       });
     }
-  }, [editingNode, parentNode, teamId, reset]);
+  }, [editingNode, parentNode, teamId, reset, existingCodes]);
+
+  // Ao alterar o setor (Disciplina), atualiza automaticamente o código EAP para o setor correspondente
+  const handleDisciplineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newDiscipline = e.target.value as DeliveryGroup;
+    setValue("discipline", newDiscipline, { shouldValidate: true });
+
+    if (!isEditing) {
+      if (parentNode) {
+        // Se ainda for a mesma disciplina do pai, usa hierarquia do pai; se alterada, calcula pelo novo setor
+        if (parentNode.discipline === newDiscipline) {
+          const existingChildCodes = parentNode.children.map((c) => c.code);
+          const childCode = getNextChildCode(parentNode.code, existingChildCodes);
+          setValue("code", childCode, { shouldValidate: true });
+        } else {
+          const autoCode = getSuggestedCodeForDiscipline(newDiscipline, existingCodes);
+          setValue("code", autoCode, { shouldValidate: true });
+        }
+      } else {
+        // Entregável Raiz: seta diretamente o código correspondente do setor (1, 2, 3 ou 4)
+        const autoCode = getSuggestedCodeForDiscipline(newDiscipline, existingCodes);
+        setValue("code", autoCode, { shouldValidate: true });
+      }
+    }
+  };
 
   const handleCurrencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawDigits = e.target.value.replace(/\D/g, "");
@@ -171,7 +212,7 @@ export function WbsNodeModal({
               </Label>
               <Input
                 id="code"
-                placeholder="Ex: 1.2.3"
+                placeholder="Ex: 1, 1.1, 1.1.1"
                 className="font-mono text-xs"
                 {...register("code")}
               />
@@ -200,6 +241,12 @@ export function WbsNodeModal({
             </div>
           </div>
 
+          {/* Dica didática da padronização de códigos por setor */}
+          <div className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+            <span className="font-semibold text-foreground">Padronização de Códigos STEM: </span>
+            <span>1 Gestão • 2 Engenharia • 3 Empreendimento & Mkt • 4 Projeto Social</span>
+          </div>
+
           {/* Linha 2: Descrição do Escopo */}
           <div className="space-y-1.5">
             <Label htmlFor="description" className="text-xs font-semibold">
@@ -219,20 +266,21 @@ export function WbsNodeModal({
             )}
           </div>
 
-          {/* Linha 3: Disciplina e Responsável Técnico */}
+          {/* Linha 3: Disciplina (Setor) e Responsável Técnico */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="discipline" className="text-xs font-semibold">
-                Disciplina da Escuderia *
+                Setor / Disciplina *
               </Label>
               <select
                 id="discipline"
-                className="w-full h-9 rounded-md border border-border bg-background px-3 py-1 text-xs shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="w-full h-9 rounded-md border border-border bg-background px-3 py-1 text-xs shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
                 {...register("discipline")}
+                onChange={handleDisciplineChange}
               >
-                {(Object.keys(DISCIPLINE_LABELS) as DeliveryGroup[]).map((group) => (
-                  <option key={group} value={group}>
-                    {DISCIPLINE_LABELS[group]}
+                {DISCIPLINE_SELECT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </select>

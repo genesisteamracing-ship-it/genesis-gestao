@@ -8,7 +8,34 @@ import {
 
 describe("WBS Zod Validation Schemas", () => {
   describe("createWbsNodeSchema", () => {
-    it("deve validar com sucesso um nó raiz válido (Nível 1)", () => {
+    it("deve validar com sucesso códigos raiz e sub-níveis da padronização STEM (1, 2, 3, 4, 1.1, 2.1, 1.1.1)", () => {
+      const validCases = [
+        { code: "1", title: "Gestão de Projetos", discipline: "PROJECT_MANAGEMENT" },
+        { code: "2", title: "Engenharia e Manufatura", discipline: "ENGINEERING_CAD" },
+        { code: "3", title: "Empreendimento e Marketing", discipline: "MARKETING_SPONSOR" },
+        { code: "4", title: "Projeto Social", discipline: "SOCIAL_PROJECT" },
+        { code: "1.1", title: "Planejamento e Cronograma", discipline: "PROJECT_MANAGEMENT" },
+        { code: "2.1", title: "Chassis e Aerodinâmica", discipline: "ENGINEERING_CAD" },
+        { code: "2.1.1", title: "Modelagem do Difusor", discipline: "ENGINEERING_CAD" },
+        { code: "3.1.2", title: "Press Kit de Patrocínio", discipline: "MARKETING_SPONSOR" },
+        { code: "4.1.1", title: "Oficina STEM na Comunidade", discipline: "SOCIAL_PROJECT" },
+      ];
+
+      for (const tc of validCases) {
+        const result = createWbsNodeSchema.safeParse({
+          teamId: "team-test",
+          code: tc.code,
+          title: tc.title,
+          discipline: tc.discipline,
+          status: "PLANNED",
+          estimatedCostCents: 0,
+          estimatedHours: 0,
+        });
+        assert.equal(result.success, true, `Código válido ${tc.code} deveria ser aceito`);
+      }
+    });
+
+    it("deve validar com sucesso um nó raiz válido (Nível 1 legado 1.0)", () => {
       const input = {
         teamId: "team-cl12345",
         parentId: null,
