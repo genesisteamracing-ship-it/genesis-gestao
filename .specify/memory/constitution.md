@@ -1,16 +1,3 @@
-<!--
-Sync Impact Report:
-- Version Change: 1.1.0 -> 1.2.0
-- Ratification Date: 2026-10-26
-- Last Amended Date: 2026-11-06
-- Modified Principles:
-  - Fluxo de Desenvolvimento, Quality Gates & CI/CD: Adicionada obrigatoriedade estrita de commit e push remoto após finalização de specs/features.
-- Added Requirements:
-  - Ao finalizar qualquer especificação ou conjunto de tarefas de spec (`tasks.md`), o agente ou desenvolvedor DEVE obrigatoriamente realizar o `git commit` com mensagem semântica e o `git push origin <branch>`, garantindo sincronização remota antes de encerrar o ciclo.
-- Removed Sections: None
-- Follow-up TODOs: None
--->
-
 # Genesis Gestão Constitution
 
 ## Core Principles
@@ -74,6 +61,12 @@ Todas as alterações na base de código devem passar por validações automatiz
 - **Padronização e Linting**: `eslint` configurado com regras de React e TypeScript, mantendo a árvore limpa de dead-code ou práticas inseguras.
 - **Execução da Bateria de Testes**: Validação contínua com `npm test` (`tsx --test`), garantindo que todos os testes passem de forma determinística em menos de 3 segundos.
 - **Sincronização Remota Obrigatória (Commit & Push)**: Ao concluir a implementação de qualquer especificação (`tasks.md`), após a validação completa de testes, tipos e lint, o agente/desenvolvedor DEVE obrigatoriamente realizar o commit com mensagem convencional descritiva e o push para a branch remota (`git push origin <branch>`). Nenhuma entrega de spec pode ser finalizada ou reportada sem sincronização remota concluída.
+- **Pull Obrigatório Antes de Cada Push**: Antes de cada tentativa de `git push`, o
+  agente ou desenvolvedor DEVE executar `git pull` para integrar as alterações mais
+  recentes da branch remota de destino à branch local. No primeiro push de uma branch
+  nova, o pull deve integrar a branch base do mesmo remoto. Se houver erro, divergência
+  ou conflito, o push só pode prosseguir após a sincronização ser concluída com sucesso.
+  Se a integração alterar os arquivos, repita as validações aplicáveis antes do push.
 - **Pipeline de Integração Contínua (CI)**: Pipeline configurado no GitHub Actions (`.github/workflows/ci.yml`) que bloqueia pull requests ou commits que não atinjam os critérios de compilação, lint e teste.
 - **Deploy Contínuo**: Sincronização automática para a plataforma de produção (Render) após aprovação do pipeline.
 
@@ -87,4 +80,4 @@ A Constituição do projeto é o documento soberano que rege a arquitetura, padr
   - **PATCH**: Ajustes redacionais, correções pontuais de texto ou refinamentos não estruturais.
 - O arquivo `.specify/memory/constitution.md` deve ser mantido atualizado como fonte primária da verdade para orientar desenvolvedores e agentes autônomos de IA durante todo o ciclo de vida do projeto.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-26 | **Last Amended**: 2026-11-06
+**Version**: 1.3.0 | **Ratified**: 2026-10-26 | **Last Amended**: 2026-11-09
