@@ -13,6 +13,11 @@ import {
   type CommunicationPlan,
   type CommunicationLog,
   type WbsNode,
+  type Task,
+  type TaskAssignment,
+  type TaskDependency,
+  type RiskPath,
+  type RiskPathStep,
 } from "@prisma/client";
 import type { DatabaseSnapshotPayload } from "./db-backup-sync";
 
@@ -139,6 +144,36 @@ export async function restoreDatabaseFromSnapshotFile(
     });
   }
 
+  const tasks = (payload.data.tasks ?? []) as Task[];
+  const assignments = (payload.data.taskAssignments ?? []) as TaskAssignment[];
+  const dependencies = (payload.data.taskDependencies ?? []) as TaskDependency[];
+  const paths = (payload.data.riskPaths ?? []) as RiskPath[];
+  const steps = (payload.data.riskPathSteps ?? []) as RiskPathStep[];
+
+  if (tasks.length || paths.length) {
+    await prisma.$transaction(async (tx) => {
+      for (const row of tasks) {
+        await tx.task.upsert({ where: { id: row.id }, update: row, create: row });
+      }
+      for (const row of assignments) {
+        const { teamId, taskId, memberKey, role } = row;
+        await tx.taskAssignment.upsert({ where: { teamId_taskId_memberKey_role: { teamId, taskId, memberKey, role } }, update: row, create: row });
+      }
+      for (const row of dependencies) {
+        const { teamId, predecessorId, successorId } = row;
+        await tx.taskDependency.upsert({ where: { teamId_predecessorId_successorId: { teamId, predecessorId, successorId } }, update: row, create: row });
+      }
+      for (const row of paths) {
+        await tx.riskPath.upsert({ where: { id: row.id }, update: row, create: row });
+      }
+      // Restore each saved sequence as a unit to avoid conflicting positions.
+      for (const row of paths) {
+        await tx.riskPathStep.deleteMany({ where: { teamId: row.teamId, pathId: row.id } });
+      }
+      await tx.riskPathStep.createMany({ data: steps });
+    });
+  }
+
   return {
     restoredCounts: {
       teams: teams.length,
@@ -152,6 +187,8 @@ export async function restoreDatabaseFromSnapshotFile(
       communicationPlans: plans.length,
       communicationLogs: logs.length,
       wbsNodes: wbsNodes.length,
+      tasks: tasks.length, taskAssignments: assignments.length, taskDependencies: dependencies.length,
+      riskPaths: paths.length, riskPathSteps: steps.length,
     },
   };
 }

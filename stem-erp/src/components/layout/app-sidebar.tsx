@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Flag,
   FolderGit2,
+  ListTodo,
   Grid3X3,
   Layers,
   LayoutDashboard,
@@ -363,6 +364,13 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
           )}
 
           {/* Combo / Grupo: Documentos */}
+          {permissions.tasks && (
+            <Link href="/tarefas" className={sidebarItemStyles({ isActive: pathname === "/tarefas" })} aria-current={pathname === "/tarefas" ? "page" : undefined}>
+              <ListTodo className="h-4 w-4 shrink-0" />
+              <span>Tarefas</span>
+            </Link>
+          )}
+
           {permissions.documents && (
             <div className="relative px-5">
               {isDocumentosRouteActive && !isDocumentosOpen && (

@@ -1,4 +1,5 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
 import { createLocalDatabaseSnapshot, syncNeonRecoveryBranch } from "./db-backup-sync";
 
 export const FORBIDDEN_PRISMA_FLAGS = [
@@ -34,14 +35,30 @@ async function runSafeMigrate() {
   }
 
   console.log("🛡️ 1/3 Criando snapshot local e sincronizando branch de backup antes de atualizar o schema...");
-  const neonSync = syncNeonRecoveryBranch();
-  console.log(`☁️  ${neonSync.message}`);
+  const localTest = extraArgs.length === 1 && extraArgs[0] === "--local-test";
+  if (extraArgs.length && !localTest) throw new Error("Argumento de sincronização desconhecido.");
+  if (localTest) {
+    for (const value of [process.env.DATABASE_URL, process.env.DATABASE_URL_UNPOOLED]) {
+      const url = value ? URL.parse(value) : null;
+      if (!url || !["postgres:", "postgresql:"].includes(url.protocol) ||
+          !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || url.pathname !== "/tasks_test") {
+        throw new Error("O teste exige um banco PostgreSQL local chamado tasks_test.");
+      }
+    }
+  } else {
+    const neonSync = syncNeonRecoveryBranch();
+    if (!neonSync.synced) throw new Error(neonSync.message);
+    console.log(`☁️  ${neonSync.message}`);
+  }
 
-  const snapshot = await createLocalDatabaseSnapshot();
+  const snapshot = await createLocalDatabaseSnapshot(
+    localTest ? path.resolve("prisma", "backups", "tasks-test") : undefined,
+    localTest,
+  );
   console.log(`💾 Snapshot pré-migração salvo em: ${snapshot.filePath}`);
 
   console.log("🛡️ 2/3 Verificando diferenças de schema de forma não-destrutiva...");
-  execSync("npx prisma db push", { stdio: "inherit" });
+  execFileSync(process.execPath, [path.resolve("node_modules/prisma/build/index.js"), "db", "push", "--skip-generate"], { stdio: "inherit" });
 
   console.log("✅ 3/3 Schema sincronizado com segurança (Zero perda de dados)!");
 }

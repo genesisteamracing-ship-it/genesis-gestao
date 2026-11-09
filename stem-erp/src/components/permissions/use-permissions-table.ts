@@ -140,6 +140,7 @@ export function usePermissionsTable({
       finance: true,
       roi: true,
       communication: true,
+      tasks: true,
       team: true,
     };
 
@@ -192,6 +193,7 @@ export function usePermissionsTable({
       finance: false,
       roi: false,
       communication: false,
+      tasks: false,
       team: nextTeamPermission,
     };
 

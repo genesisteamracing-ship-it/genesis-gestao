@@ -134,6 +134,7 @@ export function PermissionsTable({
                     <TableHead className="text-center w-[130px]">Financeiro</TableHead>
                     <TableHead className="text-center w-[130px]">ROI</TableHead>
                     <TableHead className="text-center w-[130px]">Comunicação</TableHead>
+                    <TableHead className="text-center w-[140px]">Tarefas</TableHead>
                     <TableHead className="text-center w-[140px]">Equipe & Acessos</TableHead>
                     <TableHead className="text-right w-[80px]">Ações</TableHead>
                   </TableRow>
@@ -208,6 +209,16 @@ export function PermissionsTable({
                             onToggle={(next) =>
                               handleTogglePermission(member, "communication", next)
                             }
+                          />
+                        </TableCell>
+
+                        <TableCell className="text-center">
+                          <ModulePermissionToggle
+                            moduleLabel="Tarefas"
+                            userName={member.name}
+                            allowed={Boolean(member.permissions.tasks)}
+                            isLoading={Boolean(loadingMap[`${member.id}-tasks`])}
+                            onToggle={(next) => handleTogglePermission(member, "tasks", next)}
                           />
                         </TableCell>
 
@@ -319,6 +330,17 @@ export function PermissionsTable({
                           onToggle={(next) =>
                             handleTogglePermission(member, "communication", next)
                           }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-2 rounded-lg border border-border bg-muted/30">
+                        <span className="text-xs font-semibold text-foreground">Tarefas</span>
+                        <ModulePermissionToggle
+                          moduleLabel="Tarefas"
+                          userName={member.name}
+                          allowed={Boolean(member.permissions.tasks)}
+                          isLoading={Boolean(loadingMap[`${member.id}-tasks`])}
+                          onToggle={(next) => handleTogglePermission(member, "tasks", next)}
                         />
                       </div>
 

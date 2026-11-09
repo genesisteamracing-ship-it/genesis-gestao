@@ -5,6 +5,18 @@ on:
     # Executa todos os dias às 03:00 UTC (00:00 Horário de Brasília)
     - cron: "0 3 * * *"
   workflow_dispatch:
+    inputs:
+      apply_schema:
+        description: Aplicar o schema desta branch em produção após o backup
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neon-production-schema
+  cancel-in-progress: false
 
 jobs:
   backup-and-sync:
@@ -17,6 +29,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -38,9 +52,12 @@ jobs:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: npm run db:backup
 
-      - name: Upload Database Snapshot Artifact (90 days retention)
-        uses: actions/upload-artifact@v4
-        with:
-          name: neon-db-snapshot-${{ github.run_number }}
-          path: stem-erp/prisma/backups/latest-snapshot.json
-          retention-days: 90
+      - name: Apply schema through the database guardrail
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_schema }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: npm run db:safe-push
+
+      # O snapshot contém dados de produção. A cópia persistente fica no Neon.

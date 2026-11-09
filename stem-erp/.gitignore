@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -43,3 +45,4 @@ next-env.d.ts
 
 # database snapshots (keep local, do not push password hashes to git)
 /prisma/backups/*.json
+/prisma/backups/tasks-test/
