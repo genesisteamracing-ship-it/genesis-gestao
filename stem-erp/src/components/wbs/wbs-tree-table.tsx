@@ -7,10 +7,8 @@ import {
   User,
   AlertTriangle,
   Layers,
-  Sparkles,
 } from "lucide-react";
 import type { DeliveryGroup, WbsNodeStatus, WbsTreeNode } from "@/types/wbs";
-import { formatCentsToReais } from "@/lib/utils";
 import { WbsRowActions } from "./wbs-row-actions";
 
 export const DISCIPLINE_LABELS: Record<DeliveryGroup, string> = {
@@ -108,7 +106,6 @@ export function WbsTreeTable({
               <th className="py-3 px-3 sm:px-4">Disciplina</th>
               <th className="py-3 px-3 sm:px-4">Responsável Técnico</th>
               <th className="py-3 px-3 sm:px-4">Status</th>
-              <th className="py-3 px-3 sm:px-4 text-right">Custo Previsto</th>
               <th className="py-3 px-3 sm:px-4 text-right">Horas</th>
               {!isPresentationMode && (
                 <th className="py-3 px-3 sm:px-4 text-center w-16">Ações</th>
@@ -213,25 +210,7 @@ export function WbsTreeTable({
                     </span>
                   </td>
 
-                  {/* Coluna 5: Custo Previsto (Roll-up ou Direto) */}
-                  <td className="py-2.5 px-3 sm:px-4 text-right whitespace-nowrap font-mono">
-                    <div className="flex items-center justify-end gap-1">
-                      {!node.isLeaf && (
-                        <span
-                          title="Valor agregado pela soma de 100% dos nós filhos"
-                          className="flex items-center text-[10px] uppercase font-sans font-semibold text-primary/80 bg-primary/10 px-1 rounded"
-                        >
-                          <Sparkles className="h-2.5 w-2.5 mr-0.5" />
-                          Roll-up
-                        </span>
-                      )}
-                      <span className="font-semibold text-foreground">
-                        {formatCentsToReais(node.rolledUpCostCents)}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Coluna 6: Horas */}
+                  {/* Coluna 5: Horas */}
                   <td className="py-2.5 px-3 sm:px-4 text-right whitespace-nowrap font-mono text-muted-foreground">
                     {node.rolledUpHours}h
                   </td>

@@ -8,14 +8,12 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
-  Coins,
   Layers,
   Plus,
   Sparkles,
   User,
 } from "lucide-react";
 import type { WbsFlowNodeData, WbsFlowRootData } from "./wbs-flow.adapter";
-import { formatCentsToReais } from "@/lib/utils";
 import { WbsRowActions } from "./wbs-row-actions";
 import { DISCIPLINE_LABELS, STATUS_LABELS } from "./wbs-tree-table";
 import { Button } from "@/components/ui/button";
@@ -123,7 +121,6 @@ export function WbsFlowNodeComponent({ data }: NodeProps) {
     isLeaf: node.isLeaf,
   });
 
-  const cost = node.isLeaf ? node.estimatedCostCents : node.rolledUpCostCents;
   const hours = node.isLeaf ? node.estimatedHours : node.rolledUpHours;
 
   return (
@@ -183,15 +180,8 @@ export function WbsFlowNodeComponent({ data }: NodeProps) {
         </span>
       </div>
 
-      {/* Métricas: Custo & Horas */}
+      {/* Métricas: Horas */}
       <div className={styles.metricsRow()}>
-        <span
-          className={styles.metricItem()}
-          title={node.isLeaf ? "Custo Estimado" : "Custo Consolidado (Regra dos 100%)"}
-        >
-          <Coins className="h-3 w-3 text-primary shrink-0" />
-          <span>{formatCentsToReais(cost)}</span>
-        </span>
         <span
           className={styles.metricItem()}
           title={node.isLeaf ? "Horas Estimadas" : "Horas Consolidadas"}
@@ -257,8 +247,6 @@ export function WbsProjectRootNodeComponent({ data }: NodeProps) {
         Decomposição Hierárquica do Escopo Total
       </p>
       <div className="mt-2.5 flex items-center justify-center gap-3 border-t border-primary/20 pt-2 text-[10px] font-semibold text-foreground">
-        <span>{formatCentsToReais(rootData.totalCostCents)}</span>
-        <span>•</span>
         <span>{rootData.totalHours}h totais</span>
         <span>•</span>
         <span>{rootData.totalNodes} entregáveis</span>

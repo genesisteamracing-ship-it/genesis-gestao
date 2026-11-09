@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { useCanvasPanZoom } from "@/hooks/use-canvas-pan-zoom";
 import type { WbsTreeNode } from "@/types/wbs";
 import { WbsNodeCard } from "./wbs-node-card";
-import { formatCentsToReais } from "@/lib/utils";
 
 export const canvasStyles = tv({
   slots: {
@@ -147,15 +146,7 @@ export function WbsCanvasView({
     reset,
   } = useCanvasPanZoom(viewportRef, 1);
 
-  // Totais consolidados de todas as raízes para o Nó Mestre do Projeto
-  const totalProjectCostCents = React.useMemo(() => {
-    return nodes.reduce(
-      (acc, node) =>
-        acc + (node.isLeaf ? node.estimatedCostCents : node.rolledUpCostCents),
-      0
-    );
-  }, [nodes]);
-
+  // Horas consolidadas de todas as raízes para o Nó Mestre do Projeto
   const totalProjectHours = React.useMemo(() => {
     return nodes.reduce(
       (acc, node) =>
@@ -272,8 +263,6 @@ export function WbsCanvasView({
                 Decomposição Hierárquica do Escopo Total
               </p>
               <div className="mt-2.5 flex items-center justify-center gap-3 border-t border-primary/20 pt-2 text-[10px] font-semibold text-foreground">
-                <span>{formatCentsToReais(totalProjectCostCents)}</span>
-                <span>•</span>
                 <span>{totalProjectHours}h totais</span>
               </div>
             </div>

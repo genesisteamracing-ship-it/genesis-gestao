@@ -7,13 +7,11 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
-  Coins,
   Layers,
   Plus,
   User,
 } from "lucide-react";
 import type { DeliveryGroup, WbsNodeStatus, WbsTreeNode } from "@/types/wbs";
-import { formatCentsToReais } from "@/lib/utils";
 import { WbsRowActions } from "./wbs-row-actions";
 import { DISCIPLINE_LABELS, STATUS_LABELS } from "./wbs-tree-table";
 import { Button } from "@/components/ui/button";
@@ -132,7 +130,6 @@ export function WbsNodeCard({
   });
 
   const hasChildren = node.children.length > 0;
-  const cost = node.isLeaf ? node.estimatedCostCents : node.rolledUpCostCents;
   const hours = node.isLeaf ? node.estimatedHours : node.rolledUpHours;
 
   return (
@@ -192,12 +189,8 @@ export function WbsNodeCard({
         </span>
       </div>
 
-      {/* Métricas: Custo & Horas (com indicativo de nó folha vs consolidado) */}
+      {/* Métricas: Horas */}
       <div className={styles.metricsRow()}>
-        <span className={styles.metricItem()} title={node.isLeaf ? "Custo Estimado" : "Custo Consolidado (Regra dos 100%)"}>
-          <Coins className="h-3 w-3 text-primary shrink-0" />
-          <span>{formatCentsToReais(cost)}</span>
-        </span>
         <span className={styles.metricItem()} title={node.isLeaf ? "Horas Estimadas" : "Horas Consolidadas"}>
           <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
           <span>{hours}h</span>
