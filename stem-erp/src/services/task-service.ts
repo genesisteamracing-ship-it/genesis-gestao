@@ -1,7 +1,7 @@
 import { Prisma, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createsCycle, missingLinks, parseTaskDate } from "@/lib/task-schedule";
-import type { CreateTaskInput, EdgeInput, EditTaskInput, RiskPathInput } from "@/lib/validations/tasks";
+import type { CreateTaskInput, DeleteTaskInput, EdgeInput, EditTaskInput, RiskPathInput } from "@/lib/validations/tasks";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { TaskPerson, TaskWorkspace } from "@/types/tasks";
 
@@ -153,6 +153,17 @@ export async function saveTask(scope: Scope, input: CreateTaskInput | EditTaskIn
     if (removals.length) await tx.taskAssignment.deleteMany({ where: { teamId, taskId, OR: removals } });
     if (newRows.length) await tx.taskAssignment.createMany({ data: newRows });
     return taskId;
+  });
+}
+
+export async function deleteTask(scope: Scope, input: DeleteTaskInput): Promise<void> {
+  requireWrite(scope, input.teamId);
+  await serializable(async (tx) => {
+    await requireActiveEditor(tx, scope);
+    const { count } = await tx.task.deleteMany({
+      where: { id: input.id, teamId: scope.teamId },
+    });
+    if (!count) throw new TaskError("Tarefa não encontrada.");
   });
 }
 

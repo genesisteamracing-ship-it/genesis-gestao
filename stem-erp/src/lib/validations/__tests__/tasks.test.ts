@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { createTaskSchema, riskPathSchema } from "../tasks";
+import { createTaskSchema, deleteTaskSchema, riskPathSchema } from "../tasks";
 
 const valid = {
   teamId: "test", title: "Montar carro", deliveryGroup: "MANUFACTURING_CNC",
@@ -18,4 +18,11 @@ test("validates unique roles and unique risk steps", () => {
   const member = { memberKey: "a", role: "R" };
   assert.equal(createTaskSchema.safeParse({ ...valid, assignments: [member, member] }).success, false);
   assert.equal(riskPathSchema.safeParse({ teamId: "test", name: "Risco", reason: "Prazo", taskIds: ["a", "a"] }).success, false);
+});
+
+test("validates deleteTaskSchema with id and teamId", () => {
+  assert.equal(deleteTaskSchema.safeParse({ id: "task-1", teamId: "team-1" }).success, true);
+  assert.equal(deleteTaskSchema.safeParse({ id: "task-1" }).success, false);
+  assert.equal(deleteTaskSchema.safeParse({ teamId: "team-1" }).success, false);
+  assert.equal(deleteTaskSchema.safeParse({ id: "", teamId: "team-1" }).success, false);
 });

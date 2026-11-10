@@ -26,6 +26,7 @@ const invalidRange = { message: "O término deve ser igual ou posterior ao iníc
 
 export const createTaskSchema = task.refine(dateRange, invalidRange);
 export const editTaskSchema = task.extend({ id, revision, status: z.nativeEnum(TaskStatus) }).refine(dateRange, invalidRange);
+export const deleteTaskSchema = z.object({ id, teamId: id }).strict();
 export const taskEdgeSchema = z.object({ teamId: id, predecessorId: id, successorId: id }).strict()
   .refine((item) => item.predecessorId !== item.successorId, "Uma tarefa não pode depender de si mesma.");
 
@@ -41,5 +42,6 @@ export const riskPathSchema = z.object({
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type EditTaskInput = z.infer<typeof editTaskSchema>;
+export type DeleteTaskInput = z.infer<typeof deleteTaskSchema>;
 export type EdgeInput = z.infer<typeof taskEdgeSchema>;
 export type RiskPathInput = z.infer<typeof riskPathSchema>;

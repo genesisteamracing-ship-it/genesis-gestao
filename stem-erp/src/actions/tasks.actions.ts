@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
-import { createTaskSchema, editTaskSchema, riskPathSchema, taskEdgeSchema } from "@/lib/validations/tasks";
+import { createTaskSchema, deleteTaskSchema, editTaskSchema, riskPathSchema, taskEdgeSchema } from "@/lib/validations/tasks";
 import { getCurrentUserFromSession } from "@/services/auth-service";
-import { changeDependency, resolveTaskScope, saveRiskPath, saveTask, TaskError } from "@/services/task-service";
+import { changeDependency, deleteTask, resolveTaskScope, saveRiskPath, saveTask, TaskError } from "@/services/task-service";
 import type { TaskActionResult } from "@/types/tasks";
 
 type Scope = NonNullable<Awaited<ReturnType<typeof resolveTaskScope>>>;
@@ -40,6 +40,9 @@ export async function addTaskDependencyAction(input: unknown) {
 }
 export async function removeTaskDependencyAction(input: unknown) {
   return mutate(taskEdgeSchema, input, (scope, data) => changeDependency(scope, data, false));
+}
+export async function deleteTaskAction(input: unknown) {
+  return mutate(deleteTaskSchema, input, deleteTask);
 }
 export async function saveRiskPathAction(input: unknown) {
   return mutate(riskPathSchema, input, saveRiskPath);
