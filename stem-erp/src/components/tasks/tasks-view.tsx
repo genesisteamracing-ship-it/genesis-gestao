@@ -138,6 +138,8 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
                 edges={workspace.edges}
                 path={highlighted}
                 open={openTask}
+                teamId={workspace.teamId}
+                canEdit={workspace.canEdit}
               />
             ) : (
               empty
