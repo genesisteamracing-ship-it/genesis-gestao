@@ -3,7 +3,6 @@ import type { TaskStatus } from "@prisma/client";
 import { createTaskAction, editTaskAction } from "@/actions/tasks.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import { TASK_STATUS_LABELS, type TaskPerson, type TaskRecord } from "@/types/tasks";
 import { TaskField, TaskSelect, TaskMultiSelect } from "./task-fields";
@@ -103,7 +102,7 @@ export function TaskForm({
       deliveryGroup: sector,
       assignments,
       title: data.get("title"),
-      description: data.get("description"),
+      description: task?.description ?? undefined,
       startDate: data.get("startDate"),
       endDate: data.get("endDate"),
     };
@@ -162,18 +161,6 @@ export function TaskForm({
           {(id) => <Input id={id} type="date" name="endDate" defaultValue={task?.endDate} required />}
         </TaskField>
       </div>
-
-      {/* Descrição: largura total */}
-      <TaskField label="Descrição">
-        {(id) => (
-          <Textarea
-            id={id}
-            name="description"
-            defaultValue={task?.description ?? ""}
-            maxLength={4000}
-          />
-        )}
-      </TaskField>
 
       {/* A — Atribuição */}
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground border-b border-border/60 pb-2">
