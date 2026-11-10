@@ -74,7 +74,17 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
         <DialogHeader><DialogTitle>{label}</DialogTitle><DialogDescription>
           {panel.type === "risk" ? "Defina a sequência de atividades afetadas." : "Consulte ou organize o trabalho deste setor."}
         </DialogDescription></DialogHeader>
-        {panel.type === "task" && workspace.canEdit && <TaskForm key={panel.id ?? "new"} task={task} teamId={workspace.teamId} members={workspace.members} onDone={saved} />}
+        {panel.type === "task" && workspace.canEdit && (
+          <TaskForm
+            key={panel.id ?? "new"}
+            task={task}
+            teamId={workspace.teamId}
+            members={workspace.members}
+            currentUserId={shell.currentUser?.id}
+            currentUserName={shell.currentUser?.name}
+            onDone={saved}
+          />
+        )}
         {panel.type === "detail" && task && <>
           <TaskDetail key={task.id} task={task} workspace={workspace} />
           {workspace.canEdit && <Button variant="outline" onClick={() => editTask(task.id)}>Editar tarefa</Button>}
