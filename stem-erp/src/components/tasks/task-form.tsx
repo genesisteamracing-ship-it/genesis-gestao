@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import { TASK_STATUS_LABELS, type TaskPerson, type TaskRecord } from "@/types/tasks";
+import { TaskDatePicker } from "./task-date-picker";
 import { TaskField, TaskSelect, TaskMultiSelect } from "./task-fields";
 
 export const sectorOptions = Object.entries(DELIVERY_GROUP_LABELS).map(([value, label]) => ({ value, label }));
@@ -27,6 +28,8 @@ export function TaskForm({
 }) {
   const [sector, setSector] = useState<string>(task?.deliveryGroup ?? "");
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? "TODO");
+  const [startDate, setStartDate] = useState<string>(task?.startDate ?? "");
+  const [endDate, setEndDate] = useState<string>(task?.endDate ?? "");
 
   const people = new Map(members.map((person) => [person.key, person]));
   for (const item of task?.roles ?? []) people.set(item.person.key, item.person);
@@ -103,8 +106,8 @@ export function TaskForm({
       assignments,
       title: data.get("title"),
       description: task?.description ?? undefined,
-      startDate: data.get("startDate"),
-      endDate: data.get("endDate"),
+      startDate,
+      endDate,
     };
 
     setPending(true);
@@ -155,10 +158,26 @@ export function TaskForm({
       {/* Início e Término: um do lado do outro */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <TaskField label="Início">
-          {(id) => <Input id={id} type="date" name="startDate" defaultValue={task?.startDate} required />}
+          {(id) => (
+            <TaskDatePicker
+              id={id}
+              name="startDate"
+              value={startDate}
+              onChange={setStartDate}
+              placeholder="Selecione o início"
+            />
+          )}
         </TaskField>
         <TaskField label="Término">
-          {(id) => <Input id={id} type="date" name="endDate" defaultValue={task?.endDate} required />}
+          {(id) => (
+            <TaskDatePicker
+              id={id}
+              name="endDate"
+              value={endDate}
+              onChange={setEndDate}
+              placeholder="Selecione o término"
+            />
+          )}
         </TaskField>
       </div>
 
