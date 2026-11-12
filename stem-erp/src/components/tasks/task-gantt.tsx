@@ -831,12 +831,20 @@ export function TaskGantt({
                         />
                       )}
 
-                      {/* Source Drag Connector Handle (Outside Box on the Right) */}
+                      {/* Source Drag Connector Handle (Outside Box on the Right, reveals left-to-right on proximity/hover) */}
                       {canEdit && (
                         <>
                           <span
                             aria-hidden="true"
-                            className="pointer-events-none absolute left-full top-1/2 h-px w-2 -translate-y-1/2 bg-primary/50"
+                            className="absolute -inset-y-2 left-full w-10 z-10"
+                          />
+                          <span
+                            aria-hidden="true"
+                            className={`pointer-events-none absolute left-full top-1/2 h-px w-2 -translate-y-1/2 origin-left bg-primary/50 transition-all duration-200 ease-out ${
+                              isSource
+                                ? "opacity-100 scale-x-100"
+                                : "opacity-0 scale-x-0 group-hover:opacity-100 group-hover:scale-x-100 group-focus-within:opacity-100 group-focus-within:scale-x-100"
+                            }`}
                           />
                           <div
                             role="button"
@@ -885,10 +893,10 @@ export function TaskGantt({
                                 });
                               }
                             }}
-                            className={`absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 z-20 flex h-5 w-5 items-center justify-center rounded-full border-2 border-primary bg-card shadow-xs transition-transform hover:scale-125 focus:scale-125 cursor-crosshair ${
+                            className={`absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 z-20 flex h-5 w-5 items-center justify-center rounded-full border-2 border-primary bg-card shadow-xs transition-all duration-200 ease-out hover:scale-125 focus:scale-125 cursor-crosshair ${
                               isSource
-                                ? "scale-125 opacity-100 ring-2 ring-primary/60"
-                                : "opacity-90 hover:opacity-100 focus:opacity-100"
+                                ? "translate-x-0 scale-125 opacity-100 pointer-events-auto ring-2 ring-primary/60"
+                                : "-translate-x-4 scale-75 opacity-0 pointer-events-none group-hover:translate-x-0 group-hover:scale-100 group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:translate-x-0 group-focus-within:scale-100 group-focus-within:opacity-100 group-focus-within:pointer-events-auto"
                             }`}
                           >
                             <div className="h-1.5 w-1.5 rounded-full bg-primary" />
