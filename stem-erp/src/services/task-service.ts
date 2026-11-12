@@ -7,6 +7,8 @@ import type {
   DeleteTaskInput,
   EdgeInput,
   EditTaskInput,
+  ReorderTasksInput,
+  RescheduleTaskInput,
   RiskPathInput,
   UpdateMyTaskStatusInput,
 } from "@/lib/validations/tasks";
@@ -84,7 +86,7 @@ export async function getTaskWorkspace({
   const [members, tasks, edges, paths] = await prisma.$transaction([
     prisma.user.findMany({ where: { teamId, isActive: true }, select: memberSelect, orderBy: [{ name: "asc" }, { id: "asc" }] }),
     prisma.task.findMany({
-      where: { teamId }, orderBy: [{ startDate: "asc" }, { title: "asc" }, { id: "asc" }],
+      where: { teamId }, orderBy: [{ sortOrder: "asc" }, { startDate: "asc" }, { title: "asc" }, { id: "asc" }],
       include: {
         creator: { select: { ...memberSelect, role: true } },
         assignments: { include: { user: { select: memberSelect } }, orderBy: [{ role: "asc" }, { memberKey: "asc" }] },
@@ -173,8 +175,17 @@ export async function saveTask(scope: Scope, input: CreateTaskInput | EditTaskIn
       });
       if (!count) throw new TaskError("Tarefa não encontrada ou atualizada. Recarregue a página.");
     } else {
+      const last = await tx.task.aggregate({ where: { teamId }, _max: { sortOrder: true } });
+      const sortOrder = (last._max.sortOrder ?? -1) + 1;
       const task = await tx.task.create({
-        data: { ...fields, teamId, creatorKey: scope.actorId, creatorName: actor.name, creatorUserId: scope.actorId },
+        data: {
+          ...fields,
+          teamId,
+          sortOrder,
+          creatorKey: scope.actorId,
+          creatorName: actor.name,
+          creatorUserId: scope.actorId,
+        },
         select: { id: true },
       });
       taskId = task.id;
@@ -311,5 +322,65 @@ export async function saveRiskPath(scope: Scope, input: RiskPathInput) {
       ({ id: pathId } = await tx.riskPath.create({ data: { ...fields, teamId }, select: { id: true } }));
     }
     await tx.riskPathStep.createMany({ data: input.taskIds.map((taskId, position) => ({ teamId, pathId, taskId, position })) });
+  });
+}
+
+export async function rescheduleTask(scope: Scope, input: RescheduleTaskInput) {
+  requireWrite(scope, input.teamId);
+  const { teamId } = scope;
+  await serializable(async (tx) => {
+    const actor = await requireActiveEditor(tx, scope);
+    const startDate = parseTaskDate(input.startDate);
+    const endDate = parseTaskDate(input.endDate);
+    if (!startDate || !endDate || endDate < startDate) {
+      throw new TaskError("Informe um intervalo de datas válido.");
+    }
+    const current = await tx.task.findFirst({
+      where: { id: input.taskId, teamId, revision: input.revision },
+      select: { creatorUserId: true, creatorKey: true },
+    });
+    if (!current) throw new TaskError("Tarefa não encontrada ou atualizada. Recarregue a página.");
+    if (!canManageTask(actor, current.creatorUserId ?? current.creatorKey)) {
+      throw new TaskError(
+        "Somente o criador da tarefa, a gestora de projetos, técnico ou administrador podem alterar esta tarefa.",
+      );
+    }
+    const { count } = await tx.task.updateMany({
+      where: { id: input.taskId, teamId, revision: input.revision },
+      data: { startDate, endDate, revision: { increment: 1 } },
+    });
+    if (!count) throw new TaskError("Tarefa não encontrada ou atualizada. Recarregue a página.");
+  });
+}
+
+export async function reorderTasks(scope: Scope, input: ReorderTasksInput) {
+  requireWrite(scope, input.teamId);
+  const { teamId } = scope;
+  await serializable(async (tx) => {
+    await requireActiveEditor(tx, scope);
+    const allTasks = await tx.task.findMany({
+      where: { teamId },
+      orderBy: [{ sortOrder: "asc" }, { startDate: "asc" }, { title: "asc" }, { id: "asc" }],
+      select: { id: true },
+    });
+    const allIds = new Set(allTasks.map((t) => t.id));
+    if (input.taskIds.some((id) => !allIds.has(id))) {
+      throw new TaskError("Algumas tarefas selecionadas não pertencem à equipe ativa.");
+    }
+    const subsetSet = new Set(input.taskIds);
+    let subsetIndex = 0;
+    const mergedOrder = allTasks.map((task) => {
+      if (subsetSet.has(task.id)) {
+        const nextId = input.taskIds[subsetIndex];
+        subsetIndex += 1;
+        return nextId;
+      }
+      return task.id;
+    });
+    await Promise.all(
+      mergedOrder.map((id, index) =>
+        tx.task.updateMany({ where: { id, teamId }, data: { sortOrder: index } }),
+      ),
+    );
   });
 }

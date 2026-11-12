@@ -5,7 +5,7 @@ import { Link2, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
-import { addTaskDependencyAction, removeTaskDependencyAction } from "@/actions/tasks.actions";
+import { addTaskDependencyAction, removeTaskDependencyAction, reorderTasksAction, rescheduleTaskAction } from "@/actions/tasks.actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +22,9 @@ import {
   edgeKey,
   formatTaskDate,
   pathEdges,
+  reorderItems,
+  resizeTaskDates,
+  type ResizeTaskEdge,
   scheduleConflict,
   taskDay,
 } from "@/lib/task-schedule";
@@ -52,6 +55,24 @@ type ConnectingState = {
   startY: number;
   currentX: number;
   currentY: number;
+  isDragging: boolean;
+};
+
+type ResizingState = {
+  taskId: string;
+  edge: ResizeTaskEdge;
+  startClientX: number;
+  originalStartDate: string;
+  originalEndDate: string;
+  deltaDays: number;
+};
+
+type ReorderingState = {
+  taskId: string;
+  startX: number;
+  startY: number;
+  currentY: number;
+  targetIndex: number;
   isDragging: boolean;
 };
 
@@ -89,21 +110,74 @@ export function TaskGantt({
     forEdges: edges,
     list: edges,
   });
+  const [optimisticDates, setOptimisticDates] = useState<{
+    forTasks: TaskRecord[];
+    overrides: Record<string, { startDate: string; endDate: string }>;
+  }>({
+    forTasks: tasks,
+    overrides: {},
+  });
+  const [optimisticOrder, setOptimisticOrder] = useState<{
+    forVisible: TaskRecord[];
+    list: TaskRecord[];
+  }>({
+    forVisible: visible,
+    list: visible,
+  });
   const [connecting, setConnecting] = useState<ConnectingState | null>(null);
+  const [resizing, setResizing] = useState<ResizingState | null>(null);
+  const [reordering, setReordering] = useState<ReorderingState | null>(null);
   const [edgeToDelete, setEdgeToDelete] = useState<TaskEdge | null>(null);
   const [isDeletingEdge, setIsDeletingEdge] = useState(false);
 
   const marker = useId();
   const rowsContainerRef = useRef<HTMLDivElement>(null);
+  const justReorderedRef = useRef(false);
 
   const currentEdges = optimistic.forEdges === edges ? optimistic.list : edges;
-  const byId = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks]);
+  const currentDateOverrides = useMemo(
+    () => (optimisticDates.forTasks === tasks ? optimisticDates.overrides : {}),
+    [optimisticDates, tasks]
+  );
+  const orderedVisible = useMemo(() => {
+    const base = optimisticOrder.forVisible === visible ? optimisticOrder.list : visible;
+    return base.map((task) => {
+      const override = currentDateOverrides[task.id];
+      return override ? { ...task, ...override } : task;
+    });
+  }, [optimisticOrder, visible, currentDateOverrides]);
+
+  const byId = useMemo(
+    () =>
+      new Map(
+        tasks.map((task) => {
+          const override = currentDateOverrides[task.id];
+          return [task.id, override ? { ...task, ...override } : task];
+        })
+      ),
+    [tasks, currentDateOverrides]
+  );
 
   const highlightedTasks = new Set(path?.taskIds);
   const highlightedEdges = new Set(pathEdges(path?.taskIds ?? []).map(edgeKey));
 
   const view = useMemo(() => {
-    const ranges = visible.map((task) => ({ task, start: taskDay(task.startDate), end: taskDay(task.endDate) }));
+    const ranges = orderedVisible.map((task) => {
+      if (resizing && resizing.taskId === task.id) {
+        const preview = resizeTaskDates({
+          startDate: resizing.originalStartDate,
+          endDate: resizing.originalEndDate,
+          edge: resizing.edge,
+          deltaDays: resizing.deltaDays,
+        });
+        return {
+          task: { ...task, ...preview },
+          start: taskDay(preview.startDate),
+          end: taskDay(preview.endDate),
+        };
+      }
+      return { task, start: taskDay(task.startDate), end: taskDay(task.endDate) };
+    });
     const from = ranges.reduce((min, item) => Math.min(min, item.start), ranges[0]?.start ?? 0);
     const last = ranges.reduce((max, item) => Math.max(max, item.end), from);
     const span = Math.max(1, last - from + 1);
@@ -116,7 +190,7 @@ export function TaskGantt({
       y: index * ROW_HEIGHT + 24,
     }));
     return { rows, span, from, dayWidth, tickStep };
-  }, [visible, week]);
+  }, [orderedVisible, week, resizing]);
 
   const width = view.span * view.dayWidth;
   const rows = useMemo(() => new Map(view.rows.map((row) => [row.task.id, row])), [view.rows]);
@@ -211,6 +285,159 @@ export function TaskGantt({
     setEdgeToDelete(null);
   };
 
+  const handleRescheduleTask = useCallback(
+    async (task: TaskRecord, nextStartDate: string, nextEndDate: string) => {
+      if (!teamId || !canEdit) return;
+      if (nextStartDate === task.startDate && nextEndDate === task.endDate) return;
+
+      setOptimisticDates((prev) => {
+        const base = prev.forTasks === tasks ? prev.overrides : {};
+        return {
+          forTasks: tasks,
+          overrides: { ...base, [task.id]: { startDate: nextStartDate, endDate: nextEndDate } },
+        };
+      });
+
+      try {
+        const res = await rescheduleTaskAction({
+          teamId,
+          taskId: task.id,
+          startDate: nextStartDate,
+          endDate: nextEndDate,
+          revision: task.revision,
+        });
+        if (res.ok) {
+          toast.success(
+            `Datas atualizadas: ${task.title} (${formatTaskDate(nextStartDate)} — ${formatTaskDate(nextEndDate)})`
+          );
+          router.refresh();
+        } else {
+          setOptimisticDates({ forTasks: tasks, overrides: {} });
+          toast.error(res.message || "Não foi possível atualizar as datas da tarefa.");
+        }
+      } catch {
+        setOptimisticDates({ forTasks: tasks, overrides: {} });
+        toast.error("Ocorreu um erro ao atualizar as datas da tarefa.");
+      }
+    },
+    [teamId, canEdit, tasks, router]
+  );
+
+  const handleReorderTasks = useCallback(
+    async (sourceId: string, targetIndex: number) => {
+      if (!teamId || !canEdit) return;
+      const fromIndex = orderedVisible.findIndex((t) => t.id === sourceId);
+      if (fromIndex === -1 || fromIndex === targetIndex) return;
+
+      const previousList = orderedVisible;
+      const nextList = reorderItems(orderedVisible, sourceId, targetIndex);
+      setOptimisticOrder({ forVisible: visible, list: nextList });
+
+      try {
+        const res = await reorderTasksAction({
+          teamId,
+          taskIds: nextList.map((t) => t.id),
+        });
+        if (res.ok) {
+          toast.success("Ordem das tarefas atualizada.");
+          router.refresh();
+        } else {
+          setOptimisticOrder({ forVisible: visible, list: previousList });
+          toast.error(res.message || "Não foi possível reordenar as tarefas.");
+        }
+      } catch {
+        setOptimisticOrder({ forVisible: visible, list: previousList });
+        toast.error("Ocorreu um erro ao reordenar as tarefas.");
+      }
+    },
+    [teamId, canEdit, orderedVisible, visible, router]
+  );
+
+  // Resize bar edges (startDate / endDate)
+  useEffect(() => {
+    if (!resizing) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      const deltaDays = Math.round((e.clientX - resizing.startClientX) / view.dayWidth);
+      setResizing((prev) => (prev && prev.deltaDays !== deltaDays ? { ...prev, deltaDays } : prev));
+    };
+
+    const handlePointerUp = () => {
+      const next = resizeTaskDates({
+        startDate: resizing.originalStartDate,
+        endDate: resizing.originalEndDate,
+        edge: resizing.edge,
+        deltaDays: resizing.deltaDays,
+      });
+      const task = byId.get(resizing.taskId);
+      setResizing(null);
+      if (task && (next.startDate !== resizing.originalStartDate || next.endDate !== resizing.originalEndDate)) {
+        void handleRescheduleTask(task, next.startDate, next.endDate);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setResizing(null);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [resizing, view.dayWidth, byId, handleRescheduleTask]);
+
+  // Reorder rows vertically by dragging the inner body of the bar
+  useEffect(() => {
+    if (!reordering) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!rowsContainerRef.current) return;
+      const rect = rowsContainerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left - LABEL_WIDTH;
+      const y = e.clientY - rect.top;
+      const targetIndex = Math.max(0, Math.min(orderedVisible.length - 1, Math.floor(y / ROW_HEIGHT)));
+
+      setReordering((prev) => {
+        if (!prev) return null;
+        const moved = Math.hypot(x - prev.startX, y - prev.startY);
+        return {
+          ...prev,
+          currentY: y,
+          targetIndex,
+          isDragging: prev.isDragging || moved > 6,
+        };
+      });
+    };
+
+    const handlePointerUp = () => {
+      if (reordering.isDragging) {
+        justReorderedRef.current = true;
+        window.setTimeout(() => {
+          justReorderedRef.current = false;
+        }, 50);
+        void handleReorderTasks(reordering.taskId, reordering.targetIndex);
+      }
+      setReordering(null);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setReordering(null);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [reordering, orderedVisible.length, handleReorderTasks]);
+
   // Drag and drop pointer listener
   useEffect(() => {
     if (!connecting) return;
@@ -289,6 +516,7 @@ export function TaskGantt({
 
   // Handle bar clicking in connection mode vs view mode
   const handleTaskBarClick = (taskId: string) => {
+    if (justReorderedRef.current) return;
     if (connecting) {
       if (taskId === connecting.sourceId) {
         setConnecting(null);
@@ -415,7 +643,7 @@ export function TaskGantt({
         tabIndex={0}
         aria-label="Linha do tempo rolável"
       >
-        <div style={{ width: LABEL_WIDTH + width }}>
+        <div style={{ width: LABEL_WIDTH + width + 32 }}>
           <div className="sticky top-0 z-30 flex h-10 border-b border-border bg-card text-xs font-semibold">
             <div
               className="sticky left-0 z-10 shrink-0 border-r border-border bg-card p-2"
@@ -437,15 +665,22 @@ export function TaskGantt({
           </div>
 
           <div ref={rowsContainerRef} className="relative">
-            {view.rows.map(({ task, left, width: duration, y }) => {
+            {view.rows.map(({ task, left, width: duration, y }, index) => {
               const isSource = connecting?.sourceId === task.id;
               const isTargetCandidate = Boolean(connecting && !isSource && hoveredCandidate?.id === task.id);
               const barWidth = Math.max(28, duration);
+              const canManageBar = canEdit && (task.canManage ?? true);
+              const isBeingReordered = Boolean(reordering?.isDragging && reordering.taskId === task.id);
+              const isReorderTarget = Boolean(
+                reordering?.isDragging && reordering.targetIndex === index && reordering.taskId !== task.id
+              );
 
               return (
                 <div
                   key={task.id}
-                  className="flex border-b border-border last:border-b-0"
+                  className={`flex border-b border-border last:border-b-0 transition-colors ${
+                    isBeingReordered ? "opacity-50" : ""
+                  } ${isReorderTarget ? "bg-primary/5 ring-1 ring-inset ring-primary/60" : ""}`}
                   style={{ height: ROW_HEIGHT }}
                 >
                   <button
@@ -480,6 +715,31 @@ export function TaskGantt({
                       })}
                       style={{ left, width: barWidth }}
                     >
+                      {/* Left Edge Resize Handle (startDate) */}
+                      {canManageBar && (
+                        <div
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label={`Alterar data de início de ${task.title}`}
+                          title="Arraste a aresta esquerda para alterar a data de início"
+                          onPointerDown={(e) => {
+                            if (e.button !== 0) return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setConnecting(null);
+                            setResizing({
+                              taskId: task.id,
+                              edge: "start",
+                              startClientX: e.clientX,
+                              originalStartDate: task.startDate,
+                              originalEndDate: task.endDate,
+                              deltaDays: 0,
+                            });
+                          }}
+                          className="absolute inset-y-0 left-0 z-20 w-2 cursor-ew-resize rounded-l-md transition-colors hover:bg-primary/35"
+                        />
+                      )}
+
                       {/* Target Snap Anchor (Left) */}
                       {connecting && !isSource && (
                         <div
@@ -503,10 +763,26 @@ export function TaskGantt({
                         </div>
                       )}
 
-                      {/* Main Bar Button */}
+                      {/* Main Bar Body (Click to open, Drag vertically away from edges to reorder) */}
                       <button
                         type="button"
-                        className="h-full flex-1 truncate px-1.5 text-left focus-visible:outline-none"
+                        className={`h-full flex-1 truncate px-2.5 text-left focus-visible:outline-none ${
+                          canEdit && !connecting ? "cursor-grab active:cursor-grabbing" : ""
+                        }`}
+                        onPointerDown={(e) => {
+                          if (!canEdit || connecting || e.button !== 0 || !rowsContainerRef.current) return;
+                          const rect = rowsContainerRef.current.getBoundingClientRect();
+                          const x = e.clientX - rect.left - LABEL_WIDTH;
+                          const pointerY = e.clientY - rect.top;
+                          setReordering({
+                            taskId: task.id,
+                            startX: x,
+                            startY: pointerY,
+                            currentY: pointerY,
+                            targetIndex: index,
+                            isDragging: false,
+                          });
+                        }}
                         onClick={() => handleTaskBarClick(task.id)}
                         aria-label={
                           task.title +
@@ -530,63 +806,94 @@ export function TaskGantt({
                         {TASK_STATUS_LABELS[task.status]}
                       </button>
 
-                      {/* Source Drag Connector Handle (Right) */}
-                      {canEdit && (
+                      {/* Right Edge Resize Handle (endDate) */}
+                      {canManageBar && (
                         <div
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Conectar dependência a partir de ${task.title}`}
-                          title="Conectar dependência: arraste até outra tarefa ou clique para conectar"
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label={`Alterar data de término de ${task.title}`}
+                          title="Arraste a aresta direita para alterar a data de término"
                           onPointerDown={(e) => {
                             if (e.button !== 0) return;
                             e.preventDefault();
                             e.stopPropagation();
-                            setConnecting({
-                              sourceId: task.id,
-                              startX: left + barWidth,
-                              startY: y,
-                              currentX: left + barWidth,
-                              currentY: y,
-                              isDragging: false,
+                            setConnecting(null);
+                            setResizing({
+                              taskId: task.id,
+                              edge: "end",
+                              startClientX: e.clientX,
+                              originalStartDate: task.startDate,
+                              originalEndDate: task.endDate,
+                              deltaDays: 0,
                             });
                           }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (connecting?.sourceId === task.id) {
-                              setConnecting(null);
-                            } else {
-                              setConnecting({
-                                sourceId: task.id,
-                                startX: left + barWidth,
-                                startY: y,
-                                currentX: left + barWidth,
-                                currentY: y,
-                                isDragging: false,
-                              });
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
+                          className="absolute inset-y-0 right-0 z-20 w-2 cursor-ew-resize rounded-r-md transition-colors hover:bg-primary/35"
+                        />
+                      )}
+
+                      {/* Source Drag Connector Handle (Outside Box on the Right) */}
+                      {canEdit && (
+                        <>
+                          <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute left-full top-1/2 h-px w-2 -translate-y-1/2 bg-primary/50"
+                          />
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Conectar dependência a partir de ${task.title}`}
+                            title="Puxe esta bolinha para conectar uma dependência"
+                            onPointerDown={(e) => {
+                              if (e.button !== 0) return;
                               e.preventDefault();
                               e.stopPropagation();
                               setConnecting({
                                 sourceId: task.id,
-                                startX: left + barWidth,
+                                startX: left + barWidth + 18,
                                 startY: y,
-                                currentX: left + barWidth,
+                                currentX: left + barWidth + 18,
                                 currentY: y,
                                 isDragging: false,
                               });
-                            }
-                          }}
-                          className={`absolute -right-2 top-1/2 -translate-y-1/2 z-20 flex h-5 w-5 items-center justify-center rounded-full border-2 border-primary bg-card shadow-xs transition-transform hover:scale-125 focus:scale-125 cursor-crosshair ${
-                            isSource
-                              ? "scale-125 opacity-100 ring-2 ring-primary/60"
-                              : "opacity-80 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
-                          }`}
-                        >
-                          <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                        </div>
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (connecting?.sourceId === task.id) {
+                                setConnecting(null);
+                              } else {
+                                setConnecting({
+                                  sourceId: task.id,
+                                  startX: left + barWidth + 18,
+                                  startY: y,
+                                  currentX: left + barWidth + 18,
+                                  currentY: y,
+                                  isDragging: false,
+                                });
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setConnecting({
+                                  sourceId: task.id,
+                                  startX: left + barWidth + 18,
+                                  startY: y,
+                                  currentX: left + barWidth + 18,
+                                  currentY: y,
+                                  isDragging: false,
+                                });
+                              }
+                            }}
+                            className={`absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 z-20 flex h-5 w-5 items-center justify-center rounded-full border-2 border-primary bg-card shadow-xs transition-transform hover:scale-125 focus:scale-125 cursor-crosshair ${
+                              isSource
+                                ? "scale-125 opacity-100 ring-2 ring-primary/60"
+                                : "opacity-90 hover:opacity-100 focus:opacity-100"
+                            }`}
+                          >
+                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>

@@ -6,6 +6,8 @@ import {
   createTaskSchema,
   deleteTaskSchema,
   editTaskSchema,
+  reorderTasksSchema,
+  rescheduleTaskSchema,
   riskPathSchema,
   taskEdgeSchema,
   updateMyTaskStatusSchema,
@@ -14,6 +16,8 @@ import { getCurrentUserFromSession } from "@/services/auth-service";
 import {
   changeDependency,
   deleteTask,
+  reorderTasks,
+  rescheduleTask,
   resolveTaskScope,
   saveRiskPath,
   saveTask,
@@ -64,4 +68,10 @@ export async function saveRiskPathAction(input: unknown) {
 }
 export async function updateMyTaskStatusAction(input: unknown) {
   return mutate(updateMyTaskStatusSchema, input, updateTaskStatus);
+}
+export async function rescheduleTaskAction(input: unknown) {
+  return mutate(rescheduleTaskSchema, input, rescheduleTask);
+}
+export async function reorderTasksAction(input: unknown) {
+  return mutate(reorderTasksSchema, input, reorderTasks);
 }

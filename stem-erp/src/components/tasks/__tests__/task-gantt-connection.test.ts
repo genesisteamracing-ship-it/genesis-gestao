@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
-import { createsCycle, edgeKey, scheduleConflict } from "@/lib/task-schedule";
+import { createsCycle, edgeKey, reorderItems, resizeTaskDates, scheduleConflict } from "@/lib/task-schedule";
+import { reorderTasksSchema, rescheduleTaskSchema } from "@/lib/validations/tasks";
 import type { TaskEdge } from "@/types/tasks";
 
 describe("Gantt Interactive Dependency & Drag-to-Connect Engine", () => {
@@ -65,5 +66,94 @@ describe("Gantt Interactive Dependency & Drag-to-Connect Engine", () => {
     );
     assert.equal(edges.length, 1);
     assert.deepEqual(edges[0], newEdge);
+  });
+
+  it("ajusta data fim ao puxar aresta direita e respeita limite mínimo na data início", () => {
+    const stretched = resizeTaskDates({
+      startDate: "2026-11-10",
+      endDate: "2026-11-12",
+      edge: "end",
+      deltaDays: 3,
+    });
+    assert.deepEqual(stretched, { startDate: "2026-11-10", endDate: "2026-11-15" });
+
+    const clamped = resizeTaskDates({
+      startDate: "2026-11-10",
+      endDate: "2026-11-12",
+      edge: "end",
+      deltaDays: -10,
+    });
+    assert.deepEqual(clamped, { startDate: "2026-11-10", endDate: "2026-11-10" });
+  });
+
+  it("ajusta data início ao puxar aresta esquerda (diminuindo ou avançando até o fim)", () => {
+    const earlier = resizeTaskDates({
+      startDate: "2026-11-10",
+      endDate: "2026-11-12",
+      edge: "start",
+      deltaDays: -4,
+    });
+    assert.deepEqual(earlier, { startDate: "2026-11-06", endDate: "2026-11-12" });
+
+    const clamped = resizeTaskDates({
+      startDate: "2026-11-10",
+      endDate: "2026-11-12",
+      edge: "start",
+      deltaDays: 8,
+    });
+    assert.deepEqual(clamped, { startDate: "2026-11-12", endDate: "2026-11-12" });
+  });
+
+  it("reordena tarefas para cima e para baixo preservando integridade da lista", () => {
+    const items = [{ id: "t1" }, { id: "t2" }, { id: "t3" }, { id: "t4" }];
+
+    const movedDown = reorderItems(items, "t1", 2);
+    assert.deepEqual(
+      movedDown.map((item) => item.id),
+      ["t2", "t3", "t1", "t4"],
+    );
+
+    const movedUp = reorderItems(movedDown, "t4", 0);
+    assert.deepEqual(
+      movedUp.map((item) => item.id),
+      ["t4", "t2", "t3", "t1"],
+    );
+  });
+
+  it("valida schemas de reagendamento e reordenação persistente", () => {
+    assert.equal(
+      rescheduleTaskSchema.safeParse({
+        teamId: "team-1",
+        taskId: "task-1",
+        startDate: "2026-11-10",
+        endDate: "2026-11-15",
+        revision: 0,
+      }).success,
+      true,
+    );
+    assert.equal(
+      rescheduleTaskSchema.safeParse({
+        teamId: "team-1",
+        taskId: "task-1",
+        startDate: "2026-11-15",
+        endDate: "2026-11-10",
+        revision: 0,
+      }).success,
+      false,
+    );
+    assert.equal(
+      reorderTasksSchema.safeParse({
+        teamId: "team-1",
+        taskIds: ["t1", "t2", "t1"],
+      }).success,
+      false,
+    );
+    assert.equal(
+      reorderTasksSchema.safeParse({
+        teamId: "team-1",
+        taskIds: ["t2", "t1", "t3"],
+      }).success,
+      true,
+    );
   });
 });
