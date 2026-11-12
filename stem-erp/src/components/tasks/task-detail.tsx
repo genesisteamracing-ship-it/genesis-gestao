@@ -1,23 +1,43 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { addTaskDependencyAction, removeTaskDependencyAction } from "@/actions/tasks.actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import { formatTaskDate, edgeKey, scheduleConflict } from "@/lib/task-schedule";
 import { TASK_STATUS_LABELS, type TaskRecord, type TaskWorkspace, type TaskEdge } from "@/types/tasks";
-import { TaskSelect } from "./task-fields";
 
 export function TaskDetail({ task, workspace }: {
   task: TaskRecord; workspace: TaskWorkspace;
 }) {
+  const inputId = useId();
   const [predecessorId, setPredecessorId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
+
   const linked = workspace.edges.filter((edge) => edge.predecessorId === task.id || edge.successorId === task.id);
   const byId = new Map(workspace.tasks.map((item) => [item.id, item]));
   const predecessors = new Set(linked.filter((edge) => edge.successorId === task.id).map((edge) => edge.predecessorId));
-  const options = workspace.tasks.filter((item) => item.id !== task.id && !predecessors.has(item.id))
-    .map((item) => ({ value: item.id, label: item.title + " · " + DELIVERY_GROUP_LABELS[item.deliveryGroup] }));
+  const options = workspace.tasks
+    .filter((item) => item.id !== task.id && !predecessors.has(item.id))
+    .map((item) => ({
+      value: item.id,
+      title: item.title,
+      sector: DELIVERY_GROUP_LABELS[item.deliveryGroup],
+      label: item.title + " · " + DELIVERY_GROUP_LABELS[item.deliveryGroup],
+    }));
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const matchingOptions = normalizedQuery
+    ? options.filter(
+        (option) =>
+          option.title.toLowerCase().includes(normalizedQuery) ||
+          option.sector.toLowerCase().includes(normalizedQuery),
+      )
+    : [];
+  const showSuggestions = normalizedQuery.length > 0 && !predecessorId;
 
   async function change(edge: TaskEdge, add: boolean) {
     setPending(true);
@@ -25,8 +45,12 @@ export function TaskDetail({ task, workspace }: {
     try {
       const action = add ? addTaskDependencyAction : removeTaskDependencyAction;
       const result = await action({ ...edge, teamId: workspace.teamId });
-      if (result.ok) setPredecessorId("");
-      else setMessage(result.message);
+      if (result.ok) {
+        setPredecessorId("");
+        setSearchQuery("");
+      } else {
+        setMessage(result.message);
+      }
     } catch {
       setMessage("Não foi possível atualizar a dependência. Tente novamente.");
     } finally {
@@ -96,13 +120,51 @@ export function TaskDetail({ task, workspace }: {
         </ul>
         {workspace.canEdit && options.length > 0 && (
           <div className="grid items-end gap-2 sm:grid-cols-[1fr_auto]">
-            <TaskSelect
-              label="Tarefa predecessora"
-              value={predecessorId}
-              options={options}
-              onChange={setPredecessorId}
-              placeholder="Selecione"
-            />
+            <div className="relative flex min-w-0 flex-col justify-between gap-1.5">
+              <Label htmlFor={inputId} className="flex min-h-8 items-end text-xs font-semibold">
+                Tarefa predecessora
+              </Label>
+              <Input
+                id={inputId}
+                type="search"
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  if (predecessorId) setPredecessorId("");
+                }}
+                placeholder="Digite o nome da atividade..."
+                autoComplete="off"
+                aria-autocomplete="list"
+              />
+              {showSuggestions && (
+                <div
+                  role="listbox"
+                  aria-label="Atividades encontradas"
+                  className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md"
+                >
+                  {matchingOptions.length === 0 ? (
+                    <p className="px-2 py-1.5 text-xs text-muted-foreground">Nenhuma atividade encontrada.</p>
+                  ) : (
+                    matchingOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        role="option"
+                        aria-selected={predecessorId === option.value}
+                        onClick={() => {
+                          setPredecessorId(option.value);
+                          setSearchQuery(option.title);
+                        }}
+                        className="flex w-full cursor-pointer flex-col rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                      >
+                        <span className="font-medium text-foreground">{option.title}</span>
+                        <span className="text-muted-foreground">{option.sector}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             <Button
               type="button"
               variant="outline"
