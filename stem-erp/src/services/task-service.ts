@@ -1,5 +1,6 @@
 import { Prisma, TaskStatus, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { canManageTask } from "@/lib/task-permissions";
 import { createsCycle, missingLinks, parseTaskDate } from "@/lib/task-schedule";
 import type {
   CreateTaskInput,
@@ -12,7 +13,13 @@ import type {
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { TaskPerson, TaskWorkspace } from "@/types/tasks";
 
-type Scope = { teamId: string; actorId: string; canEdit: boolean };
+type Scope = {
+  teamId: string;
+  actorId: string;
+  actorRole: UserRole;
+  actorJobTitle: string | null;
+  canEdit: boolean;
+};
 export class TaskError extends Error {}
 
 export async function resolveTaskScope(user: AuthenticatedUserDTO | null): Promise<Scope | null> {
@@ -21,7 +28,7 @@ export async function resolveTaskScope(user: AuthenticatedUserDTO | null): Promi
     prisma.team.findFirst({ where: { id: user.teamId, isActive: true }, select: { id: true } }),
     prisma.user.findFirst({
       where: { id: user.id, isActive: true },
-      select: { id: true, teamId: true, role: true, canAccessTasks: true },
+      select: { id: true, teamId: true, role: true, jobTitle: true, canAccessTasks: true },
     }),
   ]);
   if (!team || !actor) return null;
@@ -29,6 +36,8 @@ export async function resolveTaskScope(user: AuthenticatedUserDTO | null): Promi
   return {
     teamId: team.id,
     actorId: actor.id,
+    actorRole: actor.role,
+    actorJobTitle: actor.jobTitle,
     canEdit: actor.role !== UserRole.AUDITOR && user.role !== UserRole.AUDITOR,
   };
 }
@@ -50,7 +59,7 @@ async function requireActiveEditor(tx: Prisma.TransactionClient, scope: Scope) {
           { teamId: scope.teamId, role: { not: UserRole.AUDITOR }, canAccessTasks: true },
         ],
       },
-      select: { name: true },
+      select: { id: true, name: true, role: true, jobTitle: true },
     }),
   ]);
   if (!team || !actor) throw new TaskError("Seu acesso à equipe mudou. Recarregue a página.");
@@ -65,7 +74,13 @@ function person(teamId: string, key: string, name: string, live: LiveMember | nu
   return { key, name: current?.name ?? name, available: current?.isActive ?? false };
 }
 
-export async function getTaskWorkspace({ teamId, actorId, canEdit }: Scope): Promise<TaskWorkspace> {
+export async function getTaskWorkspace({
+  teamId,
+  actorId,
+  actorRole,
+  actorJobTitle,
+  canEdit,
+}: Scope): Promise<TaskWorkspace> {
   const [members, tasks, edges, paths] = await prisma.$transaction([
     prisma.user.findMany({ where: { teamId, isActive: true }, select: memberSelect, orderBy: [{ name: "asc" }, { id: "asc" }] }),
     prisma.task.findMany({
@@ -88,6 +103,12 @@ export async function getTaskWorkspace({ teamId, actorId, canEdit }: Scope): Pro
       completedAt: task.completedAt ? task.completedAt.toISOString() : null,
       cancelledAt: task.cancelledAt ? task.cancelledAt.toISOString() : null,
       revision: task.revision,
+      canManage:
+        canEdit &&
+        canManageTask(
+          { id: actorId, role: actorRole, jobTitle: actorJobTitle },
+          task.creatorUserId ?? task.creatorKey,
+        ),
       roles: [
         {
           role: "A",
@@ -133,9 +154,14 @@ export async function saveTask(scope: Scope, input: CreateTaskInput | EditTaskIn
       taskId = input.id;
       const current = await tx.task.findFirst({
         where: { id: taskId, teamId, revision: input.revision },
-        select: { status: true },
+        select: { status: true, creatorUserId: true, creatorKey: true },
       });
       if (!current) throw new TaskError("Tarefa não encontrada ou atualizada. Recarregue a página.");
+      if (!canManageTask(actor, current.creatorUserId ?? current.creatorKey)) {
+        throw new TaskError(
+          "Somente o criador da tarefa, a gestora de projetos, técnico ou administrador podem alterar esta tarefa.",
+        );
+      }
       const { count } = await tx.task.updateMany({
         where: { id: taskId, teamId, revision: input.revision },
         data: {
@@ -222,7 +248,17 @@ export async function updateTaskStatus(scope: Scope, input: UpdateMyTaskStatusIn
 export async function deleteTask(scope: Scope, input: DeleteTaskInput): Promise<void> {
   requireWrite(scope, input.teamId);
   await serializable(async (tx) => {
-    await requireActiveEditor(tx, scope);
+    const actor = await requireActiveEditor(tx, scope);
+    const existing = await tx.task.findFirst({
+      where: { id: input.id, teamId: scope.teamId },
+      select: { creatorUserId: true, creatorKey: true },
+    });
+    if (!existing) throw new TaskError("Tarefa não encontrada.");
+    if (!canManageTask(actor, existing.creatorUserId ?? existing.creatorKey)) {
+      throw new TaskError(
+        "Somente o criador da tarefa, a gestora de projetos, técnico ou administrador podem excluir esta tarefa.",
+      );
+    }
     const { count } = await tx.task.deleteMany({
       where: { id: input.id, teamId: scope.teamId },
     });

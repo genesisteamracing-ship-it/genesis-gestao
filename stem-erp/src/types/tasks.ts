@@ -13,6 +13,7 @@ export type TaskRecord = {
   completedAt: string | null;
   cancelledAt: string | null;
   revision: number;
+  canManage?: boolean;
   roles: { person: TaskPerson; role: TaskRole }[];
 };
 export type TaskEdge = { predecessorId: string; successorId: string };

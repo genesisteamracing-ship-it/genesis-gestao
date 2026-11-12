@@ -2,14 +2,10 @@
 
 import type { TaskStatus } from "@prisma/client";
 import {
-  Ban,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Circle,
-  Clock,
   Eye,
   Settings,
 } from "lucide-react";
@@ -20,7 +16,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,11 +39,11 @@ const urgencyBadgeStyles = tv({
   },
 });
 
-const STATUS_ITEMS: { value: TaskStatus; label: string; icon: typeof Circle }[] = [
-  { value: "TODO", label: TASK_STATUS_LABELS.TODO, icon: Circle },
-  { value: "IN_PROGRESS", label: TASK_STATUS_LABELS.IN_PROGRESS, icon: Clock },
-  { value: "DONE", label: TASK_STATUS_LABELS.DONE, icon: CheckCircle2 },
-  { value: "CANCELLED", label: TASK_STATUS_LABELS.CANCELLED, icon: Ban },
+const STATUS_ITEMS: { value: TaskStatus; label: string }[] = [
+  { value: "TODO", label: TASK_STATUS_LABELS.TODO },
+  { value: "IN_PROGRESS", label: TASK_STATUS_LABELS.IN_PROGRESS },
+  { value: "DONE", label: TASK_STATUS_LABELS.DONE },
+  { value: "CANCELLED", label: TASK_STATUS_LABELS.CANCELLED },
 ];
 
 type MyActivitiesTableProps = {
@@ -144,20 +139,7 @@ export function MyActivitiesTable({
                           <Settings className="h-4 w-4 text-foreground transition-transform duration-200 hover:rotate-45" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        {canEdit &&
-                          STATUS_ITEMS.map(({ value, label, icon: Icon }) => (
-                            <DropdownMenuItem
-                              key={value}
-                              disabled={task.status === value || isPending}
-                              onSelect={() => onStatusChange(task, value)}
-                              className="cursor-pointer gap-2 text-xs font-medium"
-                            >
-                              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span>Marcar: {label}</span>
-                            </DropdownMenuItem>
-                          ))}
-                        {canEdit && <DropdownMenuSeparator />}
+                      <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuItem
                           onSelect={() => onOpenDetail(task.id)}
                           className="cursor-pointer gap-2 text-xs font-medium"

@@ -184,12 +184,16 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
           {panel && (
             <DialogContent className="max-h-[90dvh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>{label}</DialogTitle>
-                <DialogDescription>
-                  {panel.type === "risk"
-                    ? "Defina a sequência de atividades afetadas."
-                    : "Consulte ou organize o trabalho deste setor."}
-                </DialogDescription>
+                <DialogTitle className={panel.type === "detail" ? "mt-3 px-2" : undefined}>{label}</DialogTitle>
+                {panel.type === "detail" ? (
+                  <DialogDescription className="sr-only">Detalhes da atividade selecionada.</DialogDescription>
+                ) : (
+                  <DialogDescription>
+                    {panel.type === "risk"
+                      ? "Defina a sequência de atividades afetadas."
+                      : "Organize as informações da atividade."}
+                  </DialogDescription>
+                )}
               </DialogHeader>
               {panel.type === "task" && workspace.canEdit && (
                 <TaskForm
@@ -205,15 +209,15 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
               {panel.type === "detail" && task && (
                 <>
                   <TaskDetail key={task.id} task={task} workspace={workspace} />
-                  {workspace.canEdit && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      <Button variant="outline" onClick={() => editTask(task.id)}>
+                  {workspace.canEdit && (task.canManage ?? true) && (
+                    <DialogFooter className="grid grid-cols-2 gap-2 px-2 pt-3 sm:flex-none">
+                      <Button type="button" variant="outline" className="w-full" onClick={() => editTask(task.id)}>
                         Editar tarefa
                       </Button>
-                      <Button variant="destructive" onClick={() => setTaskToDelete(task)}>
+                      <Button type="button" variant="destructive" className="w-full" onClick={() => setTaskToDelete(task)}>
                         Excluir tarefa
                       </Button>
-                    </div>
+                    </DialogFooter>
                   )}
                 </>
               )}
