@@ -490,7 +490,6 @@ model Task {
   endDate       DateTime         @db.Date
   status        TaskStatus       @default(TODO)
   completedAt   DateTime?
-  sortOrder     Int              @default(0)
   cancelledAt   DateTime?
   creatorKey    String
   creatorName   String
