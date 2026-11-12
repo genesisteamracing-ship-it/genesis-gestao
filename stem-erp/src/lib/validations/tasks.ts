@@ -27,6 +27,26 @@ const invalidRange = { message: "O término deve ser igual ou posterior ao iníc
 export const createTaskSchema = task.refine(dateRange, invalidRange);
 export const editTaskSchema = task.extend({ id, revision, status: z.nativeEnum(TaskStatus) }).refine(dateRange, invalidRange);
 export const deleteTaskSchema = z.object({ id, teamId: id }).strict();
+export const updateMyTaskStatusSchema = z.object({
+  teamId: id,
+  taskId: id,
+  status: z.nativeEnum(TaskStatus),
+  revision,
+}).strict();
+export const rescheduleTaskSchema = z.object({
+  teamId: id,
+  taskId: id,
+  startDate: day,
+  endDate: day,
+  revision,
+}).strict().refine(dateRange, invalidRange);
+export const reorderTasksSchema = z.object({
+  teamId: id,
+  taskIds: z.array(id).min(1).refine(
+    (items) => new Set(items).size === items.length,
+    "A lista de ordenação não pode repetir tarefas.",
+  ),
+}).strict();
 export const taskEdgeSchema = z.object({ teamId: id, predecessorId: id, successorId: id }).strict()
   .refine((item) => item.predecessorId !== item.successorId, "Uma tarefa não pode depender de si mesma.");
 
@@ -43,5 +63,8 @@ export const riskPathSchema = z.object({
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type EditTaskInput = z.infer<typeof editTaskSchema>;
 export type DeleteTaskInput = z.infer<typeof deleteTaskSchema>;
+export type UpdateMyTaskStatusInput = z.infer<typeof updateMyTaskStatusSchema>;
+export type RescheduleTaskInput = z.infer<typeof rescheduleTaskSchema>;
+export type ReorderTasksInput = z.infer<typeof reorderTasksSchema>;
 export type EdgeInput = z.infer<typeof taskEdgeSchema>;
 export type RiskPathInput = z.infer<typeof riskPathSchema>;

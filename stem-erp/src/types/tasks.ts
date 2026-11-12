@@ -10,7 +10,10 @@ export type TaskRecord = {
   startDate: string;
   endDate: string;
   status: TaskStatus;
+  completedAt: string | null;
+  cancelledAt: string | null;
   revision: number;
+  canManage?: boolean;
   roles: { person: TaskPerson; role: TaskRole }[];
 };
 export type TaskEdge = { predecessorId: string; successorId: string };
@@ -24,6 +27,7 @@ export type TaskRisk = {
 };
 export type TaskWorkspace = {
   teamId: string;
+  currentUserId: string;
   canEdit: boolean;
   members: TaskPerson[];
   tasks: TaskRecord[];

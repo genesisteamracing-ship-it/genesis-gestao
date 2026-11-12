@@ -58,3 +58,41 @@ export function missingLinks(taskIds: string[], edges: TaskEdge[]): TaskEdge[] {
   const existing = new Set(edges.map(edgeKey));
   return pathEdges(taskIds).filter((edge) => !existing.has(edgeKey(edge)));
 }
+
+export type ResizeTaskEdge = "start" | "end";
+
+export function resizeTaskDates({
+  startDate,
+  endDate,
+  edge,
+  deltaDays,
+}: {
+  startDate: string;
+  endDate: string;
+  edge: ResizeTaskEdge;
+  deltaDays: number;
+}): { startDate: string; endDate: string } {
+  const start = taskDay(startDate);
+  const end = taskDay(endDate);
+  if (edge === "start") {
+    const nextStart = Math.min(start + deltaDays, end);
+    return { startDate: dayLabel(nextStart), endDate };
+  }
+  const nextEnd = Math.max(end + deltaDays, start);
+  return { startDate, endDate: dayLabel(nextEnd) };
+}
+
+export function reorderItems<T extends { id: string }>(
+  items: readonly T[],
+  sourceId: string,
+  targetIndex: number,
+): T[] {
+  const fromIndex = items.findIndex((item) => item.id === sourceId);
+  if (fromIndex === -1 || items.length < 2) return [...items];
+  const clampedTarget = Math.max(0, Math.min(items.length - 1, targetIndex));
+  if (fromIndex === clampedTarget) return [...items];
+  const next = [...items];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(clampedTarget, 0, moved);
+  return next;
+}

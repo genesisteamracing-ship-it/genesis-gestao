@@ -2,9 +2,28 @@
 
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
-import { createTaskSchema, deleteTaskSchema, editTaskSchema, riskPathSchema, taskEdgeSchema } from "@/lib/validations/tasks";
+import {
+  createTaskSchema,
+  deleteTaskSchema,
+  editTaskSchema,
+  reorderTasksSchema,
+  rescheduleTaskSchema,
+  riskPathSchema,
+  taskEdgeSchema,
+  updateMyTaskStatusSchema,
+} from "@/lib/validations/tasks";
 import { getCurrentUserFromSession } from "@/services/auth-service";
-import { changeDependency, deleteTask, resolveTaskScope, saveRiskPath, saveTask, TaskError } from "@/services/task-service";
+import {
+  changeDependency,
+  deleteTask,
+  reorderTasks,
+  rescheduleTask,
+  resolveTaskScope,
+  saveRiskPath,
+  saveTask,
+  TaskError,
+  updateTaskStatus,
+} from "@/services/task-service";
 import type { TaskActionResult } from "@/types/tasks";
 
 type Scope = NonNullable<Awaited<ReturnType<typeof resolveTaskScope>>>;
@@ -46,4 +65,13 @@ export async function deleteTaskAction(input: unknown) {
 }
 export async function saveRiskPathAction(input: unknown) {
   return mutate(riskPathSchema, input, saveRiskPath);
+}
+export async function updateMyTaskStatusAction(input: unknown) {
+  return mutate(updateMyTaskStatusSchema, input, updateTaskStatus);
+}
+export async function rescheduleTaskAction(input: unknown) {
+  return mutate(rescheduleTaskSchema, input, rescheduleTask);
+}
+export async function reorderTasksAction(input: unknown) {
+  return mutate(reorderTasksSchema, input, reorderTasks);
 }

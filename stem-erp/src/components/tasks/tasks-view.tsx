@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle, Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { deleteTaskAction } from "@/actions/tasks.actions";
+import { deleteTaskAction, updateMyTaskStatusAction } from "@/actions/tasks.actions";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,7 @@ import { TaskList } from "./task-list";
 import { TaskRaci } from "./task-raci";
 import { TaskRiskForm } from "./task-risk-form";
 import { TaskRiskView } from "./task-risk-view";
+import { MyActivitiesView } from "./my-activities-view";
 
 type Panel = { type: "task" | "detail" | "risk"; id?: string };
 type Shell = Omit<ComponentProps<typeof DashboardShell>, "title" | "subtitle" | "children">;
@@ -100,7 +101,7 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
         </p>
       ) : (
         <div className="min-w-0 space-y-4">
-          {viewId !== "risks" && (
+          {viewId !== "risks" && viewId !== "my-activities" && (
             <div className="flex flex-wrap items-end gap-2">
               <div className="min-w-44 flex-1 sm:max-w-72">
                 <TaskSelect
@@ -116,6 +117,13 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
                 </Button>
               )}
             </div>
+          )}
+          {viewId === "my-activities" && (
+            <MyActivitiesView
+              workspace={workspace}
+              onOpenDetail={openTask}
+              onUpdateStatus={updateMyTaskStatusAction}
+            />
           )}
           {viewId === "tasks" &&
             (visible.length ? (
@@ -176,12 +184,16 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
           {panel && (
             <DialogContent className="max-h-[90dvh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>{label}</DialogTitle>
-                <DialogDescription>
-                  {panel.type === "risk"
-                    ? "Defina a sequência de atividades afetadas."
-                    : "Consulte ou organize o trabalho deste setor."}
-                </DialogDescription>
+                <DialogTitle className={panel.type === "detail" ? "mt-3 px-2" : undefined}>{label}</DialogTitle>
+                {panel.type === "detail" ? (
+                  <DialogDescription className="sr-only">Detalhes da atividade selecionada.</DialogDescription>
+                ) : (
+                  <DialogDescription>
+                    {panel.type === "risk"
+                      ? "Defina a sequência de atividades afetadas."
+                      : "Organize as informações da atividade."}
+                  </DialogDescription>
+                )}
               </DialogHeader>
               {panel.type === "task" && workspace.canEdit && (
                 <TaskForm
@@ -197,15 +209,15 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
               {panel.type === "detail" && task && (
                 <>
                   <TaskDetail key={task.id} task={task} workspace={workspace} />
-                  {workspace.canEdit && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      <Button variant="outline" onClick={() => editTask(task.id)}>
+                  {workspace.canEdit && (task.canManage ?? true) && (
+                    <DialogFooter className="grid grid-cols-2 gap-2 px-2 pt-3 sm:flex-none">
+                      <Button type="button" variant="outline" className="w-full" onClick={() => editTask(task.id)}>
                         Editar tarefa
                       </Button>
-                      <Button variant="destructive" onClick={() => setTaskToDelete(task)}>
+                      <Button type="button" variant="destructive" className="w-full" onClick={() => setTaskToDelete(task)}>
                         Excluir tarefa
                       </Button>
-                    </div>
+                    </DialogFooter>
                   )}
                 </>
               )}

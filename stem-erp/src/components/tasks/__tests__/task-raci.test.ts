@@ -17,7 +17,7 @@ test("RACI identifies A and the pending executor", () => {
     const member = { key: "two", name: "Bruno", available: true };
     const task: TaskRecord = {
       id: "task", title: "Prototipar", description: null, deliveryGroup: "ENGINEERING_CAD",
-      startDate: "2026-11-09", endDate: "2026-11-09", status: "TODO", revision: 0,
+      startDate: "2026-11-09", endDate: "2026-11-09", status: "TODO", completedAt: null, cancelledAt: null, revision: 0,
       roles: [{ role: "A", person: author }],
     };
     const view = render(createElement(TaskRaci, { tasks: [task], members: [author, member] }));

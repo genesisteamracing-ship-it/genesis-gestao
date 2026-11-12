@@ -77,7 +77,7 @@ export function TaskList({
                         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                         <span>Ver detalhes</span>
                       </DropdownMenuItem>
-                      {canEdit && (
+                      {canEdit && (task.canManage ?? true) && (
                         <>
                           <DropdownMenuItem
                             onSelect={() => edit(task.id)}
