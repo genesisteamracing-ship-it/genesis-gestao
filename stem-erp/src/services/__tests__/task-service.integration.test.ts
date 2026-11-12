@@ -9,7 +9,7 @@ test("keeps A, enforces tenant boundaries and serializes reciprocal edges", { sk
   process.env.DATABASE_URL = database;
   process.env.DATABASE_URL_UNPOOLED = database;
   const { prisma } = await import("../../lib/prisma");
-  const { resolveTaskScope, saveTask, getTaskWorkspace, changeDependency, saveRiskPath } = await import("../task-service");
+  const { resolveTaskScope, saveTask, getTaskWorkspace, changeDependency, saveRiskPath, updateTaskStatus } = await import("../task-service");
   const key = randomUUID();
   const team = await prisma.team.create({ data: { name: key, slug: key } });
   const other = await prisma.team.create({ data: { name: key + "-other", slug: key + "-other" } });
@@ -58,5 +58,31 @@ test("keeps A, enforces tenant boundaries and serializes reciprocal edges", { sk
   await assert.rejects(saveTask(adminScope, { ...input, assignments: [{ memberKey: admin.id, role: "R" }] }), /integrante ativo/);
   await prisma.user.update({ where: { id: admin.id }, data: { role: "TEAM_LEAD" } });
   await assert.rejects(saveTask(adminScope, input), /acesso à equipe mudou/);
+  await updateTaskStatus(scope, { teamId: team.id, taskId: b, status: "DONE", revision: 0 });
+  const doneTask = (await getTaskWorkspace(scope)).tasks.find((item) => item.id === b);
+  assert.ok(doneTask?.completedAt);
+  assert.equal(doneTask?.cancelledAt, null);
+
+  await updateTaskStatus(scope, { teamId: team.id, taskId: b, status: "CANCELLED", revision: 1 });
+  const cancelledTask = (await getTaskWorkspace(scope)).tasks.find((item) => item.id === b);
+  assert.equal(cancelledTask?.completedAt, null);
+  assert.ok(cancelledTask?.cancelledAt);
+
+  await updateTaskStatus(scope, { teamId: team.id, taskId: b, status: "TODO", revision: 2 });
+  const reopenedTask = (await getTaskWorkspace(scope)).tasks.find((item) => item.id === b);
+  assert.equal(reopenedTask?.completedAt, null);
+  assert.equal(reopenedTask?.cancelledAt, null);
+
+  await assert.rejects(
+    updateTaskStatus(scope, { teamId: team.id, taskId: b, status: "DONE", revision: 0 }),
+    /atualizada/,
+  );
+  const auditorScope = await resolveTaskScope({ ...user, role: "AUDITOR" });
+  assert.ok(auditorScope);
+  await assert.rejects(
+    updateTaskStatus(auditorScope, { teamId: team.id, taskId: b, status: "DONE", revision: 3 }),
+    /somente para consulta/,
+  );
+
   await prisma.$disconnect();
 });

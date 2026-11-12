@@ -464,6 +464,7 @@ enum TaskStatus {
   TODO
   IN_PROGRESS
   DONE
+  CANCELLED
 }
 
 enum TaskAssignmentRole {
@@ -482,6 +483,8 @@ model Task {
   startDate     DateTime         @db.Date
   endDate       DateTime         @db.Date
   status        TaskStatus       @default(TODO)
+  completedAt   DateTime?
+  cancelledAt   DateTime?
   creatorKey    String
   creatorName   String
   creatorUserId String?

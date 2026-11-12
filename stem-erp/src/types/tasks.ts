@@ -10,6 +10,8 @@ export type TaskRecord = {
   startDate: string;
   endDate: string;
   status: TaskStatus;
+  completedAt: string | null;
+  cancelledAt: string | null;
   revision: number;
   roles: { person: TaskPerson; role: TaskRole }[];
 };
@@ -24,6 +26,7 @@ export type TaskRisk = {
 };
 export type TaskWorkspace = {
   teamId: string;
+  currentUserId: string;
   canEdit: boolean;
   members: TaskPerson[];
   tasks: TaskRecord[];
@@ -36,4 +39,5 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   TODO: "A fazer",
   IN_PROGRESS: "Em andamento",
   DONE: "Concluída",
+  CANCELLED: "Cancelada",
 };

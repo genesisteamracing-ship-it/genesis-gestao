@@ -25,6 +25,7 @@ import { TaskList } from "./task-list";
 import { TaskRaci } from "./task-raci";
 import { TaskRiskForm } from "./task-risk-form";
 import { TaskRiskView } from "./task-risk-view";
+import { MyActivitiesView } from "./my-activities-view";
 
 type Panel = { type: "task" | "detail" | "risk"; id?: string };
 type Shell = Omit<ComponentProps<typeof DashboardShell>, "title" | "subtitle" | "children">;
@@ -100,7 +101,7 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
         </p>
       ) : (
         <div className="min-w-0 space-y-4">
-          {viewId !== "risks" && (
+          {viewId !== "risks" && viewId !== "my-activities" && (
             <div className="flex flex-wrap items-end gap-2">
               <div className="min-w-44 flex-1 sm:max-w-72">
                 <TaskSelect
@@ -117,6 +118,7 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
               )}
             </div>
           )}
+          {viewId === "my-activities" && <MyActivitiesView workspace={workspace} onOpenDetail={openTask} />}
           {viewId === "tasks" &&
             (visible.length ? (
               <TaskList

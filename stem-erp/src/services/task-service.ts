@@ -1,7 +1,14 @@
-import { Prisma, UserRole } from "@prisma/client";
+import { Prisma, TaskStatus, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createsCycle, missingLinks, parseTaskDate } from "@/lib/task-schedule";
-import type { CreateTaskInput, DeleteTaskInput, EdgeInput, EditTaskInput, RiskPathInput } from "@/lib/validations/tasks";
+import type {
+  CreateTaskInput,
+  DeleteTaskInput,
+  EdgeInput,
+  EditTaskInput,
+  RiskPathInput,
+  UpdateMyTaskStatusInput,
+} from "@/lib/validations/tasks";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { TaskPerson, TaskWorkspace } from "@/types/tasks";
 
@@ -58,7 +65,7 @@ function person(teamId: string, key: string, name: string, live: LiveMember | nu
   return { key, name: current?.name ?? name, available: current?.isActive ?? false };
 }
 
-export async function getTaskWorkspace({ teamId, canEdit }: Scope): Promise<TaskWorkspace> {
+export async function getTaskWorkspace({ teamId, actorId, canEdit }: Scope): Promise<TaskWorkspace> {
   const [members, tasks, edges, paths] = await prisma.$transaction([
     prisma.user.findMany({ where: { teamId, isActive: true }, select: memberSelect, orderBy: [{ name: "asc" }, { id: "asc" }] }),
     prisma.task.findMany({
@@ -72,12 +79,15 @@ export async function getTaskWorkspace({ teamId, canEdit }: Scope): Promise<Task
     prisma.riskPath.findMany({ where: { teamId }, orderBy: [{ name: "asc" }, { id: "asc" }], include: { steps: { orderBy: { position: "asc" } } } }),
   ], { isolationLevel: "RepeatableRead" });
   return {
-    teamId, canEdit, edges,
+    teamId, currentUserId: actorId, canEdit, edges,
     members: members.map((member) => person(teamId, member.id, member.name, member)),
     tasks: tasks.map((task) => ({
       id: task.id, title: task.title, description: task.description, deliveryGroup: task.deliveryGroup,
       startDate: task.startDate.toISOString().slice(0, 10), endDate: task.endDate.toISOString().slice(0, 10),
-      status: task.status, revision: task.revision,
+      status: task.status,
+      completedAt: task.completedAt ? task.completedAt.toISOString() : null,
+      cancelledAt: task.cancelledAt ? task.cancelledAt.toISOString() : null,
+      revision: task.revision,
       roles: [
         {
           role: "A",
@@ -121,9 +131,19 @@ export async function saveTask(scope: Scope, input: CreateTaskInput | EditTaskIn
     let taskId: string;
     if ("id" in input) {
       taskId = input.id;
+      const current = await tx.task.findFirst({
+        where: { id: taskId, teamId, revision: input.revision },
+        select: { status: true },
+      });
+      if (!current) throw new TaskError("Tarefa não encontrada ou atualizada. Recarregue a página.");
       const { count } = await tx.task.updateMany({
         where: { id: taskId, teamId, revision: input.revision },
-        data: { ...fields, status: input.status, revision: { increment: 1 } },
+        data: {
+          ...fields,
+          status: input.status,
+          ...buildStatusTimestamps(input.status, current.status),
+          revision: { increment: 1 },
+        },
       });
       if (!count) throw new TaskError("Tarefa não encontrada ou atualizada. Recarregue a página.");
     } else {
@@ -153,6 +173,49 @@ export async function saveTask(scope: Scope, input: CreateTaskInput | EditTaskIn
     if (removals.length) await tx.taskAssignment.deleteMany({ where: { teamId, taskId, OR: removals } });
     if (newRows.length) await tx.taskAssignment.createMany({ data: newRows });
     return taskId;
+  });
+}
+
+function buildStatusTimestamps(nextStatus: TaskStatus, currentStatus?: TaskStatus) {
+  if (nextStatus === TaskStatus.DONE) {
+    return {
+      completedAt: currentStatus === TaskStatus.DONE ? undefined : new Date(),
+      cancelledAt: null,
+    };
+  }
+  if (nextStatus === TaskStatus.CANCELLED) {
+    return {
+      completedAt: null,
+      cancelledAt: currentStatus === TaskStatus.CANCELLED ? undefined : new Date(),
+    };
+  }
+  return { completedAt: null, cancelledAt: null };
+}
+
+export async function updateTaskStatus(scope: Scope, input: UpdateMyTaskStatusInput): Promise<void> {
+  requireWrite(scope, input.teamId);
+  await serializable(async (tx) => {
+    await requireActiveEditor(tx, scope);
+    const existing = await tx.task.findFirst({
+      where: { id: input.taskId, teamId: scope.teamId },
+      select: { id: true, status: true, revision: true },
+    });
+    if (!existing) throw new TaskError("Tarefa não encontrada.");
+    if (existing.revision !== input.revision) {
+      throw new TaskError("A tarefa foi atualizada por outro integrante. Recarregue para ver a versão atual.");
+    }
+    const timestamps = buildStatusTimestamps(input.status, existing.status);
+    const { count } = await tx.task.updateMany({
+      where: { id: input.taskId, teamId: scope.teamId, revision: input.revision },
+      data: {
+        status: input.status,
+        ...timestamps,
+        revision: { increment: 1 },
+      },
+    });
+    if (!count) {
+      throw new TaskError("A tarefa foi atualizada por outro integrante. Recarregue para ver a versão atual.");
+    }
   });
 }
 
