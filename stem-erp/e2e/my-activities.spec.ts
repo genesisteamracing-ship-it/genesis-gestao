@@ -23,8 +23,8 @@ test("displays assigned activities ordered by deadline, updates status and recal
   const row = page.getByRole("row").filter({ hasText: title });
   await expect(row).toBeVisible();
 
-  await page.getByRole("button", { name: "Ações para " + title }).click();
-  await page.getByRole("menuitem", { name: "Marcar: Concluída" }).click();
+  await page.getByRole("combobox", { name: "Status de " + title }).click();
+  await page.getByRole("option", { name: "Concluída", exact: true }).click();
   await expect(page.getByText("Status da atividade atualizado.")).toBeVisible();
 
   await page.reload();
