@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle, Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { deleteTaskAction } from "@/actions/tasks.actions";
+import { deleteTaskAction, updateMyTaskStatusAction } from "@/actions/tasks.actions";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,7 @@ import { TaskList } from "./task-list";
 import { TaskRaci } from "./task-raci";
 import { TaskRiskForm } from "./task-risk-form";
 import { TaskRiskView } from "./task-risk-view";
+import { MyActivitiesView } from "./my-activities-view";
 
 type Panel = { type: "task" | "detail" | "risk"; id?: string };
 type Shell = Omit<ComponentProps<typeof DashboardShell>, "title" | "subtitle" | "children">;
@@ -100,7 +101,7 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
         </p>
       ) : (
         <div className="min-w-0 space-y-4">
-          {viewId !== "risks" && (
+          {viewId !== "risks" && viewId !== "my-activities" && (
             <div className="flex flex-wrap items-end gap-2">
               <div className="min-w-44 flex-1 sm:max-w-72">
                 <TaskSelect
@@ -116,6 +117,13 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
                 </Button>
               )}
             </div>
+          )}
+          {viewId === "my-activities" && (
+            <MyActivitiesView
+              workspace={workspace}
+              onOpenDetail={openTask}
+              onUpdateStatus={updateMyTaskStatusAction}
+            />
           )}
           {viewId === "tasks" &&
             (visible.length ? (

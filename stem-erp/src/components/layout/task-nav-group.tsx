@@ -3,11 +3,11 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChartGantt, ChevronDown, Grid3X3, ListTodo, Network } from "lucide-react";
+import { ChartGantt, ChevronDown, Grid3X3, ListTodo, Network, UserCheck } from "lucide-react";
 import { getTaskView, TASK_VIEWS } from "@/lib/task-navigation";
 import { sidebarItemStyles } from "./sidebar-item-styles";
 
-const icons = { tasks: ListTodo, gantt: ChartGantt, risks: Network, raci: Grid3X3 };
+const icons = { tasks: ListTodo, "my-activities": UserCheck, gantt: ChartGantt, risks: Network, raci: Grid3X3 };
 
 export function TaskNavGroup({ onSelect }: { onSelect?: () => void }) {
   const active = usePathname() === "/tarefas";

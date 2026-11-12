@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { createTaskSchema, deleteTaskSchema, riskPathSchema } from "../tasks";
+import { createTaskSchema, deleteTaskSchema, riskPathSchema, updateMyTaskStatusSchema } from "../tasks";
 
 const valid = {
   teamId: "test", title: "Montar carro", deliveryGroup: "MANUFACTURING_CNC",
@@ -25,4 +25,25 @@ test("validates deleteTaskSchema with id and teamId", () => {
   assert.equal(deleteTaskSchema.safeParse({ id: "task-1" }).success, false);
   assert.equal(deleteTaskSchema.safeParse({ teamId: "team-1" }).success, false);
   assert.equal(deleteTaskSchema.safeParse({ id: "", teamId: "team-1" }).success, false);
+});
+
+test("validates updateMyTaskStatusSchema across all statuses and revision", () => {
+  for (const status of ["TODO", "IN_PROGRESS", "DONE", "CANCELLED"] as const) {
+    assert.equal(
+      updateMyTaskStatusSchema.safeParse({ teamId: "team-1", taskId: "task-1", status, revision: 0 }).success,
+      true,
+    );
+  }
+  assert.equal(
+    updateMyTaskStatusSchema.safeParse({ teamId: "team-1", taskId: "task-1", status: "INVALID", revision: 0 }).success,
+    false,
+  );
+  assert.equal(
+    updateMyTaskStatusSchema.safeParse({ teamId: "team-1", taskId: "task-1", status: "DONE", revision: -1 }).success,
+    false,
+  );
+  assert.equal(
+    updateMyTaskStatusSchema.safeParse({ teamId: "", taskId: "task-1", status: "DONE", revision: 0 }).success,
+    false,
+  );
 });
