@@ -45,6 +45,12 @@ export const SYSTEM_MODULES_META: Record<SystemModuleKey, SystemModuleMetadata> 
     description: "Estrutura Analítica do Projeto (WBS / EAP) e Governança de Escopo",
     defaultRoute: "/documentos",
   },
+  risks: {
+    key: "risks",
+    label: "Gestão de Riscos",
+    description: "Registro de riscos e oportunidades, matriz cartesiana, planos e revisões",
+    defaultRoute: "/riscos",
+  },
 };
 
 export const SYSTEM_MODULE_KEYS: SystemModuleKey[] = [
@@ -53,6 +59,7 @@ export const SYSTEM_MODULE_KEYS: SystemModuleKey[] = [
   "communication",
   "documents",
   "tasks",
+  "risks",
   "team",
 ];
 
@@ -67,6 +74,7 @@ export function getDefaultModulePermissionsByRole(
       team: true,
       documents: true,
       tasks: true,
+      risks: true,
     };
   }
 
@@ -77,6 +85,7 @@ export function getDefaultModulePermissionsByRole(
     team: false,
     documents: true,
     tasks: false,
+    risks: true,
   };
 }
 
@@ -115,6 +124,7 @@ export function getFirstAllowedRoute(
   if (permissions.documents) return "/documentos";
   if (permissions.tasks) return "/tarefas";
   if (permissions.team) return "/equipe";
+  if (permissions.risks !== false) return "/riscos";
 
   return "/dashboard";
 }
@@ -124,5 +134,8 @@ export function hasModuleAccess(
   moduleKey: SystemModuleKey
 ): boolean {
   if (!permissions) return false;
+  if (moduleKey === "risks" && permissions.risks === undefined) {
+    return true;
+  }
   return Boolean(permissions[moduleKey]);
 }

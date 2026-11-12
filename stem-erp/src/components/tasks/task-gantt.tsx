@@ -37,6 +37,7 @@ const bar = tv({
       TODO: "border-border bg-secondary text-secondary-foreground",
       IN_PROGRESS: "border-primary/40 bg-primary/15 text-foreground",
       DONE: "border-success/40 bg-success/15 text-foreground",
+      CANCELLED: "border-border bg-muted text-muted-foreground line-through",
     },
     highlighted: { true: "border-primary ring-2 ring-primary" },
     isConnectingSource: { true: "border-primary ring-2 ring-primary shadow-sm" },

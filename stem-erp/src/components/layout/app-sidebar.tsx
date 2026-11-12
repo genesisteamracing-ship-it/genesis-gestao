@@ -16,6 +16,7 @@ import {
   MessageSquare,
   MessageSquareText,
   Network,
+  ShieldAlert,
   ShieldCheck,
   TrendingUp,
   Users,
@@ -349,6 +350,28 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
           {permissions.tasks && (
             <div className="relative px-5">
               <TaskNavGroup />
+            </div>
+          )}
+
+          {/* Módulo: Gestão de Riscos */}
+          {permissions.risks !== false && (
+            <div className="relative px-5">
+              {(pathname === "/riscos" || pathname.startsWith("/riscos/")) && (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
+                />
+              )}
+              <Link
+                href="/riscos"
+                className={sidebarItemStyles({
+                  isActive:
+                    pathname === "/riscos" || pathname.startsWith("/riscos/"),
+                })}
+              >
+                <ShieldAlert className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">Gestão de Riscos</span>
+              </Link>
             </div>
           )}
 

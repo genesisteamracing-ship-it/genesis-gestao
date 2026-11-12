@@ -36,4 +36,5 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   TODO: "A fazer",
   IN_PROGRESS: "Em andamento",
   DONE: "Concluída",
+  CANCELLED: "Cancelada",
 };

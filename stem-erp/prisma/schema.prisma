@@ -94,6 +94,8 @@ model Team {
   wbsNodes           WbsNode[]
   tasks              Task[]
   riskPaths          RiskPath[]
+  riskItems          RiskItem[]
+  riskReviews        RiskReview[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -181,6 +183,7 @@ model User {
   canAccessTeam          Boolean         @default(false)
   canAccessDocuments     Boolean         @default(true)
   canAccessTasks         Boolean         @default(false)
+  canAccessRisks         Boolean         @default(true)
 
   failedLoginAttempts Int             @default(0)
   lockedUntil         DateTime?       // Bloqueio automático anti-força bruta
@@ -191,6 +194,9 @@ model User {
   wbsNodes            WbsNode[]
   authoredTasks       Task[]
   taskAssignments     TaskAssignment[]
+  ownedRisks          RiskItem[]      @relation("RiskOwner")
+  createdRisks        RiskItem[]      @relation("RiskCreator")
+  riskReviews         RiskReview[]
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
@@ -464,6 +470,7 @@ enum TaskStatus {
   TODO
   IN_PROGRESS
   DONE
+  CANCELLED
 }
 
 enum TaskAssignmentRole {
@@ -482,6 +489,8 @@ model Task {
   startDate     DateTime         @db.Date
   endDate       DateTime         @db.Date
   status        TaskStatus       @default(TODO)
+  completedAt   DateTime?
+  sortOrder     Int              @default(0)
   creatorKey    String
   creatorName   String
   creatorUserId String?
@@ -548,4 +557,104 @@ model RiskPathStep {
 
   @@id([teamId, pathId, position])
   @@unique([teamId, pathId, taskId])
+}
+
+// ============================================================================
+// MÓDULO: GESTÃO DE RISCOS & OPORTUNIDADES
+// ============================================================================
+
+enum RiskEntryType {
+  RISK
+  OPPORTUNITY
+}
+
+enum RiskProbability {
+  QUASE_CERTO
+  PROVAVEL
+  POSSIVEL
+  IMPROVAVEL
+  RARA
+  NONE
+}
+
+enum RiskConsequence {
+  CATASTROFICA
+  GRANDE
+  MODERADA
+  PEQUENA
+  DESPREZIVEL
+  NONE
+}
+
+enum RiskLifecycleStatus {
+  IDENTIFIED
+  MONITORING
+  MITIGATED
+  OCCURRED
+  CLOSED
+}
+
+enum RiskPriorityLevel {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  UNASSESSED
+}
+
+model RiskItem {
+  id                String              @id @default(cuid())
+  teamId            String
+  team              Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  season            String              @default("2025/2026")
+  entryType         RiskEntryType       @default(RISK)
+  title             String
+  description       String?
+  sector            DeliveryGroup
+  probability       RiskProbability     @default(NONE)
+  consequence       RiskConsequence     @default(NONE)
+  priorityScore     Int                 @default(0)
+  priorityLevel     RiskPriorityLevel   @default(UNASSESSED)
+  proactiveStrategy String?
+  contingencyPlan   String?
+  observations      String?
+  evidenceNotes     String?
+  evidenceUrl       String?
+  status            RiskLifecycleStatus @default(IDENTIFIED)
+  ownerName         String?
+  ownerUserId       String?
+  owner             User?               @relation("RiskOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  createdByUserId   String?
+  createdBy         User?               @relation("RiskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  reviews           RiskReview[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([teamId, season])
+  @@index([teamId, sector])
+  @@index([teamId, priorityScore])
+}
+
+model RiskReview {
+  id                  String              @id @default(cuid())
+  riskItemId          String
+  riskItem            RiskItem            @relation(fields: [riskItemId], references: [id], onDelete: Cascade)
+  teamId              String
+  team                Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  previousProbability RiskProbability
+  newProbability      RiskProbability
+  previousConsequence RiskConsequence
+  newConsequence      RiskConsequence
+  previousStatus      RiskLifecycleStatus
+  newStatus           RiskLifecycleStatus
+  notes               String
+  evidenceNotes       String?
+  evidenceUrl         String?
+  reviewerName        String
+  reviewerUserId      String?
+  reviewer            User?               @relation(fields: [reviewerUserId], references: [id], onDelete: SetNull)
+  reviewedAt          DateTime            @default(now())
+
+  @@index([riskItemId, reviewedAt])
+  @@index([teamId])
 }

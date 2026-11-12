@@ -377,6 +377,7 @@ export async function getCurrentUserFromSession(): Promise<AuthenticatedUserDTO 
         team: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessTeam,
         tasks: session.user.role === UserRole.SUPER_ADMIN || session.user.canAccessTasks,
         documents: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessDocuments,
+        risks: session.user.role === UserRole.SUPER_ADMIN ? true : session.user.canAccessRisks,
       },
     };
   } catch {
@@ -506,6 +507,7 @@ export async function createTeamMemberService(
         canAccessTeam: defaultPermissions.team,
         canAccessDocuments: defaultPermissions.documents,
         canAccessTasks: defaultPermissions.tasks,
+        canAccessRisks: defaultPermissions.risks ?? true,
         createdById: superAdmin.id,
       },
     });
@@ -798,6 +800,7 @@ export async function getTeamManagementMetricsService(): Promise<TeamManagementM
       team: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessTeam,
       tasks: u.role === UserRole.SUPER_ADMIN || u.canAccessTasks,
       documents: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessDocuments,
+      risks: u.role === UserRole.SUPER_ADMIN ? true : u.canAccessRisks,
     },
     failedLoginAttempts: u.failedLoginAttempts,
     lockedUntil: u.lockedUntil ? u.lockedUntil.toISOString() : null,
@@ -1014,6 +1017,7 @@ export async function toggleUserModulePermissionService(
     team: "canAccessTeam",
     documents: "canAccessDocuments",
     tasks: "canAccessTasks",
+    risks: "canAccessRisks",
   };
 
   if (input.moduleKey === "tasks") {
@@ -1055,6 +1059,7 @@ export async function toggleUserModulePermissionService(
     team: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessTeam,
     tasks: updatedUser.role === UserRole.SUPER_ADMIN || updatedUser.canAccessTasks,
     documents: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessDocuments,
+    risks: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessRisks,
   };
 }
 
@@ -1100,6 +1105,7 @@ export async function updateAllUserPermissionsService(
         canAccessTeam: input.team,
         canAccessDocuments: input.documents ?? true,
         canAccessTasks: input.tasks,
+        canAccessRisks: input.risks ?? true,
       },
     });
 
@@ -1124,5 +1130,6 @@ export async function updateAllUserPermissionsService(
     team: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessTeam,
     tasks: updatedUser.role === UserRole.SUPER_ADMIN || updatedUser.canAccessTasks,
     documents: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessDocuments,
+    risks: updatedUser.role === UserRole.SUPER_ADMIN ? true : updatedUser.canAccessRisks,
   };
 }
