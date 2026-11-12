@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import type { TaskStatus } from "@prisma/client";
 import { toast } from "sonner";
-import { updateMyTaskStatusAction } from "@/actions/tasks.actions";
 import {
   buildMyActivityItems,
   calculateUserActivityKpis,
@@ -32,10 +31,20 @@ type UseMyActivitiesOptions = {
   onUpdateStatus?: UpdateStatusAction;
 };
 
+async function defaultUpdateStatus(input: {
+  teamId: string;
+  taskId: string;
+  status: TaskStatus;
+  revision: number;
+}): Promise<TaskActionResult> {
+  const { updateMyTaskStatusAction } = await import("@/actions/tasks.actions");
+  return updateMyTaskStatusAction(input);
+}
+
 export function useMyActivities({
   workspace,
   todayIso = getTodayIsoDate(),
-  onUpdateStatus = updateMyTaskStatusAction,
+  onUpdateStatus = defaultUpdateStatus,
 }: UseMyActivitiesOptions) {
   const [tasks, setTasks] = useState<TaskRecord[]>(workspace.tasks);
   const [search, setSearch] = useState("");

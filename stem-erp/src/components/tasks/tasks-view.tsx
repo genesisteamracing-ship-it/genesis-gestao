@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle, Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { deleteTaskAction } from "@/actions/tasks.actions";
+import { deleteTaskAction, updateMyTaskStatusAction } from "@/actions/tasks.actions";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,7 +118,13 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
               )}
             </div>
           )}
-          {viewId === "my-activities" && <MyActivitiesView workspace={workspace} onOpenDetail={openTask} />}
+          {viewId === "my-activities" && (
+            <MyActivitiesView
+              workspace={workspace}
+              onOpenDetail={openTask}
+              onUpdateStatus={updateMyTaskStatusAction}
+            />
+          )}
           {viewId === "tasks" &&
             (visible.length ? (
               <TaskList
