@@ -75,6 +75,42 @@ const priorityBadgeStyles = tv({
   },
 });
 
+const signalBadgeStyles = tv({
+  base: "whitespace-nowrap text-[11px] font-medium",
+  variants: {
+    tone: {
+      red: "border-destructive/30 bg-destructive/10 text-destructive",
+      yellow: "border-warning/30 bg-warning/10 text-warning",
+      green: "border-success/30 bg-success/10 text-success",
+      neutral: "border-border bg-muted text-muted-foreground",
+    },
+  },
+});
+
+const PROBABILITY_TONE_MAP: Record<
+  RiskItemDTO["probability"],
+  "red" | "yellow" | "green" | "neutral"
+> = {
+  QUASE_CERTO: "red",
+  PROVAVEL: "red",
+  POSSIVEL: "yellow",
+  IMPROVAVEL: "green",
+  RARA: "green",
+  NONE: "neutral",
+};
+
+const CONSEQUENCE_TONE_MAP: Record<
+  RiskItemDTO["consequence"],
+  "red" | "yellow" | "green" | "neutral"
+> = {
+  CATASTROFICA: "red",
+  GRANDE: "red",
+  MODERADA: "yellow",
+  PEQUENA: "green",
+  DESPREZIVEL: "green",
+  NONE: "neutral",
+};
+
 export function RiskTable({
   items,
   canEdit,
@@ -99,38 +135,40 @@ export function RiskTable({
         id: "probability",
         header: "Probabilidade de ocorrer",
         cell: ({ row }) => (
-          <span className="whitespace-nowrap text-xs text-foreground">
+          <Badge
+            variant="outline"
+            className={signalBadgeStyles({
+              tone: PROBABILITY_TONE_MAP[row.original.probability],
+            })}
+          >
             {RISK_PROBABILITY_LABELS[row.original.probability]}
-          </span>
+          </Badge>
         ),
       },
       {
         id: "consequence",
         header: "Consequência de ocorrência",
         cell: ({ row }) => (
-          <span className="whitespace-nowrap text-xs text-foreground">
+          <Badge
+            variant="outline"
+            className={signalBadgeStyles({
+              tone: CONSEQUENCE_TONE_MAP[row.original.consequence],
+            })}
+          >
             {RISK_CONSEQUENCE_LABELS[row.original.consequence]}
-          </span>
+          </Badge>
         ),
       },
       {
-        id: "risk",
-        header: "Risco",
+        id: "name",
+        header: "Nome",
         cell: ({ row }) => {
           const item = row.original;
           return (
             <div className="min-w-[200px] max-w-sm space-y-1">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs font-semibold text-foreground">
-                  {item.title}
-                </span>
-                <Badge
-                  variant="outline"
-                  className={priorityBadgeStyles({ level: item.priorityLevel })}
-                >
-                  {RISK_PRIORITY_LABELS[item.priorityLevel]}
-                </Badge>
-              </div>
+              <span className="block text-xs font-semibold text-foreground">
+                {item.title}
+              </span>
               <p className="text-[11px] text-muted-foreground">
                 {RISK_ENTRY_TYPE_LABELS[item.entryType]} ·{" "}
                 {RISK_STATUS_LABELS[item.status]}
@@ -141,6 +179,20 @@ export function RiskTable({
             </div>
           );
         },
+      },
+      {
+        id: "risk",
+        header: "Risco",
+        cell: ({ row }) => (
+          <Badge
+            variant="outline"
+            className={priorityBadgeStyles({
+              level: row.original.priorityLevel,
+            })}
+          >
+            {RISK_PRIORITY_LABELS[row.original.priorityLevel]}
+          </Badge>
+        ),
       },
       {
         id: "observations",

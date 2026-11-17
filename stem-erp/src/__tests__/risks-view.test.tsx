@@ -147,6 +147,7 @@ test("RisksView renders Success state with charts, required table columns and op
   assert.ok(
     screen.getByRole("columnheader", { name: "Consequência de ocorrência" })
   );
+  assert.ok(screen.getByRole("columnheader", { name: "Nome" }));
   assert.ok(screen.getByRole("columnheader", { name: "Risco" }));
   assert.ok(screen.getByRole("columnheader", { name: "Observações" }));
 
