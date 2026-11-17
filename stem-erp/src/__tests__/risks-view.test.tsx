@@ -34,6 +34,13 @@ Object.assign(globalThis, {
   },
 });
 
+if (typeof globalThis.navigator === "undefined") {
+  Object.defineProperty(globalThis, "navigator", {
+    value: dom.window.navigator,
+    configurable: true,
+  });
+}
+
 /* eslint-disable @typescript-eslint/no-require-imports */
 const {
   cleanup,
@@ -140,6 +147,7 @@ test("RisksView renders Success state with charts, required table columns and op
   assert.ok(
     screen.getByRole("columnheader", { name: "Consequência de ocorrência" })
   );
+  assert.ok(screen.getByRole("columnheader", { name: "Nome" }));
   assert.ok(screen.getByRole("columnheader", { name: "Risco" }));
   assert.ok(screen.getByRole("columnheader", { name: "Observações" }));
 
