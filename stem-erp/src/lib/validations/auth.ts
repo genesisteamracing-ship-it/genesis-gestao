@@ -136,6 +136,7 @@ export const systemModuleKeySchema = z.enum([
   "communication",
   "documents",
   "tasks",
+  "risks",
   "team",
 ]);
 
@@ -153,6 +154,7 @@ export const updateAllUserPermissionsSchema = z.object({
   team: z.boolean(),
   documents: z.boolean().optional(),
   tasks: z.boolean().optional(),
+  risks: z.boolean().optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
