@@ -34,6 +34,13 @@ Object.assign(globalThis, {
   },
 });
 
+if (typeof globalThis.navigator === "undefined") {
+  Object.defineProperty(globalThis, "navigator", {
+    value: dom.window.navigator,
+    configurable: true,
+  });
+}
+
 /* eslint-disable @typescript-eslint/no-require-imports */
 const {
   cleanup,
