@@ -1,6 +1,50 @@
 import type { DeliveryGroup } from "@prisma/client";
 import { DELIVERY_GROUP_SHORT_LABELS } from "@/lib/constants";
-import type { OfficeMemberDTO, OfficeMemberStatus } from "@/types/office";
+import type {
+  OfficeMemberDTO,
+  OfficeMemberStatus,
+  OfficeTaskItemDTO,
+  OfficeTaskRole,
+} from "@/types/office";
+
+const ROLE_PRIORITY: Record<OfficeTaskRole, number> = {
+  R: 0,
+  A: 1,
+  C: 2,
+  I: 3,
+};
+
+export function deriveMemberStatus(
+  tasks: OfficeTaskItemDTO[]
+): OfficeMemberStatus {
+  const inProgressTasks = tasks.filter(
+    (task) => task.status === "IN_PROGRESS"
+  );
+  if (inProgressTasks.some((task) => task.isOverdue)) {
+    return "OVERDUE";
+  }
+  if (inProgressTasks.length > 0) {
+    return "WORKING";
+  }
+  return "IDLE";
+}
+
+export function pickPrimaryActiveTask(
+  tasks: OfficeTaskItemDTO[]
+): OfficeTaskItemDTO | null {
+  const inProgress = tasks.filter((task) => task.status === "IN_PROGRESS");
+  if (inProgress.length === 0) return null;
+
+  const sorted = [...inProgress].sort((a, b) => {
+    if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
+    if (ROLE_PRIORITY[a.role] !== ROLE_PRIORITY[b.role]) {
+      return ROLE_PRIORITY[a.role] - ROLE_PRIORITY[b.role];
+    }
+    return a.endDate.localeCompare(b.endDate);
+  });
+
+  return sorted[0] ?? null;
+}
 
 export type OfficeZoneId =
   | DeliveryGroup

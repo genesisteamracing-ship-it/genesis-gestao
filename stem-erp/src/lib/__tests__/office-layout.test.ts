@@ -2,14 +2,12 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildOfficeFloorplan,
+  deriveMemberStatus,
   filterOfficeMembers,
   getAvatarTraits,
   getMemberInitials,
-} from "@/lib/office-layout";
-import {
-  deriveMemberStatus,
   pickPrimaryActiveTask,
-} from "@/services/office-service";
+} from "@/lib/office-layout";
 import type { OfficeMemberDTO, OfficeTaskItemDTO } from "@/types/office";
 
 function makeTask(overrides: Partial<OfficeTaskItemDTO> = {}): OfficeTaskItemDTO {

@@ -1,9 +1,12 @@
 import { TaskStatus } from "@prisma/client";
+import {
+  deriveMemberStatus,
+  pickPrimaryActiveTask,
+} from "@/lib/office-layout";
 import { prisma } from "@/lib/prisma";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type {
   OfficeMemberDTO,
-  OfficeMemberStatus,
   OfficeSnapshotDTO,
   OfficeTaskItemDTO,
   OfficeTaskRole,
@@ -31,39 +34,7 @@ function getTodayIsoDate(): string {
   return `${year}-${month}-${day}`;
 }
 
-export function deriveMemberStatus(
-  tasks: OfficeTaskItemDTO[]
-): OfficeMemberStatus {
-  const inProgressTasks = tasks.filter(
-    (task) => task.status === TaskStatus.IN_PROGRESS
-  );
-  if (inProgressTasks.some((task) => task.isOverdue)) {
-    return "OVERDUE";
-  }
-  if (inProgressTasks.length > 0) {
-    return "WORKING";
-  }
-  return "IDLE";
-}
-
-export function pickPrimaryActiveTask(
-  tasks: OfficeTaskItemDTO[]
-): OfficeTaskItemDTO | null {
-  const inProgress = tasks.filter(
-    (task) => task.status === TaskStatus.IN_PROGRESS
-  );
-  if (inProgress.length === 0) return null;
-
-  const sorted = [...inProgress].sort((a, b) => {
-    if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
-    if (ROLE_PRIORITY[a.role] !== ROLE_PRIORITY[b.role]) {
-      return ROLE_PRIORITY[a.role] - ROLE_PRIORITY[b.role];
-    }
-    return a.endDate.localeCompare(b.endDate);
-  });
-
-  return sorted[0] ?? null;
-}
+export { deriveMemberStatus, pickPrimaryActiveTask };
 
 export async function getOfficeSnapshotService(
   user: AuthenticatedUserDTO,
