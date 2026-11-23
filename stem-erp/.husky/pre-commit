@@ -1,0 +1,12 @@
+echo "[husky pre-commit] Validando ESLint, TypeScript e testes unitários (modo CI sem DATABASE_URL)..."
+
+cd stem-erp
+
+echo "[husky pre-commit] 1/3 ESLint..."
+npm run lint -- --quiet
+
+echo "[husky pre-commit] 2/3 TypeScript..."
+npx tsc --noEmit
+
+echo "[husky pre-commit] 3/3 Testes unitários (sem DATABASE_URL)..."
+DATABASE_URL="" DATABASE_URL_UNPOOLED="" npm test

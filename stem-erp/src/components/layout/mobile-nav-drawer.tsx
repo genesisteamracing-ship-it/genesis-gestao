@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
+  Building2,
   ChevronDown,
   FolderGit2,
   Layers,
@@ -276,6 +277,19 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
               <TaskNavGroup onSelect={() => setIsMobileOpen(false)} />
             </div>
           )}
+
+          {/* Módulo: Escritório Virtual (/office) */}
+          <Link
+            href="/office"
+            onClick={() => setIsMobileOpen(false)}
+            className={sidebarItemStyles({
+              isActive:
+                pathname === "/office" || pathname.startsWith("/office/"),
+            })}
+          >
+            <Building2 className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">Escritório Virtual</span>
+          </Link>
 
           {/* Grupo: Documentos com Submódulos */}
           {permissions.documents && (
