@@ -2,6 +2,10 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
+if (process.env.CI === "true" || process.env.RENDER === "true") {
+  process.exit(0);
+}
+
 const repoRoot = resolve(process.cwd(), "..");
 if (!existsSync(resolve(repoRoot, ".git"))) {
   process.exit(0);

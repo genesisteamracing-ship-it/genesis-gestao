@@ -6,9 +6,12 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+let productionPrismaClient: PrismaClient | undefined;
+
 function getPrismaClient(): PrismaClient {
-  if (globalForPrisma.prisma) {
-    return globalForPrisma.prisma;
+  const existing = globalForPrisma.prisma ?? productionPrismaClient;
+  if (existing) {
+    return existing;
   }
 
   const { postgres } = parseEnv(neonConfig, ["DATABASE_URL"]);
@@ -24,15 +27,17 @@ function getPrismaClient(): PrismaClient {
 
   if (process.env.NODE_ENV !== "production") {
     globalForPrisma.prisma = client;
+  } else {
+    productionPrismaClient = client;
   }
 
   return client;
 }
 
 export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
-  get(_target, prop, receiver) {
+  get(_target, prop) {
     const client = getPrismaClient();
-    const value = Reflect.get(client, prop, receiver);
+    const value = Reflect.get(client, prop, client);
     return typeof value === "function" ? value.bind(client) : value;
   },
 });
