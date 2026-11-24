@@ -43,31 +43,29 @@ describe("WBS PDF Layout Engine (computeWbsPdfLayout)", () => {
   it("deve retornar layout vazio quando a árvore não possuir entregáveis", () => {
     const result = computeWbsPdfLayout({ tree: [], teamName: "Equipe Gênesis" });
     assert.equal(result.pageCount, 0);
+    assert.equal(result.pageWidth, 0);
+    assert.equal(result.pageHeight, 0);
     assert.equal(result.boxes.length, 0);
     assert.equal(result.lines.length, 0);
     assert.equal(result.totalNodes, 0);
   });
 
   it("deve usar paleta azul e amarelo sem tons de verde predominante nos níveis", () => {
-    // Nível 0: azul marinho (B > R e B > G)
     const [r0, g0, b0] = WBS_PDF_PALETTE[0].fill;
     assert.ok(b0 > r0 && b0 > g0, "Nível 0 deve ser azul");
 
-    // Nível 1: azul principal (B > R e B > G)
     const [r1, g1, b1] = WBS_PDF_PALETTE[1].fill;
     assert.ok(b1 > r1 && b1 > g1, "Nível 1 deve ser azul");
 
-    // Nível 2: amarelo ouro (R alto, G alto, B baixo)
     const [r2, g2, b2] = WBS_PDF_PALETTE[2].fill;
     assert.ok(r2 > 200 && g2 > 170 && b2 < 80, "Nível 2 deve ser amarelo");
 
-    // Nível 3: fundo branco com borda azul
     assert.deepEqual(WBS_PDF_PALETTE[3].fill, [255, 255, 255]);
     const [sr3, sg3, sb3] = WBS_PDF_PALETTE[3].stroke;
     assert.ok(sb3 > sr3 && sb3 > sg3, "Borda do Nível 3 deve ser azul");
   });
 
-  it("deve posicionar setores Nível 1 crescendo verticalmente para baixo e respeitando a largura A4 Retrato", () => {
+  it("deve posicionar setores lado a lado na horizontal e empilhar Nível 3 para baixo em página única", () => {
     const tree: WbsTreeNode[] = [
       makeNode("s1", "1", "PROJECT MANAGEMENT", 1, [
         makeNode("s1-1", "1.1", "INITIATING", 2, [
@@ -99,29 +97,28 @@ describe("WBS PDF Layout Engine (computeWbsPdfLayout)", () => {
 
     assert.ok(rootBox && s1Box && s2Box && l3a && l3b);
 
-    // Crescimento vertical: raiz -> setor 1 -> setor 2
-    assert.ok(s1Box.y > rootBox.y + rootBox.height);
-    assert.ok(s2Box.y > s1Box.y + s1Box.height);
+    // Setores Nível 1 alinhados na mesma linha horizontal, crescendo para a direita
+    assert.equal(s1Box.y, s2Box.y);
+    assert.ok(s2Box.x > s1Box.x + s1Box.width);
 
-    // Nível 3 empilhados verticalmente na mesma coluna
+    // Nível 3 empilhados verticalmente para baixo na mesma coluna
     assert.equal(l3a.x, l3b.x);
     assert.ok(l3b.y > l3a.y + l3a.height);
 
-    // Nenhuma caixa ultrapassa os limites horizontais da página A4 Retrato
+    // Todos os elementos dentro das dimensões dinâmicas da página única
     for (const box of layout.boxes) {
-      assert.ok(box.x >= WBS_PDF_PAGE.marginX - 0.1, `Caixa ${box.id} invadiu margem esquerda`);
-      assert.ok(
-        box.x + box.width <= WBS_PDF_PAGE.width - WBS_PDF_PAGE.marginX + 0.1,
-        `Caixa ${box.id} ultrapassou margem direita`
-      );
-      assert.ok(box.chamfer > 0, `Caixa ${box.id} deve ter chanfro positivo`);
+      assert.equal(box.page, 1);
+      assert.ok(box.x >= WBS_PDF_PAGE.marginX - 0.1);
+      assert.ok(box.x + box.width <= layout.pageWidth - WBS_PDF_PAGE.marginX + 0.1);
+      assert.ok(box.y + box.height <= layout.pageHeight - WBS_PDF_PAGE.marginBottom + 0.1);
+      assert.ok(box.chamfer > 0);
     }
 
-    assert.ok(layout.lines.length > 0, "Deve gerar conectores ortogonais");
+    assert.ok(layout.lines.length > 0);
   });
 
-  it("deve paginar automaticamente para baixo quando a WBS exceder uma página A4", () => {
-    const bigTree: WbsTreeNode[] = Array.from({ length: 6 }, (_, sIdx) =>
+  it("deve aumentar a largura da página na horizontal sem criar páginas extras para WBS extensa", () => {
+    const wideTree: WbsTreeNode[] = Array.from({ length: 6 }, (_, sIdx) =>
       makeNode(
         `sector-${sIdx}`,
         `${sIdx + 1}`,
@@ -133,7 +130,7 @@ describe("WBS PDF Layout Engine (computeWbsPdfLayout)", () => {
             `${sIdx + 1}.${subIdx + 1}`,
             `SUBCATEGORIA ${subIdx + 1}`,
             2,
-            Array.from({ length: 6 }, (_, wpIdx) =>
+            Array.from({ length: 8 }, (_, wpIdx) =>
               makeNode(
                 `wp-${sIdx}-${subIdx}-${wpIdx}`,
                 `${sIdx + 1}.${subIdx + 1}.${wpIdx + 1}`,
@@ -146,15 +143,18 @@ describe("WBS PDF Layout Engine (computeWbsPdfLayout)", () => {
       )
     );
 
-    const layout = computeWbsPdfLayout({ tree: bigTree, teamName: "Equipe Gênesis" });
+    const layout = computeWbsPdfLayout({ tree: wideTree, teamName: "Equipe Gênesis" });
 
-    assert.ok(layout.pageCount >= 2, "WBS extensa deve gerar múltiplas páginas verticais");
+    assert.equal(layout.pageCount, 1, "Nunca deve adicionar novas páginas");
+    assert.ok(
+      layout.pageWidth > WBS_PDF_PAGE.minWidth,
+      "Deve expandir a largura da página para acomodar todos os setores na horizontal"
+    );
 
     for (const box of layout.boxes) {
-      assert.ok(
-        box.y + box.height <= WBS_PDF_PAGE.contentBottom + 0.1,
-        `Caixa ${box.id} na página ${box.page} não deve ultrapassar a área útil inferior`
-      );
+      assert.equal(box.page, 1);
+      assert.ok(box.x + box.width <= layout.pageWidth - WBS_PDF_PAGE.marginX + 0.1);
+      assert.ok(box.y + box.height <= layout.pageHeight - WBS_PDF_PAGE.marginBottom + 0.1);
     }
   });
 
