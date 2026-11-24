@@ -2,10 +2,15 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { planWbsDefaults } from "../wbs-default-structure";
 
-test("starts the WBS with four sectors and their ordered subcards", () => {
+test("starts the WBS with six sectors and their ordered subcards", () => {
   const rows = planWbsDefaults("team-a", []);
   assert.deepEqual(rows.filter((row) => row.parentId === null).map((row) => [row.code, row.title]), [
-    ["1", "PROJECT MANAGEMENT"], ["2", "ENGINEERING"], ["3", "ENTERPRISE"], ["4", "SOCIAL PROJECT"],
+    ["1", "PROJECT MANAGEMENT"],
+    ["2", "ENGINEERING"],
+    ["3", "ENTERPRISE"],
+    ["4", "SOCIAL PROJECT"],
+    ["5", "APRESENTAÇÃO VERBAL"],
+    ["6", "PITCH"],
   ]);
   assert.deepEqual(rows.filter((row) => row.parentId !== null).map((row) => [row.code, row.title]), [
     ["1.1", "INITIATING"], ["1.2", "PLANNING"], ["1.3", "EXECUTING AND CONTROLLING"],
