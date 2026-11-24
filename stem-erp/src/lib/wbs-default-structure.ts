@@ -39,6 +39,14 @@ const sectors: Sector[] = [
     code: "4", title: "SOCIAL PROJECT", discipline: "SOCIAL_PROJECT", aliases: ["Projeto Social"],
     children: [{ title: "PLANNING", aliases: ["Planejamento"] }, { title: "EXECUTING", aliases: ["Execução"] }],
   },
+  {
+    code: "5", title: "APRESENTAÇÃO VERBAL", discipline: "PIT_DISPLAY", aliases: ["Apresentação Verbal", "Verbal Presentation"],
+    children: [],
+  },
+  {
+    code: "6", title: "PITCH", discipline: "MARKETING_SPONSOR", aliases: ["Pitch"],
+    children: [],
+  },
 ];
 
 function comparable(title: string): string {

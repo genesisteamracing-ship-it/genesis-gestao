@@ -3,12 +3,15 @@
 import * as React from "react";
 import {
   AlertTriangle,
+  FileDown,
   Filter,
+  Loader2,
   Network,
   Plus,
   Search,
   TableProperties,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type { DashboardMetricsDTO } from "@/types/financial";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
@@ -23,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useWbs } from "@/hooks/use-wbs";
+import { exportWbsToPdf } from "@/lib/wbs-pdf-export";
 import { WbsHeaderMetrics } from "./wbs-header-metrics";
 import { WbsTreeTable, DISCIPLINE_LABELS } from "./wbs-tree-table";
 import { WbsFlowCanvas } from "./wbs-flow-canvas";
@@ -67,16 +71,58 @@ export function WbsView({
 
   const isAuditor = currentUser.role === "AUDITOR";
   const [viewMode, setViewMode] = React.useState<"canvas" | "table">("canvas");
+  const [isExportingPdf, setIsExportingPdf] = React.useState(false);
 
-  const headerAction = !isAuditor ? (
-    <Button
-      onClick={openCreateRoot}
-      className="gap-2 text-xs font-semibold cursor-pointer shrink-0 shadow-2xs"
-    >
-      <Plus className="h-4 w-4" />
-      <span>Novo Entregável</span>
-    </Button>
-  ) : undefined;
+  const handleExportPdf = React.useCallback(async () => {
+    if (tree.length === 0) {
+      toast.error("Não há entregáveis na WBS para exportar.");
+      return;
+    }
+
+    try {
+      setIsExportingPdf(true);
+      const { filename } = await exportWbsToPdf({
+        tree,
+        teamName: activeTeam.name,
+      });
+      toast.success(`PDF da WBS exportado: ${filename}`);
+    } catch {
+      toast.error("Não foi possível gerar o PDF da WBS.");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }, [tree, activeTeam.name]);
+
+  const headerAction = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleExportPdf}
+        disabled={isExportingPdf || isLoading || tree.length === 0}
+        className="gap-2 text-xs font-semibold cursor-pointer shrink-0 shadow-2xs"
+        aria-label="Exportar WBS em PDF"
+      >
+        {isExportingPdf ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <FileDown className="h-4 w-4" />
+        )}
+        <span>{isExportingPdf ? "Exportando..." : "Exportar PDF"}</span>
+      </Button>
+
+      {!isAuditor && (
+        <Button
+          type="button"
+          onClick={openCreateRoot}
+          className="gap-2 text-xs font-semibold cursor-pointer shrink-0 shadow-2xs"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Novo Entregável</span>
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <DashboardShell
