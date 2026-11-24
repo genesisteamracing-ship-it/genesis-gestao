@@ -60,20 +60,20 @@ function drawChamferedBox(doc: jsPDF, box: WbsPdfBox): void {
 
 function drawPageFooter(
   doc: jsPDF,
-  pageNumber: number,
-  pageCount: number,
+  pageWidth: number,
+  pageHeight: number,
   teamName: string | undefined,
   formattedDate: string
 ): void {
-  const footerLineY = WBS_PDF_PAGE.height - 11.5;
-  const footerTextY = WBS_PDF_PAGE.height - 7.5;
+  const footerLineY = pageHeight - 11.5;
+  const footerTextY = pageHeight - 7.5;
 
   doc.setDrawColor(214, 224, 238);
   doc.setLineWidth(0.25);
   doc.line(
     WBS_PDF_PAGE.marginX,
     footerLineY,
-    WBS_PDF_PAGE.width - WBS_PDF_PAGE.marginX,
+    pageWidth - WBS_PDF_PAGE.marginX,
     footerLineY
   );
 
@@ -88,16 +88,17 @@ function drawPageFooter(
   const leftLabel = `${teamName?.trim() || "WBS"} • Estrutura Analítica do Projeto • ${formattedDate}`;
   doc.text(leftLabel, WBS_PDF_PAGE.marginX, footerTextY, { align: "left" });
   doc.text(
-    `Página ${pageNumber} de ${pageCount}`,
-    WBS_PDF_PAGE.width - WBS_PDF_PAGE.marginX,
+    "Página 1 de 1",
+    pageWidth - WBS_PDF_PAGE.marginX,
     footerTextY,
     { align: "right" }
   );
 }
 
 /**
- * Gera e dispara o download do PDF vetorial da WBS (A4 Retrato, crescendo para baixo,
- * com nós chanfrados na paleta azul e amarelo).
+ * Gera e dispara o download do PDF vetorial da WBS em PÁGINA ÚNICA,
+ * expandindo a largura da página automaticamente para caber na horizontal,
+ * com nós chanfrados na paleta azul e amarelo.
  */
 export async function exportWbsToPdf({
   tree,
@@ -110,55 +111,52 @@ export async function exportWbsToPdf({
   // Importação dinâmica evita carregar jsPDF no bundle inicial SSR
   const { jsPDF: JsPdfCtor } = await import("jspdf");
 
-  const doc = new JsPdfCtor({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-    compress: true,
-  });
+  // Instância auxiliar apenas para medição exata de quebra de texto antes de definir o tamanho final da página
+  const measureDoc = new JsPdfCtor({ unit: "mm" });
 
   const layout = computeWbsPdfLayout({
     tree,
     teamName,
     wrapText: (text, maxWidthMm, fontSizePt) => {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(fontSizePt);
-      const result = doc.splitTextToSize(text, maxWidthMm);
+      measureDoc.setFont("helvetica", "bold");
+      measureDoc.setFontSize(fontSizePt);
+      const result = measureDoc.splitTextToSize(text, maxWidthMm);
       return Array.isArray(result) ? result : [String(result)];
     },
+  });
+
+  const orientation =
+    layout.pageWidth >= layout.pageHeight ? "landscape" : "portrait";
+
+  const doc = new JsPdfCtor({
+    orientation,
+    unit: "mm",
+    format: [layout.pageWidth, layout.pageHeight],
+    compress: true,
   });
 
   const now = new Date();
   const formattedDate = now.toLocaleDateString("pt-BR");
 
-  // Cria páginas adicionais conforme necessário (crescendo verticalmente para baixo)
-  for (let p = 2; p <= layout.pageCount; p += 1) {
-    doc.addPage("a4", "portrait");
+  // 1. Conectores ortogonais na camada de fundo
+  doc.setDrawColor(
+    WBS_PDF_CONNECTOR_COLOR[0],
+    WBS_PDF_CONNECTOR_COLOR[1],
+    WBS_PDF_CONNECTOR_COLOR[2]
+  );
+  doc.setLineWidth(0.38);
+
+  for (const line of layout.lines) {
+    doc.line(line.x1, line.y1, line.x2, line.y2);
   }
 
-  // Renderiza página por página: primeiro conectores (camada de fundo), depois caixas chanfradas
-  for (let page = 1; page <= layout.pageCount; page += 1) {
-    doc.setPage(page);
-
-    const pageLines = layout.lines.filter((line) => line.page === page);
-    doc.setDrawColor(
-      WBS_PDF_CONNECTOR_COLOR[0],
-      WBS_PDF_CONNECTOR_COLOR[1],
-      WBS_PDF_CONNECTOR_COLOR[2]
-    );
-    doc.setLineWidth(0.38);
-
-    for (const line of pageLines) {
-      doc.line(line.x1, line.y1, line.x2, line.y2);
-    }
-
-    const pageBoxes = layout.boxes.filter((box) => box.page === page);
-    for (const box of pageBoxes) {
-      drawChamferedBox(doc, box);
-    }
-
-    drawPageFooter(doc, page, layout.pageCount, teamName, formattedDate);
+  // 2. Nós chanfrados em azul e amarelo
+  for (const box of layout.boxes) {
+    drawChamferedBox(doc, box);
   }
+
+  // 3. Rodapé discreto
+  drawPageFooter(doc, layout.pageWidth, layout.pageHeight, teamName, formattedDate);
 
   const filename = buildWbsPdfFilename(teamName, now);
   doc.save(filename);

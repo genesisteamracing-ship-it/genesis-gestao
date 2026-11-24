@@ -24,7 +24,7 @@ export const WBS_PDF_PALETTE: Record<WbsPdfNodeLevel, WbsPdfNodePalette> = {
     text: [255, 255, 255],
     strokeWidth: 0.45,
     fontWeight: "bold",
-    fontSize: 10.5,
+    fontSize: 11,
   },
   1: {
     fill: [29, 95, 214], // Azul principal (#1D5FD6)
@@ -32,7 +32,7 @@ export const WBS_PDF_PALETTE: Record<WbsPdfNodeLevel, WbsPdfNodePalette> = {
     text: [255, 255, 255],
     strokeWidth: 0.4,
     fontWeight: "bold",
-    fontSize: 9.2,
+    fontSize: 9,
   },
   2: {
     fill: [245, 196, 40], // Amarelo ouro (#F5C428)
@@ -40,7 +40,7 @@ export const WBS_PDF_PALETTE: Record<WbsPdfNodeLevel, WbsPdfNodePalette> = {
     text: [15, 41, 82], // Azul marinho escuro para alto contraste
     strokeWidth: 0.4,
     fontWeight: "bold",
-    fontSize: 8.2,
+    fontSize: 8,
   },
   3: {
     fill: [255, 255, 255], // Branco com borda azul (pacotes de trabalho)
@@ -48,7 +48,7 @@ export const WBS_PDF_PALETTE: Record<WbsPdfNodeLevel, WbsPdfNodePalette> = {
     text: [30, 41, 59],
     strokeWidth: 0.38,
     fontWeight: "normal",
-    fontSize: 7.6,
+    fontSize: 7.4,
   },
   4: {
     fill: [255, 251, 235], // Amarelo claríssimo para subníveis profundos (4+)
@@ -56,7 +56,7 @@ export const WBS_PDF_PALETTE: Record<WbsPdfNodeLevel, WbsPdfNodePalette> = {
     text: [30, 41, 59],
     strokeWidth: 0.35,
     fontWeight: "normal",
-    fontSize: 7.2,
+    fontSize: 7,
   },
 };
 
@@ -64,17 +64,11 @@ export const WBS_PDF_CONNECTOR_COLOR: RgbColor = [51, 65, 85];
 export const WBS_PDF_MUTED_TEXT_COLOR: RgbColor = [100, 116, 139];
 
 export const WBS_PDF_PAGE = {
-  width: 210, // A4 Retrato (mm)
-  height: 297,
-  marginX: 14,
+  minWidth: 297, // Mínimo A4 Paisagem (mm) — expande na horizontal conforme necessário
+  minHeight: 210, // Mínimo A4 Paisagem (mm) — expande na vertical conforme necessário
+  marginX: 16,
   marginTop: 14,
-  marginBottom: 16,
-  get contentWidth() {
-    return this.width - this.marginX * 2; // 182mm
-  },
-  get contentBottom() {
-    return this.height - this.marginBottom; // 281mm
-  },
+  marginBottom: 18,
 } as const;
 
 export interface WbsPdfBox {
@@ -100,6 +94,8 @@ export interface WbsPdfLine {
 
 export interface WbsPdfLayoutResult {
   pageCount: number;
+  pageWidth: number;
+  pageHeight: number;
   boxes: WbsPdfBox[];
   lines: WbsPdfLine[];
   totalNodes: number;
@@ -115,29 +111,24 @@ export interface ComputeWbsPdfLayoutParams {
   wrapText?: (text: string, maxWidthMm: number, fontSizePt: number) => string[];
 }
 
-const MAX_LEVEL2_COLUMNS = 3;
-const COLUMN_GAP = 6;
-const ROOT_WIDTH = 140;
-const ROOT_MIN_HEIGHT = 11.5;
-const LEVEL1_WIDTH = 86;
+const COL_WIDTH = 44;
+const COL_GAP = 4.5;
+const SECTOR_GAP = 9.5;
+const EMPTY_SECTOR_WIDTH = 48;
+const ROOT_MIN_HEIGHT = 12;
 const LEVEL1_MIN_HEIGHT = 9.5;
 const LEVEL2_MIN_HEIGHT = 8.5;
-const LEVEL3_MIN_HEIGHT = 7.8;
-const LEVEL4_MIN_HEIGHT = 7.2;
+const LEVEL3_MIN_HEIGHT = 7.6;
+const LEVEL4_MIN_HEIGHT = 7;
 const LEVEL3_VERTICAL_GAP = 2.6;
-const LEVEL4_INDENT = 4.5;
-const SECTION_GAP = 9;
-const ROW_GAP = 7;
-const BUS_DROP_TOP = 3.8;
-const BUS_DROP_BOTTOM = 3.8;
-const SPINE_X = 8.5;
-const SECTION_SPINE_X = 11.5;
+const LEVEL4_INDENT = 4;
+const BUS_DROP_TOP = 5;
+const BUS_DROP_BOTTOM = 5;
 
 function defaultWrapText(text: string, maxWidthMm: number, fontSizePt: number): string[] {
   const cleaned = text.trim().replace(/\s+/g, " ");
   if (!cleaned) return [""];
-  // Aproximação conservadora: ~0.52 * fontSizePt em pontos -> mm (1pt ≈ 0.3528mm)
-  const avgCharMm = Math.max(1.2, fontSizePt * 0.3528 * 0.54);
+  const avgCharMm = Math.max(1.15, fontSizePt * 0.3528 * 0.54);
   const maxChars = Math.max(8, Math.floor(maxWidthMm / avgCharMm));
 
   const words = cleaned.split(" ");
@@ -203,8 +194,8 @@ function flattenDescendants(
       const level: 3 | 4 = nesting === 0 ? 3 : 4;
       const indent = nesting === 0 ? 0 : Math.min(nesting, 2) * LEVEL4_INDENT;
       const palette = WBS_PDF_PALETTE[level];
-      const boxWidth = Math.max(24, colWidth - indent);
-      const innerTextWidth = Math.max(16, boxWidth - 6.5);
+      const boxWidth = Math.max(22, colWidth - indent);
+      const innerTextWidth = Math.max(14, boxWidth - 6);
       const lines = wrap(formatNodeLabel(child), innerTextWidth, palette.fontSize);
       const minH = level === 3 ? LEVEL3_MIN_HEIGHT : LEVEL4_MIN_HEIGHT;
       const height = computeBoxHeight(lines, palette.fontSize, minH, 2.8);
@@ -227,19 +218,6 @@ function flattenDescendants(
   return items;
 }
 
-function chunkArray<T>(items: T[], size: number): T[][] {
-  if (items.length <= size) return [items];
-  // Para 4 itens, preferir 2 + 2 para maior equilíbrio visual
-  if (items.length === 4 && size === 3) {
-    return [items.slice(0, 2), items.slice(2, 4)];
-  }
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size));
-  }
-  return chunks;
-}
-
 function countTreeNodes(tree: WbsTreeNode[]): number {
   let count = 0;
   function walk(list: WbsTreeNode[]) {
@@ -252,25 +230,26 @@ function countTreeNodes(tree: WbsTreeNode[]): number {
   return count;
 }
 
-function getColumnGeometry(colCount: number): { colWidth: number; startX: number; gap: number } {
-  const { marginX, contentWidth } = WBS_PDF_PAGE;
-  if (colCount <= 1) {
-    const colWidth = 68;
-    return { colWidth, startX: marginX + (contentWidth - colWidth) / 2, gap: 0 };
-  }
-  if (colCount === 2) {
-    const colWidth = 66;
-    const gap = 12;
-    const total = colWidth * 2 + gap;
-    return { colWidth, startX: marginX + (contentWidth - total) / 2, gap };
-  }
-  const colWidth = (contentWidth - COLUMN_GAP * (colCount - 1)) / colCount;
-  return { colWidth, startX: marginX, gap: COLUMN_GAP };
+interface PreparedLevel2Col {
+  node: WbsTreeNode;
+  lines: string[];
+  height: number;
+  descendants: FlattenedLeafItem[];
+}
+
+interface PreparedSector {
+  node: WbsTreeNode;
+  sectorWidth: number;
+  level1Width: number;
+  level1Lines: string[];
+  level1Height: number;
+  level2Cols: PreparedLevel2Col[];
 }
 
 /**
- * Calcula o layout completo da WBS crescendo verticalmente (para baixo)
- * em páginas A4 Retrato (210mm x 297mm), pronto para renderização vetorial no jsPDF.
+ * Calcula o layout completo da WBS em PÁGINA ÚNICA, expandindo automaticamente
+ * a largura horizontal da página para comportar todos os setores lado a lado
+ * e empilhando os pacotes de trabalho (Nível 3+) verticalmente para baixo.
  */
 export function computeWbsPdfLayout({
   tree,
@@ -280,6 +259,8 @@ export function computeWbsPdfLayout({
   if (tree.length === 0) {
     return {
       pageCount: 0,
+      pageWidth: 0,
+      pageHeight: 0,
       boxes: [],
       lines: [],
       totalNodes: 0,
@@ -290,282 +271,212 @@ export function computeWbsPdfLayout({
   const lines: WbsPdfLine[] = [];
   const totalNodes = countTreeNodes(tree);
 
-  const centerX = WBS_PDF_PAGE.width / 2;
-  let currentPage = 1;
-  let cursorY: number = WBS_PDF_PAGE.marginTop;
+  // 1. Pré-calcula cada setor (Nível 1) e suas colunas de Nível 2 + pilhas Nível 3+
+  const preparedSectors: PreparedSector[] = tree.map((sectorNode) => {
+    const l2Count = sectorNode.children.length;
+    const colsTotalWidth =
+      l2Count > 0 ? l2Count * COL_WIDTH + (l2Count - 1) * COL_GAP : EMPTY_SECTOR_WIDTH;
+    const sectorWidth = Math.max(EMPTY_SECTOR_WIDTH, colsTotalWidth);
 
-  // 1. Nó Raiz (Nível 0) no topo da Página 1
+    const level1Width = Math.min(Math.max(46, sectorWidth * 0.62), 82);
+    const l1Palette = WBS_PDF_PALETTE[1];
+    const level1Lines = wrapText(
+      formatNodeLabel(sectorNode),
+      level1Width - 7,
+      l1Palette.fontSize
+    );
+    const level1Height = computeBoxHeight(
+      level1Lines,
+      l1Palette.fontSize,
+      LEVEL1_MIN_HEIGHT,
+      3.2
+    );
+
+    const level2Cols: PreparedLevel2Col[] = sectorNode.children.map((l2Node) => {
+      const l2Palette = WBS_PDF_PALETTE[2];
+      const l2Lines = wrapText(
+        formatNodeLabel(l2Node),
+        COL_WIDTH - 6,
+        l2Palette.fontSize
+      );
+      const l2Height = computeBoxHeight(
+        l2Lines,
+        l2Palette.fontSize,
+        LEVEL2_MIN_HEIGHT,
+        3
+      );
+      const descendants = flattenDescendants(l2Node.children, COL_WIDTH, wrapText);
+
+      return {
+        node: l2Node,
+        lines: l2Lines,
+        height: l2Height,
+        descendants,
+      };
+    });
+
+    return {
+      node: sectorNode,
+      sectorWidth,
+      level1Width,
+      level1Lines,
+      level1Height,
+      level2Cols,
+    };
+  });
+
+  // 2. Define largura total da página única expandindo na horizontal conforme necessário
+  const totalSectorsWidth =
+    preparedSectors.reduce((sum, s) => sum + s.sectorWidth, 0) +
+    Math.max(0, preparedSectors.length - 1) * SECTOR_GAP;
+
+  const pageWidth = Number(
+    Math.max(WBS_PDF_PAGE.minWidth, totalSectorsWidth + WBS_PDF_PAGE.marginX * 2).toFixed(2)
+  );
+  const centerX = pageWidth / 2;
+  const startX = (pageWidth - totalSectorsWidth) / 2;
+
+  // 3. Nó Raiz (Nível 0) centralizado no topo
   const rootTitle = teamName?.trim()
     ? `${teamName.trim()} — Work Breakdown Structure`
     : "Work Breakdown Structure (WBS)";
+  const rootWidth = Math.min(Math.max(125, totalSectorsWidth * 0.36), 210);
   const rootPalette = WBS_PDF_PALETTE[0];
-  const rootLines = wrapText(rootTitle, ROOT_WIDTH - 10, rootPalette.fontSize);
+  const rootLines = wrapText(rootTitle, rootWidth - 10, rootPalette.fontSize);
   const rootHeight = computeBoxHeight(rootLines, rootPalette.fontSize, ROOT_MIN_HEIGHT, 4);
-  const rootX = centerX - ROOT_WIDTH / 2;
+  const rootX = centerX - rootWidth / 2;
+  const rootY = WBS_PDF_PAGE.marginTop;
 
   boxes.push({
     id: "wbs-pdf-root",
-    page: currentPage,
+    page: 1,
     x: rootX,
-    y: cursorY,
-    width: ROOT_WIDTH,
+    y: rootY,
+    width: rootWidth,
     height: rootHeight,
     chamfer: 3.2,
     level: 0,
     lines: rootLines,
   });
 
-  // Braço saindo da base do Nível 0 até a espinha vertical principal (SPINE_X)
-  const rootBottomY = cursorY + rootHeight;
-  const rootBusY = rootBottomY + 3.5;
-  lines.push(
-    { page: currentPage, x1: centerX, y1: rootBottomY, x2: centerX, y2: rootBusY },
-    { page: currentPage, x1: SPINE_X, y1: rootBusY, x2: centerX, y2: rootBusY }
-  );
+  // Coordenadas Y alinhadas por nível hierárquico
+  const rootBottomY = rootY + rootHeight;
+  const rootBusY = rootBottomY + BUS_DROP_TOP;
+  const level1Y = rootBusY + BUS_DROP_BOTTOM;
+  const maxLevel1Height = Math.max(...preparedSectors.map((s) => s.level1Height));
+  const level2BusY = level1Y + maxLevel1Height + BUS_DROP_TOP;
+  const level2Y = level2BusY + BUS_DROP_BOTTOM;
 
-  // Rastreia último ponto da espinha vertical principal por página
-  const pageSpineStartY = new Map<number, number>([[1, rootBusY]]);
-  const pageSpineEndY = new Map<number, number>();
+  const allLevel2Heights = preparedSectors.flatMap((s) => s.level2Cols.map((c) => c.height));
+  const maxLevel2Height = allLevel2Heights.length > 0 ? Math.max(...allLevel2Heights) : 0;
 
-  cursorY = rootBusY + 4.5;
+  // 4. Posiciona os setores lado a lado na horizontal e empilha Nível 3+ para baixo
+  let cursorX = startX;
+  const sectorCenterXs: number[] = [];
+  let maxBottomY = level1Y + maxLevel1Height;
 
-  function ensureSpace(neededHeight: number): boolean {
-    if (cursorY + neededHeight <= WBS_PDF_PAGE.contentBottom) {
-      return false;
-    }
-    if (cursorY <= WBS_PDF_PAGE.marginTop + 1) {
-      return false;
-    }
-    currentPage += 1;
-    cursorY = WBS_PDF_PAGE.marginTop;
-    return true;
-  }
+  for (const sector of preparedSectors) {
+    const sectorCenterX = cursorX + sector.sectorWidth / 2;
+    sectorCenterXs.push(sectorCenterX);
 
-  // 2. Percorre cada setor de Nível 1 crescendo verticalmente para baixo
-  for (const level1Node of tree) {
-    const level1Palette = WBS_PDF_PALETTE[1];
-    const level1Lines = wrapText(
-      formatNodeLabel(level1Node),
-      LEVEL1_WIDTH - 8,
-      level1Palette.fontSize
-    );
-    const level1Height = computeBoxHeight(
-      level1Lines,
-      level1Palette.fontSize,
-      LEVEL1_MIN_HEIGHT,
-      3.2
-    );
-
-    const level2Children = level1Node.children;
-    const level2Chunks =
-      level2Children.length > 0 ? chunkArray(level2Children, MAX_LEVEL2_COLUMNS) : [];
-
-    // Pré-calcula a primeira faixa de filhos para evitar deixar o Nível 1 órfão no fim da página
-    const firstChunkMinHeight =
-      level2Chunks.length > 0
-        ? BUS_DROP_TOP + BUS_DROP_BOTTOM + LEVEL2_MIN_HEIGHT + 16
-        : 0;
-
-    ensureSpace(level1Height + firstChunkMinHeight);
-
-    const level1X = centerX - LEVEL1_WIDTH / 2;
-    const level1Y = cursorY;
-    const level1MidY = level1Y + level1Height / 2;
-
+    const level1X = sectorCenterX - sector.level1Width / 2;
     boxes.push({
-      id: level1Node.id,
-      page: currentPage,
+      id: sector.node.id,
+      page: 1,
       x: level1X,
       y: level1Y,
-      width: LEVEL1_WIDTH,
-      height: level1Height,
+      width: sector.level1Width,
+      height: sector.level1Height,
       chamfer: 2.5,
       level: 1,
-      lines: level1Lines,
-      code: level1Node.code,
+      lines: sector.level1Lines,
+      code: sector.node.code,
     });
 
-    // Conecta espinha principal à borda esquerda do Nível 1
-    if (!pageSpineStartY.has(currentPage)) {
-      pageSpineStartY.set(currentPage, WBS_PDF_PAGE.marginTop - 4);
-    }
-    pageSpineEndY.set(currentPage, level1MidY);
+    // Conector vertical do barramento raiz até o topo do Nível 1
     lines.push({
-      page: currentPage,
-      x1: SPINE_X,
-      y1: level1MidY,
-      x2: level1X,
-      y2: level1MidY,
+      page: 1,
+      x1: sectorCenterX,
+      y1: rootBusY,
+      x2: sectorCenterX,
+      y2: level1Y,
     });
 
-    cursorY = level1Y + level1Height;
+    if (sector.level2Cols.length > 0) {
+      const colsWidth =
+        sector.level2Cols.length * COL_WIDTH +
+        (sector.level2Cols.length - 1) * COL_GAP;
+      const colsStartX = sectorCenterX - colsWidth / 2;
 
-    // 3. Renderiza as faixas de Nível 2 + seus Nível 3+ empilhados para baixo
-    for (let chunkIdx = 0; chunkIdx < level2Chunks.length; chunkIdx += 1) {
-      const chunk = level2Chunks[chunkIdx];
-      const { colWidth, startX, gap } = getColumnGeometry(chunk.length);
-
-      // Pré-calcula caixas Nível 2 e pilhas Nível 3+ desta faixa
-      const preparedCols = chunk.map((l2Node, colIdx) => {
-        const colX = startX + colIdx * (colWidth + gap);
-        const l2Palette = WBS_PDF_PALETTE[2];
-        const l2Lines = wrapText(
-          formatNodeLabel(l2Node),
-          colWidth - 6.5,
-          l2Palette.fontSize
-        );
-        const l2Height = computeBoxHeight(l2Lines, l2Palette.fontSize, LEVEL2_MIN_HEIGHT, 3);
-        const descendants = flattenDescendants(l2Node.children, colWidth, wrapText);
-        const descendantsHeight =
-          descendants.length > 0
-            ? descendants.reduce((sum, item) => sum + item.height, 0) +
-              descendants.length * LEVEL3_VERTICAL_GAP
-            : 0;
-
-        return {
-          l2Node,
-          colX,
-          colCenterX: colX + colWidth / 2,
-          l2Lines,
-          l2Height,
-          descendants,
-          totalColHeight: l2Height + descendantsHeight,
-        };
+      // Tronco vertical descendo do fundo do Nível 1 até o barramento de Nível 2
+      lines.push({
+        page: 1,
+        x1: sectorCenterX,
+        y1: level1Y + sector.level1Height,
+        x2: sectorCenterX,
+        y2: level2BusY,
       });
 
-      const maxRowHeight = Math.max(...preparedCols.map((c) => c.totalColHeight));
-      const connectorOverhead = BUS_DROP_TOP + BUS_DROP_BOTTOM;
+      const colCenters: number[] = [];
 
-      // Se a faixa inteira couber em uma página nova mas não na atual, quebra antes
-      const movedToNewPage =
-        chunkIdx > 0 || cursorY + connectorOverhead + maxRowHeight > WBS_PDF_PAGE.contentBottom
-          ? ensureSpace(
-              Math.min(
-                connectorOverhead + maxRowHeight,
-                WBS_PDF_PAGE.contentBottom - WBS_PDF_PAGE.marginTop
-              )
-            )
-          : false;
+      sector.level2Cols.forEach((col, colIdx) => {
+        const colX = colsStartX + colIdx * (COL_WIDTH + COL_GAP);
+        const colCenterX = colX + COL_WIDTH / 2;
+        colCenters.push(colCenterX);
 
-      // Conector do Nível 1 (ou continuação) para o barramento horizontal desta faixa
-      const busY = cursorY + BUS_DROP_TOP;
-      const firstCenterX = preparedCols[0].colCenterX;
-      const lastCenterX = preparedCols[preparedCols.length - 1].colCenterX;
-
-      if (chunkIdx === 0 && !movedToNewPage) {
-        // Linha descendo do centro do Nível 1 até o barramento
+        // Perna vertical do barramento de Nível 2 até o topo do nó Nível 2
         lines.push({
-          page: currentPage,
-          x1: centerX,
-          y1: level1Y + level1Height,
-          x2: centerX,
-          y2: busY,
-        });
-        // Barra horizontal abrangendo do centro do Nível 1 a todas as colunas
-        const busLeft = Math.min(firstCenterX, centerX);
-        const busRight = Math.max(lastCenterX, centerX);
-        if (busRight > busLeft) {
-          lines.push({
-            page: currentPage,
-            x1: busLeft,
-            y1: busY,
-            x2: busRight,
-            y2: busY,
-          });
-        }
-      } else {
-        // Continuação de faixa (2ª faixa de Nível 2 ou nova página)
-        const busLeft = Math.min(firstCenterX, SECTION_SPINE_X);
-        const busRight = lastCenterX;
-        lines.push({
-          page: currentPage,
-          x1: busLeft,
-          y1: busY,
-          x2: busRight,
-          y2: busY,
-        });
-        if (!movedToNewPage) {
-          // Conecta verticalmente à barra da faixa anterior na margem interna da seção
-          lines.push({
-            page: currentPage,
-            x1: SECTION_SPINE_X,
-            y1: Math.max(WBS_PDF_PAGE.marginTop, cursorY - ROW_GAP),
-            x2: SECTION_SPINE_X,
-            y2: busY,
-          });
-        }
-      }
-
-      const rowTopY = busY + BUS_DROP_BOTTOM;
-      let maxReachedY = rowTopY;
-      let maxReachedPage = currentPage;
-
-      // Desenha cada coluna (Nível 2 no topo + Nível 3+ empilhados verticalmente para baixo)
-      for (const col of preparedCols) {
-        // Linha vertical do barramento até o topo do nó Nível 2
-        lines.push({
-          page: currentPage,
-          x1: col.colCenterX,
-          y1: busY,
-          x2: col.colCenterX,
-          y2: rowTopY,
+          page: 1,
+          x1: colCenterX,
+          y1: level2BusY,
+          x2: colCenterX,
+          y2: level2Y,
         });
 
         boxes.push({
-          id: col.l2Node.id,
-          page: currentPage,
-          x: col.colX,
-          y: rowTopY,
-          width: colWidth,
-          height: col.l2Height,
+          id: col.node.id,
+          page: 1,
+          x: colX,
+          y: level2Y,
+          width: COL_WIDTH,
+          height: col.height,
           chamfer: 2.2,
           level: 2,
-          lines: col.l2Lines,
-          code: col.l2Node.code,
+          lines: col.lines,
+          code: col.node.code,
         });
 
-        let itemPage = currentPage;
-        let itemY = rowTopY + col.l2Height;
-        let lastLevel3ConnectorY = itemY;
+        // Empilha Nível 3+ verticalmente para baixo abaixo do seu Nível 2
+        let itemY = level2Y + maxLevel2Height;
+        let lastLevel3ConnectorY = level2Y + col.height;
+        maxBottomY = Math.max(maxBottomY, level2Y + col.height);
 
         for (const item of col.descendants) {
-          const nextY = itemY + LEVEL3_VERTICAL_GAP;
-
-          // Paginação defensiva se uma única coluna ultrapassar o limite da página
-          if (nextY + item.height > WBS_PDF_PAGE.contentBottom) {
-            itemPage += 1;
-            itemY = WBS_PDF_PAGE.marginTop;
-            lastLevel3ConnectorY = itemY;
-          } else {
-            itemY = nextY;
-          }
-
-          const boxX = col.colX + item.indent;
-          const boxWidth = Math.max(24, colWidth - item.indent);
+          itemY += LEVEL3_VERTICAL_GAP;
+          const boxX = colX + item.indent;
+          const boxWidth = Math.max(22, COL_WIDTH - item.indent);
 
           if (item.level === 3) {
-            // Linha vertical central conectando Nível 2 -> Nível 3 (passa por trás da caixa)
             lines.push({
-              page: itemPage,
-              x1: col.colCenterX,
+              page: 1,
+              x1: colCenterX,
               y1: lastLevel3ConnectorY,
-              x2: col.colCenterX,
+              x2: colCenterX,
               y2: itemY + item.height / 2,
             });
             lastLevel3ConnectorY = itemY + item.height;
           } else {
-            // Conector em L para Nível 4+ recuado à direita
-            const branchX = col.colX + 2;
+            const branchX = colX + 2;
             lines.push(
               {
-                page: itemPage,
+                page: 1,
                 x1: branchX,
-                y1: Math.max(WBS_PDF_PAGE.marginTop, itemY - LEVEL3_VERTICAL_GAP),
+                y1: itemY - LEVEL3_VERTICAL_GAP,
                 x2: branchX,
                 y2: itemY + item.height / 2,
               },
               {
-                page: itemPage,
+                page: 1,
                 x1: branchX,
                 y1: itemY + item.height / 2,
                 x2: boxX,
@@ -576,7 +487,7 @@ export function computeWbsPdfLayout({
 
           boxes.push({
             id: item.node.id,
-            page: itemPage,
+            page: 1,
             x: boxX,
             y: itemY,
             width: boxWidth,
@@ -588,49 +499,58 @@ export function computeWbsPdfLayout({
           });
 
           itemY += item.height;
-
-          if (
-            itemPage > maxReachedPage ||
-            (itemPage === maxReachedPage && itemY > maxReachedY)
-          ) {
-            maxReachedPage = itemPage;
-            maxReachedY = itemY;
-          }
+          maxBottomY = Math.max(maxBottomY, itemY);
         }
+      });
 
-        if (
-          currentPage === maxReachedPage &&
-          rowTopY + col.l2Height > maxReachedY
-        ) {
-          maxReachedY = rowTopY + col.l2Height;
-        }
+      // Barra horizontal do Nível 2 abrangendo todas as colunas do setor
+      const minColCenter = Math.min(sectorCenterX, ...colCenters);
+      const maxColCenter = Math.max(sectorCenterX, ...colCenters);
+      if (maxColCenter > minColCenter) {
+        lines.push({
+          page: 1,
+          x1: minColCenter,
+          y1: level2BusY,
+          x2: maxColCenter,
+          y2: level2BusY,
+        });
       }
-
-      currentPage = maxReachedPage;
-      cursorY = maxReachedY + (chunkIdx < level2Chunks.length - 1 ? ROW_GAP : 0);
     }
 
-    cursorY += SECTION_GAP;
+    cursorX += sector.sectorWidth + SECTOR_GAP;
   }
 
-  // Finaliza as linhas da espinha vertical principal em cada página onde há Nível 1
-  for (const [page, endY] of pageSpineEndY.entries()) {
-    const startY = pageSpineStartY.get(page) ?? WBS_PDF_PAGE.marginTop;
-    if (endY > startY) {
+  // Conector do Nível 0 descendo para o barramento horizontal principal
+  lines.push({
+    page: 1,
+    x1: centerX,
+    y1: rootBottomY,
+    x2: centerX,
+    y2: rootBusY,
+  });
+
+  if (sectorCenterXs.length > 0) {
+    const minSectorX = Math.min(centerX, ...sectorCenterXs);
+    const maxSectorX = Math.max(centerX, ...sectorCenterXs);
+    if (maxSectorX > minSectorX) {
       lines.push({
-        page,
-        x1: SPINE_X,
-        y1: startY,
-        x2: SPINE_X,
-        y2: endY,
+        page: 1,
+        x1: minSectorX,
+        y1: rootBusY,
+        x2: maxSectorX,
+        y2: rootBusY,
       });
     }
   }
 
-  const maxPageFromBoxes = boxes.reduce((max, b) => Math.max(max, b.page), 1);
+  const pageHeight = Number(
+    Math.max(WBS_PDF_PAGE.minHeight, maxBottomY + WBS_PDF_PAGE.marginBottom).toFixed(2)
+  );
 
   return {
-    pageCount: Math.max(currentPage, maxPageFromBoxes),
+    pageCount: 1,
+    pageWidth,
+    pageHeight,
     boxes,
     lines,
     totalNodes,
