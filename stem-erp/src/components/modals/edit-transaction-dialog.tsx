@@ -20,6 +20,7 @@ import {
 import {
   deliveryGroupValues,
   resolveTransactionDocumentRef,
+  sanitizeNfeCode,
   shouldShowNfeCodeField,
   trackingMethodValues,
   transactionTypeValues,
@@ -446,10 +447,12 @@ export function EditTransactionDialog({
                     <FormLabel>Código da NF-e</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Ex: NF-e 000123 ou chave de acesso"
-                        maxLength={60}
+                        placeholder="Ex: 35260412345678000199550010000012341000012345"
                         {...field}
                         value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(sanitizeNfeCode(e.target.value).slice(0, 60))
+                        }
                       />
                     </FormControl>
                     <FormMessage />

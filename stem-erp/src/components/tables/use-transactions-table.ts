@@ -14,16 +14,20 @@ import {
   DELIVERY_GROUP_LABELS,
   TRACKING_METHOD_LABELS,
 } from "@/lib/constants";
-import { downloadCsvFile, triggerPortfolioPdfPrint } from "@/lib/export-utils";
+import { toast } from "sonner";
+import { downloadCsvFile } from "@/lib/export-utils";
+import { exportFinancialStatementToPdf } from "@/lib/financial-statement-pdf-export";
 import { formatCurrencyFromCents, formatDateBR } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/financial";
 
 export function useTransactionsTable(
   transactions: TransactionDTO[],
-  columns: ColumnDef<TransactionDTO>[]
+  columns: ColumnDef<TransactionDTO>[],
+  teamName?: string
 ) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
+  const [isExportingPdf, setIsExportingPdf] = React.useState(false);
 
   const table = useReactTable({
     data: transactions,
@@ -74,7 +78,7 @@ export function useTransactionsTable(
         "Estrategia Aquisicao",
         "Descricao",
         "Metodo Comprobatorio",
-        "Ref Documento",
+        "Codigo NF-e",
         "Valor (R$)",
       ],
       filteredRows.map((tx) => [
@@ -95,6 +99,27 @@ export function useTransactionsTable(
     );
   }, [table]);
 
+  const handleExportPdf = React.useCallback(async () => {
+    const filteredRows = table.getFilteredRowModel().rows.map((r) => r.original);
+    if (filteredRows.length === 0) {
+      toast.error("Não há lançamentos financeiros para exportar.");
+      return;
+    }
+
+    try {
+      setIsExportingPdf(true);
+      const { filename } = await exportFinancialStatementToPdf({
+        transactions: filteredRows,
+        teamName,
+      });
+      toast.success(`Extrato financeiro exportado: ${filename}`);
+    } catch {
+      toast.error("Não foi possível gerar o extrato financeiro em PDF.");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }, [table, teamName]);
+
   const resetFilters = React.useCallback(() => {
     setColumnFilters([]);
     setGlobalFilter("");
@@ -111,7 +136,8 @@ export function useTransactionsTable(
     startRow,
     formattedEndRow,
     handleExportCsv,
-    triggerPdf: triggerPortfolioPdfPrint,
+    triggerPdf: handleExportPdf,
+    isExportingPdf,
     resetFilters,
   };
 }

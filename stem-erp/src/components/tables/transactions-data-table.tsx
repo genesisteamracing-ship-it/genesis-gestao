@@ -10,6 +10,7 @@ import {
   Download,
   FileText,
   Filter,
+  Loader2,
   RotateCcw,
   Search,
 } from "lucide-react";
@@ -57,6 +58,7 @@ interface TransactionsDataTableProps {
   transactions: TransactionDTO[];
   categories?: CategoryDTO[];
   budgetResources?: BudgetResourceDTO[];
+  teamName?: string;
   isLoading?: boolean;
 }
 
@@ -81,6 +83,7 @@ export function TransactionsDataTable({
   transactions,
   categories = [],
   budgetResources = [],
+  teamName,
   isLoading = false,
 }: TransactionsDataTableProps) {
   const seasonMonths = useSeasonMonths();
@@ -212,8 +215,9 @@ export function TransactionsDataTable({
     formattedEndRow,
     handleExportCsv,
     triggerPdf,
+    isExportingPdf,
     resetFilters,
-  } = useTransactionsTable(transactions, columns);
+  } = useTransactionsTable(transactions, columns, teamName);
 
   if (isLoading) {
     return <StateView state="loading" />;
@@ -244,10 +248,15 @@ export function TransactionsDataTable({
           <Button
             variant="outline"
             onClick={triggerPdf}
+            disabled={isExportingPdf || totalFiltered === 0}
             className="h-10 sm:h-11 w-full sm:w-auto rounded-xl border-border bg-card font-semibold text-foreground hover:bg-muted px-4"
           >
-            <FileText className="h-4 w-4" />
-            <span>Relatório PDF</span>
+            {isExportingPdf ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            <span>{isExportingPdf ? "Exportando..." : "Relatório PDF"}</span>
           </Button>
         </div>
       </div>
