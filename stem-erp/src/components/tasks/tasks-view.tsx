@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Loader2, Plus } from "lucide-react";
+import { AlertTriangle, FileDown, Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { deleteTaskAction, updateMyTaskStatusAction } from "@/actions/tasks.actions";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { exportGanttToPdf } from "@/lib/gantt-pdf-export";
 import { getTaskView, type TaskViewId } from "@/lib/task-navigation";
 import type { ComponentProps } from "react";
 import type { TaskRecord, TaskRisk, TaskWorkspace } from "@/types/tasks";
@@ -40,6 +42,7 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
   const [deleteError, setDeleteError] = useState("");
   const [selectedRisk, setSelectedRisk] = useState<string>();
   const [highlightId, setHighlightId] = useState<string>();
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const task = workspace?.tasks.find((item) => item.id === panel?.id);
   const risk = workspace?.paths.find((item) => item.id === panel?.id);
   const highlighted = workspace?.paths.find((item) => item.id === highlightId && item.missing.length === 0);
@@ -47,6 +50,28 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
   const openTask = (id: string) => setPanel({ type: "detail", id });
   const editTask = (id: string) => setPanel({ type: "task", id });
   const editRisk = (item?: TaskRisk) => setPanel({ type: "risk", id: item?.id });
+
+  async function handleExportGanttPdf() {
+    if (!workspace || visible.length === 0) {
+      toast.error("Não há tarefas no cronograma para exportar.");
+      return;
+    }
+
+    try {
+      setIsExportingPdf(true);
+      const { filename } = await exportGanttToPdf({
+        tasks: visible,
+        edges: workspace.edges,
+        highlightedPath: highlighted,
+        teamName: shell.activeTeam?.name,
+      });
+      toast.success(`PDF do Gantt exportado: ${filename}`);
+    } catch {
+      toast.error("Não foi possível gerar o PDF do Gantt.");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }
 
   const saved = () => {
     if (panel?.type === "task" && !panel.id) {
@@ -87,11 +112,32 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
       title={title}
       subtitle={subtitle}
       headerAction={
-        workspace?.canEdit && (
-          <Button type="button" className="w-full sm:w-auto" onClick={() => setPanel({ type: "task" })}>
-            <Plus aria-hidden="true" />
-            Nova tarefa
-          </Button>
+        (viewId === "gantt" || workspace?.canEdit) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {viewId === "gantt" && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleExportGanttPdf}
+                disabled={isExportingPdf || !workspace || visible.length === 0}
+                className="w-full sm:w-auto gap-2 text-xs font-semibold cursor-pointer shrink-0 shadow-2xs"
+                aria-label="Exportar Gantt em PDF"
+              >
+                {isExportingPdf ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4" />
+                )}
+                <span>{isExportingPdf ? "Exportando..." : "Exportar PDF"}</span>
+              </Button>
+            )}
+            {workspace?.canEdit && (
+              <Button type="button" className="w-full sm:w-auto" onClick={() => setPanel({ type: "task" })}>
+                <Plus aria-hidden="true" />
+                Nova tarefa
+              </Button>
+            )}
+          </div>
         )
       }
     >
