@@ -36,6 +36,7 @@ export default async function LancamentosPage() {
         transactions={metrics.transactions}
         categories={metrics.categories}
         budgetResources={metrics.budgetResources}
+        teamName={metrics.activeTeam.name}
       />
     </DashboardShell>
   );
