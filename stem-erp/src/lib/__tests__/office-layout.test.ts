@@ -125,21 +125,24 @@ describe("office-layout & office-service rules", () => {
     );
   });
 
-  it("deriva status OVERDUE quando há tarefa em andamento atrasada e prioriza papel R", () => {
+  it("deriva status OVERDUE apenas quando o integrante é Responsável (R) e ignora atraso para C, I e A", () => {
     const tasks: OfficeTaskItemDTO[] = [
-      makeTask({ id: "t-a", role: "C", isOverdue: false, endDate: "2026-11-20" }),
-      makeTask({ id: "t-b", role: "R", isOverdue: false, endDate: "2026-11-25" }),
+      makeTask({ id: "t-c", role: "C", isOverdue: true, endDate: "2026-11-05" }),
+      makeTask({ id: "t-i", role: "I", isOverdue: true, endDate: "2026-11-06" }),
+      makeTask({ id: "t-a", role: "A", isOverdue: true, endDate: "2026-11-07" }),
+      makeTask({ id: "t-r-ok", role: "R", isOverdue: false, endDate: "2026-11-25" }),
     ];
 
+    // Mesmo com C, I e A marcados como atrasados, status continua WORKING pois R não está atrasada
     assert.equal(deriveMemberStatus(tasks), "WORKING");
-    assert.equal(pickPrimaryActiveTask(tasks)?.id, "t-b");
+    assert.equal(pickPrimaryActiveTask(tasks)?.id, "t-r-ok");
 
-    const withOverdue = [
+    const withResponsibleOverdue = [
       ...tasks,
-      makeTask({ id: "t-c", role: "A", isOverdue: true, endDate: "2026-11-05" }),
+      makeTask({ id: "t-r-late", role: "R", isOverdue: true, endDate: "2026-11-04" }),
     ];
-    assert.equal(deriveMemberStatus(withOverdue), "OVERDUE");
-    assert.equal(pickPrimaryActiveTask(withOverdue)?.id, "t-c");
+    assert.equal(deriveMemberStatus(withResponsibleOverdue), "OVERDUE");
+    assert.equal(pickPrimaryActiveTask(withResponsibleOverdue)?.id, "t-r-late");
     assert.equal(deriveMemberStatus([]), "IDLE");
   });
 

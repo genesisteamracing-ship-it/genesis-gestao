@@ -52,7 +52,7 @@ export function LoginForm() {
       }
 
       toast.success(result.message);
-      router.push("/dashboard");
+      router.push("/office");
       router.refresh();
     });
   }

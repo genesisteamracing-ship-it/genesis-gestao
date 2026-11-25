@@ -174,7 +174,7 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
         {/* Logo Topo */}
         <div className="flex h-[70px] shrink-0 items-center justify-center px-6 border-b border-border">
           <Link
-            href="/dashboard"
+            href="/office"
             className="text-xl font-extrabold tracking-tight"
           >
             <span className="text-primary">Genesis</span>
