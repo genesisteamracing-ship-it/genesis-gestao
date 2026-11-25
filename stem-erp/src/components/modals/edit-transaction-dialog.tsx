@@ -19,6 +19,8 @@ import {
 } from "@/lib/constants";
 import {
   deliveryGroupValues,
+  resolveTransactionDocumentRef,
+  shouldShowNfeCodeField,
   trackingMethodValues,
   transactionTypeValues,
 } from "@/lib/validations/financial";
@@ -75,7 +77,11 @@ const editTransactionFormSchema = z.object({
   sponsorId: z.string().optional().nullable(),
   description: z.string().min(3, "Descreva a transação (mín. 3 caracteres)"),
   trackingMethod: z.enum(trackingMethodValues),
-  documentRef: z.string().optional(),
+  documentRef: z
+    .string()
+    .trim()
+    .max(60, "Código da NF-e muito longo (máx. 60 caracteres)")
+    .optional(),
   amountReais: z
     .string()
     .min(1, "Informe o valor")
@@ -197,7 +203,11 @@ export function EditTransactionDialog({
             : null,
         description: values.description,
         trackingMethod: values.trackingMethod,
-        documentRef: values.documentRef || undefined,
+        documentRef: resolveTransactionDocumentRef(
+          values.type,
+          values.trackingMethod,
+          values.documentRef
+        ),
         amountCents,
       });
 
@@ -426,6 +436,27 @@ export function EditTransactionDialog({
                 </FormItem>
               )}
             />
+
+            {shouldShowNfeCodeField(watchedType, watchedTrackingMethod) && (
+              <FormField
+                control={form.control}
+                name="documentRef"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Código da NF-e</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: NF-e 000123 ou chave de acesso"
+                        maxLength={60}
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {isSponsorRelated && (
               <FormField

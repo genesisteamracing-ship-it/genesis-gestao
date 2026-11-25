@@ -84,7 +84,11 @@ export const createTransactionSchema = z.object({
   trackingMethod: z.enum(trackingMethodValues, {
     required_error: "Selecione o método comprobatório",
   }),
-  documentRef: z.string().optional(),
+  documentRef: z
+    .string()
+    .trim()
+    .max(60, "Código da NF-e muito longo (máx. 60 caracteres)")
+    .optional(),
   sponsorId: z.string().optional().nullable(),
   amountCents: z.coerce.number().int().positive("O valor deve ser maior que zero"),
   isBarterCounterpart: z.boolean().optional().default(false),
@@ -181,3 +185,30 @@ export type DeleteSponsorInput = z.infer<typeof deleteSponsorSchema>;
 
 export type CreateReturnActionInput = z.infer<typeof createReturnActionSchema>;
 export type DeleteReturnActionInput = z.infer<typeof deleteReturnActionSchema>;
+
+/**
+ * Indica se o campo de código da NF-e deve ser exibido no lançamento:
+ * somente para Despesas (APPLICATION) com método comprobatório NF-e.
+ */
+export function shouldShowNfeCodeField(
+  type: (typeof transactionTypeValues)[number],
+  trackingMethod: (typeof trackingMethodValues)[number]
+): boolean {
+  return type === "APPLICATION" && trackingMethod === "NFE";
+}
+
+/**
+ * Resolve o valor de `documentRef` a ser persistido:
+ * mantém o código da NF-e normalizado quando aplicável e limpa caso contrário.
+ */
+export function resolveTransactionDocumentRef(
+  type: (typeof transactionTypeValues)[number],
+  trackingMethod: (typeof trackingMethodValues)[number],
+  documentRef?: string
+): string | undefined {
+  if (!shouldShowNfeCodeField(type, trackingMethod)) {
+    return undefined;
+  }
+  const trimmed = documentRef?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
