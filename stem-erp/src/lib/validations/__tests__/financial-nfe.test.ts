@@ -3,10 +3,20 @@ import assert from "node:assert/strict";
 import {
   createTransactionSchema,
   resolveTransactionDocumentRef,
+  sanitizeNfeCode,
   shouldShowNfeCodeField,
 } from "../financial";
 
 describe("Código da NF-e em lançamentos de despesas", () => {
+  it("deve remover espaços em branco das bordas e internos do código da NF-e", () => {
+    assert.equal(
+      sanitizeNfeCode("  3526 0412 3456 7800 0199 5500 1000 0012 3410 0001 2345  "),
+      "35260412345678000199550010000012341000012345"
+    );
+    assert.equal(sanitizeNfeCode(" NF-e\t000 123\n "), "NF-e000123");
+    assert.equal(sanitizeNfeCode("   "), "");
+  });
+
   it("deve exibir o campo de código da NF-e apenas para despesas (APPLICATION) com método NFE", () => {
     assert.equal(shouldShowNfeCodeField("APPLICATION", "NFE"), true);
     assert.equal(shouldShowNfeCodeField("APPLICATION", "RECEIPT"), false);

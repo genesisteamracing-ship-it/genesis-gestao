@@ -86,8 +86,8 @@ export const createTransactionSchema = z.object({
   }),
   documentRef: z
     .string()
-    .trim()
-    .max(60, "Código da NF-e muito longo (máx. 60 caracteres)")
+    .transform((val) => sanitizeNfeCode(val))
+    .pipe(z.string().max(60, "Código da NF-e muito longo (máx. 60 caracteres)"))
     .optional(),
   sponsorId: z.string().optional().nullable(),
   amountCents: z.coerce.number().int().positive("O valor deve ser maior que zero"),
@@ -187,6 +187,13 @@ export type CreateReturnActionInput = z.infer<typeof createReturnActionSchema>;
 export type DeleteReturnActionInput = z.infer<typeof deleteReturnActionSchema>;
 
 /**
+ * Remove espaços em branco das bordas e internos do código da NF-e.
+ */
+export function sanitizeNfeCode(value?: string | null): string {
+  return (value ?? "").trim().replace(/\s+/g, "");
+}
+
+/**
  * Indica se o campo de código da NF-e deve ser exibido no lançamento:
  * somente para Despesas (APPLICATION) com método comprobatório NF-e.
  */
@@ -199,7 +206,7 @@ export function shouldShowNfeCodeField(
 
 /**
  * Resolve o valor de `documentRef` a ser persistido:
- * mantém o código da NF-e normalizado quando aplicável e limpa caso contrário.
+ * mantém o código da NF-e sem espaços (bordas e internos) quando aplicável e limpa caso contrário.
  */
 export function resolveTransactionDocumentRef(
   type: (typeof transactionTypeValues)[number],
@@ -209,6 +216,6 @@ export function resolveTransactionDocumentRef(
   if (!shouldShowNfeCodeField(type, trackingMethod)) {
     return undefined;
   }
-  const trimmed = documentRef?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : undefined;
+  const cleaned = sanitizeNfeCode(documentRef);
+  return cleaned.length > 0 ? cleaned : undefined;
 }
