@@ -2,7 +2,11 @@
 
 import * as React from "react";
 import type { DeliveryGroup } from "@prisma/client";
-import { getOfficeSnapshotAction } from "@/actions/office-actions";
+import { toast } from "sonner";
+import {
+  getOfficeSnapshotAction,
+  markTrainingAttendanceAction,
+} from "@/actions/office-actions";
 import {
   buildOfficeFloorplan,
   filterOfficeMembers,
@@ -25,6 +29,13 @@ interface UseOfficeOptions {
     data?: OfficeSnapshotDTO;
     error?: string;
   }>;
+  onMarkAttendance?: () => Promise<{
+    success: boolean;
+    data?: OfficeSnapshotDTO;
+    message?: string;
+    alreadyMarked?: boolean;
+    error?: string;
+  }>;
   pollIntervalMs?: number;
 }
 
@@ -33,6 +44,7 @@ export function useOffice({
   initialError = null,
   isLoadingInitial = false,
   onRefresh,
+  onMarkAttendance,
   pollIntervalMs = 30000,
 }: UseOfficeOptions) {
   const [snapshot, setSnapshot] = React.useState<OfficeSnapshotDTO | null>(
@@ -41,6 +53,8 @@ export function useOffice({
   const [error, setError] = React.useState<string | null>(initialError);
   const [isLoading, setIsLoading] = React.useState<boolean>(isLoadingInitial);
   const [isRefreshing, setIsRefreshing] = React.useState<boolean>(false);
+  const [isMarkingAttendance, setIsMarkingAttendance] =
+    React.useState<boolean>(false);
 
   const [viewMode, setViewMode] = React.useState<OfficeViewMode>("canvas");
   const [search, setSearch] = React.useState<string>("");
@@ -59,6 +73,29 @@ export function useOffice({
   const [focusRequestId, setFocusRequestId] = React.useState<number>(0);
 
   const fetcher = onRefresh ?? getOfficeSnapshotAction;
+  const attendanceHandler = onMarkAttendance ?? markTrainingAttendanceAction;
+
+  const markAttendance = React.useCallback(async () => {
+    setIsMarkingAttendance(true);
+    try {
+      const result = await attendanceHandler();
+      if (result.success && result.data) {
+        setSnapshot(result.data);
+        setError(null);
+        toast.success(
+          result.message ?? "Presença marcada com sucesso no treino de hoje!"
+        );
+      } else {
+        toast.error(
+          result.error ?? "Não foi possível marcar presença no treino."
+        );
+      }
+    } catch {
+      toast.error("Falha de conexão ao marcar presença no treino.");
+    } finally {
+      setIsMarkingAttendance(false);
+    }
+  }, [attendanceHandler]);
 
   const refresh = React.useCallback(async () => {
     setIsRefreshing(true);
@@ -146,7 +183,9 @@ export function useOffice({
     error,
     isLoading,
     isRefreshing,
+    isMarkingAttendance,
     refresh,
+    markAttendance,
     viewMode,
     setViewMode,
     search,

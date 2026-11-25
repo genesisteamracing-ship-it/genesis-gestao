@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/auth/login-form";
 export default async function LoginPage() {
   const user = await getCurrentUserFromSession();
   if (user) {
-    redirect("/dashboard");
+    redirect("/office");
   }
 
   return (

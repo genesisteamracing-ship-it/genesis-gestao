@@ -1,11 +1,13 @@
-import { TaskStatus } from "@prisma/client";
+import { TaskStatus, UserRole } from "@prisma/client";
 import {
   deriveMemberStatus,
+  isTaskOverdueForMember,
   pickPrimaryActiveTask,
 } from "@/lib/office-layout";
 import { prisma } from "@/lib/prisma";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import type {
+  OfficeAttendanceDTO,
   OfficeMemberDTO,
   OfficeSnapshotDTO,
   OfficeTaskItemDTO,
@@ -34,7 +36,11 @@ function getTodayIsoDate(): string {
   return `${year}-${month}-${day}`;
 }
 
-export { deriveMemberStatus, pickPrimaryActiveTask };
+function toUtcDateOnly(isoDate: string): Date {
+  return new Date(`${isoDate}T00:00:00.000Z`);
+}
+
+export { deriveMemberStatus, isTaskOverdueForMember, pickPrimaryActiveTask };
 
 export async function getOfficeSnapshotService(
   user: AuthenticatedUserDTO,
@@ -43,7 +49,7 @@ export async function getOfficeSnapshotService(
 ): Promise<OfficeSnapshotDTO> {
   const todayIso = getTodayIsoDate();
 
-  const [users, tasks] = await prisma.$transaction([
+  const [users, tasks, rawAttendances] = await prisma.$transaction([
     prisma.user.findMany({
       where: { teamId, isActive: true },
       select: {
@@ -83,6 +89,24 @@ export async function getOfficeSnapshotService(
       },
       orderBy: [{ sortOrder: "asc" }, { endDate: "asc" }, { title: "asc" }],
     }),
+    prisma.trainingAttendance.findMany({
+      where: { teamId },
+      select: {
+        id: true,
+        userId: true,
+        date: true,
+        checkedAt: true,
+        notes: true,
+        user: {
+          select: {
+            name: true,
+            deliveryGroup: true,
+            jobTitle: true,
+          },
+        },
+      },
+      orderBy: [{ date: "desc" }, { checkedAt: "desc" }],
+    }),
   ]);
 
   const tasksByMemberId = new Map<string, Map<string, OfficeTaskItemDTO>>();
@@ -93,7 +117,7 @@ export async function getOfficeSnapshotService(
   for (const task of tasks) {
     const startDate = task.startDate.toISOString().slice(0, 10);
     const endDate = task.endDate.toISOString().slice(0, 10);
-    const isOverdue =
+    const isTaskPastDue =
       (task.status === TaskStatus.IN_PROGRESS ||
         task.status === TaskStatus.TODO) &&
       endDate < todayIso;
@@ -105,6 +129,10 @@ export async function getOfficeSnapshotService(
       if (existing && ROLE_PRIORITY[existing.role] <= ROLE_PRIORITY[role]) {
         return;
       }
+      // Regra de negócio: "Em atraso" aparece apenas para quem é Responsável (R),
+      // nunca para Informados (I), Consultados (C) ou Autor/Aprovador (A).
+      const isOverdue = isTaskPastDue && role === "R";
+
       bucket.set(task.id, {
         id: task.id,
         title: task.title,
@@ -138,7 +166,9 @@ export async function getOfficeSnapshotService(
       if (STATUS_PRIORITY[a.status] !== STATUS_PRIORITY[b.status]) {
         return STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status];
       }
-      if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
+      const aOverdue = isTaskOverdueForMember(a);
+      const bOverdue = isTaskOverdueForMember(b);
+      if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
       if (ROLE_PRIORITY[a.role] !== ROLE_PRIORITY[b.role]) {
         return ROLE_PRIORITY[a.role] - ROLE_PRIORITY[b.role];
       }
@@ -154,8 +184,8 @@ export async function getOfficeSnapshotService(
     const doneTasksCount = sortedTasks.filter(
       (task) => task.status === TaskStatus.DONE
     ).length;
-    const overdueTasksCount = sortedTasks.filter(
-      (task) => task.isOverdue
+    const overdueTasksCount = sortedTasks.filter((task) =>
+      isTaskOverdueForMember(task)
     ).length;
 
     return {
@@ -177,6 +207,21 @@ export async function getOfficeSnapshotService(
     };
   });
 
+  const attendances: OfficeAttendanceDTO[] = rawAttendances.map((item) => ({
+    id: item.id,
+    userId: item.userId,
+    userName: item.user.name,
+    deliveryGroup: item.user.deliveryGroup,
+    jobTitle: item.user.jobTitle,
+    date: item.date.toISOString().slice(0, 10),
+    checkedAt: item.checkedAt.toISOString(),
+    notes: item.notes,
+  }));
+
+  const hasMarkedAttendanceToday = attendances.some(
+    (entry) => entry.userId === user.id && entry.date === todayIso
+  );
+
   const workingCount = members.filter(
     (member) => member.status === "WORKING"
   ).length;
@@ -197,6 +242,10 @@ export async function getOfficeSnapshotService(
     teamName,
     currentUserId: user.id,
     canAccessTasks: Boolean(user.permissions.tasks),
+    canMarkAttendance: user.role !== UserRole.AUDITOR,
+    hasMarkedAttendanceToday,
+    todayIso,
+    attendances,
     generatedAt: new Date().toISOString(),
     members,
     summary: {
@@ -208,4 +257,40 @@ export async function getOfficeSnapshotService(
       totalDoneTasks,
     },
   };
+}
+
+export async function markTrainingAttendanceService(
+  user: AuthenticatedUserDTO,
+  teamId: string,
+  notes?: string
+): Promise<{ alreadyMarked: boolean }> {
+  const todayIso = getTodayIsoDate();
+  const dateOnly = toUtcDateOnly(todayIso);
+  const cleanNotes = notes?.trim() ? notes.trim().slice(0, 200) : null;
+
+  const existing = await prisma.trainingAttendance.findUnique({
+    where: {
+      teamId_userId_date: {
+        teamId,
+        userId: user.id,
+        date: dateOnly,
+      },
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    return { alreadyMarked: true };
+  }
+
+  await prisma.trainingAttendance.create({
+    data: {
+      teamId,
+      userId: user.id,
+      date: dateOnly,
+      notes: cleanNotes,
+    },
+  });
+
+  return { alreadyMarked: false };
 }

@@ -4,8 +4,11 @@ import * as React from "react";
 import {
   AlertCircle,
   Building2,
+  CheckCircle2,
   List,
+  Loader2,
   RefreshCw,
+  UserCheck,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DELIVERY_GROUP_SHORT_LABELS } from "@/lib/constants";
 import type { OfficeSnapshotDTO } from "@/types/office";
+import { OfficeAttendanceTable } from "./office-attendance-table";
 import { OfficeCanvas } from "./office-canvas";
 import { OfficeHudPanel } from "./office-hud-panel";
 import { officeStatusBadgeStyles } from "./office-styles";
@@ -34,6 +38,13 @@ export interface OfficeViewProps {
     data?: OfficeSnapshotDTO;
     error?: string;
   }>;
+  onMarkAttendance?: () => Promise<{
+    success: boolean;
+    data?: OfficeSnapshotDTO;
+    message?: string;
+    alreadyMarked?: boolean;
+    error?: string;
+  }>;
   pollIntervalMs?: number;
 }
 
@@ -42,6 +53,7 @@ export function OfficeView({
   initialError = null,
   isLoadingInitial = false,
   onRefresh,
+  onMarkAttendance,
   pollIntervalMs = 30000,
 }: OfficeViewProps) {
   const office = useOffice({
@@ -49,6 +61,7 @@ export function OfficeView({
     initialError,
     isLoadingInitial,
     onRefresh,
+    onMarkAttendance,
     pollIntervalMs,
   });
 
@@ -166,19 +179,52 @@ export function OfficeView({
           </button>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => void office.refresh()}
-          disabled={office.isRefreshing}
-          className="h-9 gap-1.5 text-xs font-semibold w-full sm:w-auto"
-        >
-          <RefreshCw
-            className={`h-3.5 w-3.5 ${office.isRefreshing ? "animate-spin" : ""}`}
-          />
-          <span>Atualizar agora</span>
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
+          {office.snapshot.canMarkAttendance !== false && (
+            <Button
+              type="button"
+              variant={
+                office.snapshot.hasMarkedAttendanceToday ? "outline" : "default"
+              }
+              size="sm"
+              onClick={() => void office.markAttendance()}
+              disabled={
+                office.isMarkingAttendance ||
+                Boolean(office.snapshot.hasMarkedAttendanceToday)
+              }
+              className="h-9 gap-1.5 text-xs font-semibold w-full sm:w-auto cursor-pointer"
+            >
+              {office.isMarkingAttendance ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : office.snapshot.hasMarkedAttendanceToday ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+              ) : (
+                <UserCheck className="h-3.5 w-3.5" />
+              )}
+              <span>
+                {office.isMarkingAttendance
+                  ? "Marcando..."
+                  : office.snapshot.hasMarkedAttendanceToday
+                    ? "Presença marcada hoje"
+                    : "Marcar Presença"}
+              </span>
+            </Button>
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void office.refresh()}
+            disabled={office.isRefreshing}
+            className="h-9 gap-1.5 text-xs font-semibold w-full sm:w-auto cursor-pointer"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${office.isRefreshing ? "animate-spin" : ""}`}
+            />
+            <span>Atualizar agora</span>
+          </Button>
+        </div>
       </div>
 
       {/* Layout Principal: Escritório + HUD Lateral */}
@@ -267,6 +313,12 @@ export function OfficeView({
           onSelectMember={office.selectMember}
         />
       </div>
+
+      {/* Tabela de Presença nos Treinos */}
+      <OfficeAttendanceTable
+        attendances={office.snapshot.attendances ?? []}
+        todayIso={office.snapshot.todayIso}
+      />
     </section>
   );
 }

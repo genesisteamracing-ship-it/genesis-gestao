@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (sessionPayload && pathname === "/login") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/office", request.url));
   }
 
   // Rota /equipe restrita exclusivamente ao SUPER_ADMIN
@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
     (pathname === "/equipe" || pathname.startsWith("/equipe/")) &&
     sessionPayload.role !== "SUPER_ADMIN"
   ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/office", request.url));
   }
 
   return NextResponse.next();

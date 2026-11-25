@@ -96,6 +96,7 @@ model Team {
   riskPaths          RiskPath[]
   riskItems          RiskItem[]
   riskReviews        RiskReview[]
+  trainingAttendances TrainingAttendance[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -197,6 +198,7 @@ model User {
   ownedRisks          RiskItem[]      @relation("RiskOwner")
   createdRisks        RiskItem[]      @relation("RiskCreator")
   riskReviews         RiskReview[]
+  trainingAttendances TrainingAttendance[]
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
@@ -659,4 +661,24 @@ model RiskReview {
 
   @@index([riskItemId, reviewedAt])
   @@index([teamId])
+}
+
+// ============================================================================
+// MÓDULO: ESCRITÓRIO VIRTUAL — PRESENÇA NOS TREINOS
+// ============================================================================
+
+model TrainingAttendance {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date // Data do treino (YYYY-MM-DD)
+  checkedAt DateTime @default(now()) // Horário exato da marcação de presença
+  notes     String?  // Observação opcional do treino
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, userId, date])
+  @@index([teamId, date])
+  @@index([userId, date])
 }

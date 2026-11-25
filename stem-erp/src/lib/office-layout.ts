@@ -14,13 +14,17 @@ const ROLE_PRIORITY: Record<OfficeTaskRole, number> = {
   I: 3,
 };
 
+export function isTaskOverdueForMember(task: OfficeTaskItemDTO): boolean {
+  return task.isOverdue && task.role === "R";
+}
+
 export function deriveMemberStatus(
   tasks: OfficeTaskItemDTO[]
 ): OfficeMemberStatus {
   const inProgressTasks = tasks.filter(
     (task) => task.status === "IN_PROGRESS"
   );
-  if (inProgressTasks.some((task) => task.isOverdue)) {
+  if (inProgressTasks.some((task) => isTaskOverdueForMember(task))) {
     return "OVERDUE";
   }
   if (inProgressTasks.length > 0) {
@@ -36,7 +40,9 @@ export function pickPrimaryActiveTask(
   if (inProgress.length === 0) return null;
 
   const sorted = [...inProgress].sort((a, b) => {
-    if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
+    const aOverdue = isTaskOverdueForMember(a);
+    const bOverdue = isTaskOverdueForMember(b);
+    if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
     if (ROLE_PRIORITY[a.role] !== ROLE_PRIORITY[b.role]) {
       return ROLE_PRIORITY[a.role] - ROLE_PRIORITY[b.role];
     }

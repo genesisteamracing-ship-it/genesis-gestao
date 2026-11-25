@@ -44,11 +44,26 @@ export interface OfficeSummaryDTO {
   totalDoneTasks: number;
 }
 
+export interface OfficeAttendanceDTO {
+  id: string;
+  userId: string;
+  userName: string;
+  deliveryGroup: DeliveryGroup | null;
+  jobTitle: string | null;
+  date: string; // YYYY-MM-DD
+  checkedAt: string; // ISO
+  notes: string | null;
+}
+
 export interface OfficeSnapshotDTO {
   teamId: string;
   teamName: string;
   currentUserId: string;
   canAccessTasks: boolean;
+  canMarkAttendance?: boolean;
+  hasMarkedAttendanceToday?: boolean;
+  todayIso?: string;
+  attendances?: OfficeAttendanceDTO[];
   generatedAt: string;
   members: OfficeMemberDTO[];
   summary: OfficeSummaryDTO;

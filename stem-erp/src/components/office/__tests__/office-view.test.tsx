@@ -216,3 +216,53 @@ test("OfficeView exibe escritório, alterna para modo Lista e filtra integrantes
   fireEvent.change(searchInput, { target: { value: "Lucas" } });
   assert.ok(view.getAllByText("Lucas Mendes").length >= 1);
 });
+
+test("OfficeView permite marcar presença e exibe o registro na tabela de presença nos treinos", async () => {
+  let markCalls = 0;
+  const view = render(
+    createElement(OfficeView, {
+      initialSnapshot: makeSnapshot({
+        canMarkAttendance: true,
+        hasMarkedAttendanceToday: false,
+        todayIso: "2026-11-25",
+        attendances: [],
+      }),
+      pollIntervalMs: 0,
+      onMarkAttendance: async () => {
+        markCalls += 1;
+        return {
+          success: true,
+          message: "Presença marcada com sucesso!",
+          data: makeSnapshot({
+            canMarkAttendance: true,
+            hasMarkedAttendanceToday: true,
+            todayIso: "2026-11-25",
+            attendances: [
+              {
+                id: "att-1",
+                userId: "u-1",
+                userName: "Marina Silva",
+                deliveryGroup: "ENGINEERING_CAD",
+                jobTitle: "Engenheira CAD",
+                date: "2026-11-25",
+                checkedAt: "2026-11-25T16:30:00.000Z",
+                notes: null,
+              },
+            ],
+          }),
+        };
+      },
+    })
+  );
+
+  assert.ok(view.getByText("Presença nos Treinos"));
+  const markBtn = view.getByRole("button", { name: /Marcar Presença/i });
+  fireEvent.click(markBtn);
+
+  await waitFor(() => {
+    assert.equal(markCalls, 1);
+    assert.ok(view.getByRole("button", { name: /Presença marcada hoje/i }));
+    assert.ok(view.getAllByText("25/11/2026").length >= 2);
+    assert.ok(view.getByText("Presente"));
+  });
+});
