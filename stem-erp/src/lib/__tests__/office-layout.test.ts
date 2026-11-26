@@ -6,6 +6,7 @@ import {
   filterOfficeMembers,
   getAvatarTraits,
   getMemberInitials,
+  groupMembersBySector,
   pickPrimaryActiveTask,
 } from "@/lib/office-layout";
 import type { OfficeMemberDTO, OfficeTaskItemDTO } from "@/types/office";
@@ -48,12 +49,28 @@ function makeMember(overrides: Partial<OfficeMemberDTO> = {}): OfficeMemberDTO {
 }
 
 describe("office-layout & office-service rules", () => {
-  it("constrói planta com 6 setores, sala de briefing e lounge", () => {
+  it("constrói planta arquitetônica com Ala Norte, Corredor Central, Ala Sul e 8 salas", () => {
     const members = [
       makeMember({ id: "u1", name: "Ana", deliveryGroup: "ENGINEERING_CAD" }),
       makeMember({ id: "u2", name: "Bruno", deliveryGroup: "ENGINEERING_CAD" }),
-      makeMember({ id: "u3", name: "Carla", deliveryGroup: "MARKETING_SPONSOR", status: "IDLE", activeTask: null, activeTasksCount: 0, tasks: [] }),
-      makeMember({ id: "u4", name: "Diego", deliveryGroup: null, status: "IDLE", activeTask: null, activeTasksCount: 0, tasks: [] }),
+      makeMember({
+        id: "u3",
+        name: "Carla",
+        deliveryGroup: "MARKETING_SPONSOR",
+        status: "IDLE",
+        activeTask: null,
+        activeTasksCount: 0,
+        tasks: [],
+      }),
+      makeMember({
+        id: "u4",
+        name: "Diego",
+        deliveryGroup: null,
+        status: "IDLE",
+        activeTask: null,
+        activeTasksCount: 0,
+        tasks: [],
+      }),
     ];
 
     const layout = buildOfficeFloorplan(members);
@@ -61,10 +78,30 @@ describe("office-layout & office-service rules", () => {
     assert.equal(layout.zones.length, 8);
     assert.equal(layout.placements.length, 4);
 
+    const northZones = layout.zones.filter((z) => z.wing === "north");
+    const southZones = layout.zones.filter((z) => z.wing === "south");
+    assert.equal(northZones.length, 4);
+    assert.equal(southZones.length, 4);
+
+    assert.equal(northZones[0].y + northZones[0].height, layout.corridor.y);
+    assert.equal(
+      layout.corridor.y + layout.corridor.height,
+      southZones[0].y
+    );
+
     const engZone = layout.zones.find((z) => z.id === "ENGINEERING_CAD");
     assert.ok(engZone);
     assert.equal(engZone.memberCount, 2);
     assert.equal(engZone.activeCount, 2);
+    assert.equal(engZone.emptyDeskSlots.length, 0);
+
+    const mktZone = layout.zones.find((z) => z.id === "MARKETING_SPONSOR");
+    assert.ok(mktZone);
+    assert.equal(mktZone.emptyDeskSlots.length, 1);
+
+    const pitZone = layout.zones.find((z) => z.id === "PIT_DISPLAY");
+    assert.ok(pitZone);
+    assert.equal(pitZone.emptyDeskSlots.length, 2);
 
     const loungeZone = layout.zones.find((z) => z.id === "LOUNGE_CAFE");
     assert.ok(loungeZone);
@@ -72,6 +109,35 @@ describe("office-layout & office-service rules", () => {
 
     const diegoPlacement = layout.placements.find((p) => p.member.id === "u4");
     assert.equal(diegoPlacement?.zoneId, "LOUNGE_CAFE");
+  });
+
+  it("agrupa integrantes por setor com barra de progresso e papéis RACI", () => {
+    const members = [
+      makeMember({
+        id: "u1",
+        name: "Marina",
+        deliveryGroup: "ENGINEERING_CAD",
+        doneTasksCount: 3,
+        activeTasksCount: 1,
+        todoTasksCount: 1,
+        activeTask: makeTask({ id: "t-eng", role: "R" }),
+      }),
+      makeMember({
+        id: "u2",
+        name: "Caio",
+        deliveryGroup: "ENGINEERING_CAD",
+        doneTasksCount: 1,
+        activeTasksCount: 1,
+        todoTasksCount: 0,
+        activeTask: makeTask({ id: "t-eng", role: "C" }),
+      }),
+    ];
+
+    const groups = groupMembersBySector(members);
+    assert.equal(groups.length, 1);
+    assert.equal(groups[0].id, "ENGINEERING_CAD");
+    assert.deepEqual(groups[0].rolesPresent, ["R", "C"]);
+    assert.ok(groups[0].totalTasksCount >= groups[0].doneTasksCount);
   });
 
   it("gera traços determinísticos de avatar pixel-art e respeita cor do setor", () => {
@@ -85,21 +151,32 @@ describe("office-layout & office-service rules", () => {
     assert.equal(mkt.outfitTone, "magenta");
   });
 
-  it("filtra integrantes por nome, tarefa ativa, setor e status", () => {
+  it("filtra integrantes por nome, tarefa ativa, setor, status e papel RACI", () => {
     const members = [
       makeMember({
         id: "u1",
         name: "Marina Silva",
         deliveryGroup: "ENGINEERING_CAD",
         status: "WORKING",
-        activeTask: makeTask({ title: "Teste em túnel de vento" }),
+        activeTask: makeTask({ title: "Teste em túnel de vento", role: "R" }),
       }),
       makeMember({
         id: "u2",
         name: "Lucas Costa",
         deliveryGroup: "MANUFACTURING_CNC",
         status: "OVERDUE",
-        activeTask: makeTask({ title: "Usinagem CNC bloco", isOverdue: true }),
+        activeTask: makeTask({
+          title: "Usinagem CNC bloco",
+          isOverdue: true,
+          role: "A",
+        }),
+        tasks: [
+          makeTask({
+            title: "Usinagem CNC bloco",
+            isOverdue: true,
+            role: "A",
+          }),
+        ],
       }),
       makeMember({
         id: "u3",
@@ -112,16 +189,37 @@ describe("office-layout & office-service rules", () => {
     ];
 
     assert.equal(
-      filterOfficeMembers(members, { search: "túnel", sector: "ALL", status: "ALL" }).length,
+      filterOfficeMembers(members, {
+        search: "túnel",
+        sector: "ALL",
+        status: "ALL",
+      }).length,
       1
     );
     assert.equal(
-      filterOfficeMembers(members, { search: "", sector: "MANUFACTURING_CNC", status: "ALL" })[0]?.id,
+      filterOfficeMembers(members, {
+        search: "",
+        sector: "MANUFACTURING_CNC",
+        status: "ALL",
+      })[0]?.id,
       "u2"
     );
     assert.equal(
-      filterOfficeMembers(members, { search: "", sector: "ALL", status: "IDLE" })[0]?.id,
+      filterOfficeMembers(members, {
+        search: "",
+        sector: "ALL",
+        status: "IDLE",
+      })[0]?.id,
       "u3"
+    );
+    assert.equal(
+      filterOfficeMembers(members, {
+        search: "",
+        sector: "ALL",
+        status: "ALL",
+        role: "A",
+      })[0]?.id,
+      "u2"
     );
   });
 
@@ -133,7 +231,6 @@ describe("office-layout & office-service rules", () => {
       makeTask({ id: "t-r-ok", role: "R", isOverdue: false, endDate: "2026-11-25" }),
     ];
 
-    // Mesmo com C, I e A marcados como atrasados, status continua WORKING pois R não está atrasada
     assert.equal(deriveMemberStatus(tasks), "WORKING");
     assert.equal(pickPrimaryActiveTask(tasks)?.id, "t-r-ok");
 

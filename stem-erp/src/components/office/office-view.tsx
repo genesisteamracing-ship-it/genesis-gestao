@@ -72,18 +72,13 @@ export function OfficeView({
           <Skeleton className="h-9 w-56 rounded-xl" />
           <Skeleton className="h-9 w-28 rounded-xl" />
         </div>
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <Skeleton className="h-[580px] w-full rounded-2xl" />
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2.5">
-              <Skeleton className="h-18 rounded-xl" />
-              <Skeleton className="h-18 rounded-xl" />
-              <Skeleton className="h-18 rounded-xl" />
-              <Skeleton className="h-18 rounded-xl" />
-            </div>
-            <Skeleton className="h-56 w-full rounded-2xl" />
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[348px_minmax(0,1fr)]">
+          <div className="space-y-4 order-2 xl:order-1">
+            <Skeleton className="h-44 w-full rounded-2xl" />
             <Skeleton className="h-64 w-full rounded-2xl" />
+            <Skeleton className="h-44 w-full rounded-2xl" />
           </div>
+          <Skeleton className="h-[640px] w-full rounded-2xl order-1 xl:order-2" />
         </div>
       </section>
     );
@@ -142,7 +137,7 @@ export function OfficeView({
 
   return (
     <section className="space-y-4">
-      {/* Barra superior: Alternador de Visualização (Canvas / Lista) + Atualização */}
+      {/* Barra superior: Alternador de Visualização (Canvas / Lista) + Presença + Atualização */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div
           role="tablist"
@@ -227,9 +222,29 @@ export function OfficeView({
         </div>
       </div>
 
-      {/* Layout Principal: Escritório + HUD Lateral */}
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px] items-start">
-        <div className="min-w-0">
+      {/* Layout Principal: Diretório à Esquerda (Desktop) + Mapa Pixel-Art à Direita */}
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[348px_minmax(0,1fr)] items-start">
+        <div className="min-w-0 order-2 xl:order-1">
+          <OfficeHudPanel
+            summary={office.snapshot.summary}
+            sectorGroups={office.sectorGroups}
+            selectedMember={office.selectedMember}
+            canAccessTasks={office.snapshot.canAccessTasks}
+            search={office.search}
+            onSearchChange={office.setSearch}
+            sectorFilter={office.sectorFilter}
+            onSectorFilterChange={office.setSectorFilter}
+            statusFilter={office.statusFilter}
+            onStatusFilterChange={office.setStatusFilter}
+            roleFilter={office.roleFilter}
+            onRoleFilterChange={office.setRoleFilter}
+            hasActiveFilters={office.hasActiveFilters}
+            onClearFilters={office.clearFilters}
+            onSelectMember={office.selectMember}
+          />
+        </div>
+
+        <div className="min-w-0 order-1 xl:order-2">
           {office.viewMode === "canvas" ? (
             <OfficeCanvas
               floorplan={office.floorplan}
@@ -296,22 +311,6 @@ export function OfficeView({
             </div>
           )}
         </div>
-
-        <OfficeHudPanel
-          summary={office.snapshot.summary}
-          members={office.filteredMembers}
-          selectedMember={office.selectedMember}
-          canAccessTasks={office.snapshot.canAccessTasks}
-          search={office.search}
-          onSearchChange={office.setSearch}
-          sectorFilter={office.sectorFilter}
-          onSectorFilterChange={office.setSectorFilter}
-          statusFilter={office.statusFilter}
-          onStatusFilterChange={office.setStatusFilter}
-          hasActiveFilters={office.hasActiveFilters}
-          onClearFilters={office.clearFilters}
-          onSelectMember={office.selectMember}
-        />
       </div>
 
       {/* Tabela de Presença nos Treinos */}

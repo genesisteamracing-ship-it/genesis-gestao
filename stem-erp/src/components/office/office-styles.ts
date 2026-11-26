@@ -3,55 +3,38 @@ import { tv, type VariantProps } from "tailwind-variants";
 export const officeRoomStyles = tv({
   slots: {
     container:
-      "relative h-full w-full rounded-2xl border-2 bg-card/85 backdrop-blur-[2px] transition-colors select-none",
-    header:
-      "flex items-center justify-between gap-2 border-b px-3.5 py-2 rounded-t-[14px]",
-    title:
-      "text-[11px] font-extrabold uppercase tracking-wider truncate",
-    counter:
-      "text-[10px] font-semibold text-muted-foreground whitespace-nowrap",
+      "relative h-full w-full select-none [--pixel-ink:var(--foreground)] dark:[--pixel-ink:var(--background)]",
+    sign:
+      "pointer-events-none absolute -top-3.5 left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-1.5 rounded-md border-2 border-border bg-popover px-2.5 py-0.5 text-[11px] font-extrabold tracking-tight text-popover-foreground shadow-sm whitespace-nowrap",
+    signAccentDot: "h-2 w-2 shrink-0 rounded-full",
+    countPill:
+      "inline-flex items-center justify-center rounded bg-muted px-1.5 py-0.2 text-[10px] font-extrabold text-foreground",
   },
   variants: {
     zone: {
       ENGINEERING_CAD: {
-        container: "border-primary/35",
-        header: "border-primary/20 bg-primary/10",
-        title: "text-primary",
+        signAccentDot: "bg-primary",
       },
       MANUFACTURING_CNC: {
-        container: "border-warning/40",
-        header: "border-warning/25 bg-warning/10",
-        title: "text-warning",
+        signAccentDot: "bg-warning",
       },
       PIT_DISPLAY: {
-        container: "border-purple/35",
-        header: "border-purple/20 bg-purple/10",
-        title: "text-purple",
+        signAccentDot: "bg-purple",
       },
       MARKETING_SPONSOR: {
-        container: "border-magenta/35",
-        header: "border-magenta/20 bg-magenta/10",
-        title: "text-magenta",
+        signAccentDot: "bg-magenta",
       },
       PROJECT_MANAGEMENT: {
-        container: "border-success/35",
-        header: "border-success/20 bg-success/10",
-        title: "text-success",
+        signAccentDot: "bg-success",
       },
       SOCIAL_PROJECT: {
-        container: "border-peach/40",
-        header: "border-peach/25 bg-peach/10",
-        title: "text-peach",
+        signAccentDot: "bg-peach",
       },
       BRIEFING_ROOM: {
-        container: "border-border bg-muted/45",
-        header: "border-border bg-muted/80",
-        title: "text-foreground",
+        signAccentDot: "bg-amber",
       },
       LOUNGE_CAFE: {
-        container: "border-border bg-muted/35",
-        header: "border-border bg-muted/70",
-        title: "text-foreground",
+        signAccentDot: "bg-chart-4",
       },
     },
   },
@@ -64,47 +47,55 @@ export type OfficeRoomStyleVariants = VariantProps<typeof officeRoomStyles>;
 
 export const officeDeskNodeStyles = tv({
   slots: {
-    card: "group relative flex w-[196px] flex-col items-center rounded-xl border bg-card/95 p-2.5 shadow-xs transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-    nameTag:
-      "inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold shadow-2xs",
-    statusDot: "h-2 w-2 shrink-0 rounded-full",
+    card: "group relative flex w-[136px] h-[108px] flex-col items-center justify-end select-none cursor-pointer transition-transform duration-150 focus-visible:outline-none [--pixel-ink:var(--foreground)] dark:[--pixel-ink:var(--background)]",
+    speechBubble:
+      "pointer-events-none absolute -top-3.5 left-1/2 -translate-x-1/2 z-30 inline-flex max-w-[164px] items-center gap-1 rounded-md border-2 px-2 py-0.5 text-[10px] font-bold leading-tight shadow-sm whitespace-nowrap transition-transform duration-150 group-hover:-translate-y-0.5",
+    speechTail:
+      "pointer-events-none absolute -bottom-[5px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-r-2 border-b-2",
     stage:
-      "relative mt-1.5 flex h-[62px] w-full items-center justify-center rounded-lg border border-border/70 bg-muted/45 overflow-hidden",
-    taskPill:
-      "mt-1.5 flex w-full items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-semibold leading-tight",
-    typingBubble:
-      "absolute top-1 right-1.5 inline-flex items-center gap-0.5 rounded-full border border-border bg-card px-1.5 py-0.5 shadow-2xs",
+      "relative flex h-[76px] w-[124px] items-center justify-center",
+    selectionRing:
+      "pointer-events-none absolute inset-x-1.5 bottom-1 top-3 rounded-xl border-2 transition-opacity",
+    nameTag:
+      "relative z-20 -mt-1 inline-flex max-w-[134px] items-center gap-1 rounded-full border border-border bg-popover/95 px-2 py-0.5 text-[10px] font-extrabold text-popover-foreground shadow-xs",
+    statusDot: "h-1.5 w-1.5 shrink-0 rounded-full",
   },
   variants: {
     status: {
       WORKING: {
-        card: "border-success/45 hover:border-success",
-        nameTag: "border-success/30 bg-success/10 text-foreground",
+        speechBubble:
+          "border-border bg-card text-card-foreground dark:border-border dark:bg-foreground dark:text-background",
+        speechTail:
+          "border-border bg-card dark:border-border dark:bg-foreground",
         statusDot: "bg-success animate-pulse",
-        taskPill: "border-primary/30 bg-primary/10 text-foreground",
       },
       OVERDUE: {
-        card: "border-destructive/55 hover:border-destructive",
-        nameTag: "border-destructive/35 bg-destructive/10 text-foreground",
+        speechBubble:
+          "border-warning bg-amber text-secondary-foreground dark:text-background",
+        speechTail: "border-warning bg-amber",
         statusDot: "bg-destructive animate-pulse",
-        taskPill: "border-destructive/35 bg-destructive/10 text-destructive",
       },
       IDLE: {
-        card: "border-border hover:border-primary/50",
-        nameTag: "border-border bg-muted/70 text-foreground",
-        statusDot: "bg-muted-foreground/60",
-        taskPill: "border-border/80 bg-muted/50 text-muted-foreground",
+        speechBubble:
+          "border-border bg-popover/95 text-muted-foreground opacity-90 group-hover:opacity-100",
+        speechTail: "border-border bg-popover",
+        statusDot: "bg-muted-foreground/70",
       },
     },
     selected: {
       true: {
-        card: "ring-2 ring-primary border-primary shadow-md scale-[1.02]",
+        card: "scale-[1.05]",
+        selectionRing: "border-primary bg-primary/15 opacity-100 shadow-sm",
+        nameTag: "border-primary ring-1 ring-primary/50",
       },
-      false: {},
+      false: {
+        selectionRing:
+          "border-primary/40 bg-primary/5 opacity-0 group-hover:opacity-100",
+      },
     },
     dimmed: {
       true: {
-        card: "opacity-35 grayscale-[45%]",
+        card: "opacity-30 grayscale-[55%]",
       },
       false: {},
     },
@@ -118,6 +109,25 @@ export const officeDeskNodeStyles = tv({
 
 export type OfficeDeskNodeStyleVariants = VariantProps<
   typeof officeDeskNodeStyles
+>;
+
+export const officeRaciBadgeStyles = tv({
+  base: "inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-[4px] px-1 text-[9px] font-black leading-none tracking-tight shadow-2xs",
+  variants: {
+    role: {
+      R: "bg-warning text-warning-foreground",
+      A: "bg-primary text-primary-foreground",
+      C: "bg-purple text-purple-foreground",
+      I: "bg-muted text-foreground border border-border",
+    },
+  },
+  defaultVariants: {
+    role: "R",
+  },
+});
+
+export type OfficeRaciBadgeVariants = VariantProps<
+  typeof officeRaciBadgeStyles
 >;
 
 export const officeStatusBadgeStyles = tv({
@@ -137,3 +147,17 @@ export const officeStatusBadgeStyles = tv({
 export type OfficeStatusBadgeVariants = VariantProps<
   typeof officeStatusBadgeStyles
 >;
+
+export const officeStatusSquareStyles = tv({
+  base: "inline-block h-2.5 w-2.5 shrink-0 rounded-[2px] border",
+  variants: {
+    status: {
+      WORKING: "border-success bg-success",
+      OVERDUE: "border-destructive bg-destructive animate-pulse",
+      IDLE: "border-border bg-muted-foreground/35",
+    },
+  },
+  defaultVariants: {
+    status: "IDLE",
+  },
+});

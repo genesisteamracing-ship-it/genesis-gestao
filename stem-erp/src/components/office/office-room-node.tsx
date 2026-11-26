@@ -2,8 +2,17 @@
 
 import * as React from "react";
 import type { Node, NodeProps } from "@xyflow/react";
-import { Coffee, Users } from "lucide-react";
 import type { OfficeZoneLayout } from "@/lib/office-layout";
+import {
+  PixelCopaLoungeDecor,
+  PixelFloorLamp,
+  PixelPitCarPedestal,
+  PixelPottedPlant,
+  PixelReceptionDecor,
+  PixelWallBoard,
+  PixelWallBookshelf,
+  PixelWorkstationDesk,
+} from "./office-pixel-props";
 import { officeRoomStyles } from "./office-styles";
 
 export type OfficeRoomNodeData = {
@@ -12,87 +21,215 @@ export type OfficeRoomNodeData = {
 
 export type OfficeRoomNodeType = Node<OfficeRoomNodeData, "officeRoom">;
 
-function PixelBriefingDecor() {
+const SECTOR_BOARD_ACCENT: Record<string, string> = {
+  ENGINEERING_CAD: "var(--primary)",
+  MANUFACTURING_CNC: "var(--warning)",
+  PIT_DISPLAY: "var(--purple)",
+  MARKETING_SPONSOR: "var(--magenta)",
+  PROJECT_MANAGEMENT: "var(--success)",
+  SOCIAL_PROJECT: "var(--peach)",
+};
+
+function RoomPixelFloor({ zone }: { zone: OfficeZoneLayout }) {
+  const patternId = `room-floor-${zone.id}`;
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4">
-      {/* Quadro branco pixelado */}
-      <svg
-        width="104"
-        height="32"
-        viewBox="0 0 26 8"
-        shapeRendering="crispEdges"
-        aria-hidden="true"
-      >
-        <rect x="0" y="0" width="26" height="8" fill="var(--border)" />
-        <rect x="1" y="1" width="24" height="6" fill="var(--card)" />
-        <rect x="3" y="2" width="7" height="1" fill="var(--primary)" />
-        <rect x="3" y="4" width="12" height="1" fill="var(--success)" />
-        <rect x="17" y="2" width="5" height="3" fill="var(--warning)" opacity="0.8" />
-      </svg>
-
-      {/* Mesa de reunião pixelada com cadeiras */}
-      <svg
-        width="160"
-        height="76"
-        viewBox="0 0 40 19"
-        shapeRendering="crispEdges"
-        aria-hidden="true"
-      >
-        {/* Cadeiras superiores */}
-        <rect x="8" y="1" width="4" height="3" fill="var(--muted-foreground)" opacity="0.55" />
-        <rect x="18" y="1" width="4" height="3" fill="var(--muted-foreground)" opacity="0.55" />
-        <rect x="28" y="1" width="4" height="3" fill="var(--muted-foreground)" opacity="0.55" />
-
-        {/* Tampo da mesa */}
-        <rect x="5" y="5" width="30" height="9" fill="var(--border)" />
-        <rect x="6" y="6" width="28" height="7" fill="var(--card)" />
-        {/* Laptop & caderno sobre a mesa */}
-        <rect x="16" y="8" width="6" height="3" fill="var(--primary)" opacity="0.8" />
-        <rect x="9" y="8" width="4" height="3" fill="var(--muted)" />
-        <rect x="26" y="8" width="3" height="2" fill="var(--amber)" />
-
-        {/* Cadeiras inferiores */}
-        <rect x="8" y="15" width="4" height="3" fill="var(--muted-foreground)" opacity="0.55" />
-        <rect x="18" y="15" width="4" height="3" fill="var(--muted-foreground)" opacity="0.55" />
-        <rect x="28" y="15" width="4" height="3" fill="var(--muted-foreground)" opacity="0.55" />
-      </svg>
-    </div>
-  );
-}
-
-function PixelLoungeDecor({ hasMembers }: { hasMembers: boolean }) {
-  return (
-    <div
-      className={`flex flex-col items-center justify-center gap-3 p-4 ${
-        hasMembers ? "opacity-35" : "flex-1"
-      }`}
+    <svg
+      width={zone.width}
+      height={zone.height}
+      className="pointer-events-none absolute inset-0"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
     >
-      {/* Sofá & Cafeteira pixelados */}
-      <svg
-        width="168"
-        height="64"
-        viewBox="0 0 42 16"
-        shapeRendering="crispEdges"
-        aria-hidden="true"
-      >
-        {/* Sofá */}
-        <rect x="2" y="4" width="22" height="9" fill="var(--border)" />
-        <rect x="3" y="5" width="20" height="4" fill="var(--primary)" opacity="0.35" />
-        <rect x="3" y="9" width="20" height="3" fill="var(--primary)" opacity="0.22" />
-        <rect x="2" y="6" width="2" height="7" fill="var(--primary)" opacity="0.5" />
-        <rect x="22" y="6" width="2" height="7" fill="var(--primary)" opacity="0.5" />
+      <defs>
+        {zone.floorStyle === "wood" && (
+          <pattern
+            id={patternId}
+            width="32"
+            height="16"
+            patternUnits="userSpaceOnUse"
+          >
+            <rect
+              width="32"
+              height="16"
+              fill="color-mix(in srgb, var(--warning) 28%, var(--card))"
+            />
+            <rect
+              x="0"
+              y="7"
+              width="32"
+              height="1"
+              fill="color-mix(in srgb, var(--warning) 44%, var(--border))"
+              opacity="0.7"
+            />
+            <rect
+              x="0"
+              y="15"
+              width="32"
+              height="1"
+              fill="color-mix(in srgb, var(--warning) 44%, var(--border))"
+              opacity="0.7"
+            />
+            <rect
+              x="16"
+              y="0"
+              width="1"
+              height="8"
+              fill="color-mix(in srgb, var(--warning) 48%, var(--border))"
+              opacity="0.55"
+            />
+            <rect
+              x="6"
+              y="8"
+              width="1"
+              height="8"
+              fill="color-mix(in srgb, var(--warning) 48%, var(--border))"
+              opacity="0.55"
+            />
+          </pattern>
+        )}
 
-        {/* Balcão do café */}
-        <rect x="28" y="5" width="12" height="8" fill="var(--border)" />
-        <rect x="29" y="6" width="10" height="6" fill="var(--card)" />
-        <rect x="31" y="7" width="3" height="3" fill="var(--destructive)" opacity="0.8" />
-        <rect x="35" y="8" width="2" height="2" fill="var(--amber)" />
+        {zone.floorStyle === "tile" && (
+          <pattern
+            id={patternId}
+            width="24"
+            height="24"
+            patternUnits="userSpaceOnUse"
+          >
+            <rect
+              width="24"
+              height="24"
+              fill="color-mix(in srgb, var(--chart-4) 22%, var(--card))"
+            />
+            <rect
+              x="0"
+              y="0"
+              width="12"
+              height="12"
+              fill="color-mix(in srgb, var(--primary) 14%, var(--card))"
+            />
+            <rect
+              x="12"
+              y="12"
+              width="12"
+              height="12"
+              fill="color-mix(in srgb, var(--primary) 14%, var(--card))"
+            />
+          </pattern>
+        )}
 
-        {/* Plantinha */}
-        <rect x="25" y="10" width="2" height="3" fill="var(--warning)" opacity="0.8" />
-        <rect x="24" y="7" width="4" height="3" fill="var(--success)" opacity="0.85" />
-      </svg>
-    </div>
+        {(zone.floorStyle === "carpet" || zone.floorStyle === "showroom") && (
+          <pattern
+            id={patternId}
+            width="16"
+            height="16"
+            patternUnits="userSpaceOnUse"
+          >
+            <rect
+              width="16"
+              height="16"
+              fill="color-mix(in srgb, var(--purple) 22%, var(--card))"
+            />
+            <rect
+              x="2"
+              y="2"
+              width="2"
+              height="2"
+              fill="var(--purple)"
+              opacity="0.14"
+            />
+            <rect
+              x="10"
+              y="10"
+              width="2"
+              height="2"
+              fill="var(--chart-4)"
+              opacity="0.14"
+            />
+          </pattern>
+        )}
+      </defs>
+
+      <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+
+      {/* Rodapé / Parede superior em perspectiva 2.5D */}
+      <rect
+        x="0"
+        y="0"
+        width={zone.width}
+        height="26"
+        fill="color-mix(in srgb, var(--secondary) 78%, var(--border))"
+      />
+      <rect
+        x="0"
+        y="26"
+        width={zone.width}
+        height="3"
+        fill="var(--pixel-ink)"
+        opacity="0.45"
+      />
+
+      {/* Paredes divisórias laterais entre as salas */}
+      <rect x="0" y="0" width="3" height={zone.height} fill="var(--pixel-ink)" />
+      <rect
+        x={zone.width - 3}
+        y="0"
+        width="3"
+        height={zone.height}
+        fill="var(--pixel-ink)"
+      />
+
+      {/* Abertura de Porta conectada ao Corredor Central */}
+      {zone.wing === "north" ? (
+        <>
+          <rect
+            x={zone.doorOffsetX}
+            y={zone.height - 8}
+            width={zone.doorWidth}
+            height="8"
+            fill="color-mix(in srgb, var(--amber) 24%, var(--secondary))"
+          />
+          <rect
+            x={zone.doorOffsetX - 3}
+            y={zone.height - 8}
+            width="3"
+            height="8"
+            fill="var(--pixel-ink)"
+          />
+          <rect
+            x={zone.doorOffsetX + zone.doorWidth}
+            y={zone.height - 8}
+            width="3"
+            height="8"
+            fill="var(--pixel-ink)"
+          />
+        </>
+      ) : (
+        <>
+          <rect
+            x={zone.doorOffsetX}
+            y="0"
+            width={zone.doorWidth}
+            height="29"
+            fill="color-mix(in srgb, var(--amber) 22%, var(--secondary))"
+          />
+          <rect
+            x={zone.doorOffsetX - 3}
+            y="0"
+            width="3"
+            height="29"
+            fill="var(--pixel-ink)"
+          />
+          <rect
+            x={zone.doorOffsetX + zone.doorWidth}
+            y="0"
+            width="3"
+            height="29"
+            fill="var(--pixel-ink)"
+          />
+        </>
+      )}
+    </svg>
   );
 }
 
@@ -101,6 +238,7 @@ export const OfficeRoomNode = React.memo(function OfficeRoomNode({
 }: NodeProps<OfficeRoomNodeType>) {
   const { zone } = data;
   const styles = officeRoomStyles({ zone: zone.id });
+  const boardAccent = SECTOR_BOARD_ACCENT[zone.id] ?? "var(--primary)";
 
   return (
     <div
@@ -108,34 +246,65 @@ export const OfficeRoomNode = React.memo(function OfficeRoomNode({
       style={{ width: zone.width, height: zone.height }}
       aria-label={`Sala ${zone.label}`}
     >
-      <div className={styles.header()}>
-        <span className="flex items-center gap-1.5 min-w-0">
-          {zone.kind === "briefing" && (
-            <Users className="h-3.5 w-3.5 shrink-0 text-primary" />
-          )}
-          {zone.kind === "lounge" && (
-            <Coffee className="h-3.5 w-3.5 shrink-0 text-warning" />
-          )}
-          <span className={styles.title()}>{zone.label}</span>
-        </span>
-        <span className={styles.counter()}>
-          {zone.kind === "briefing"
-            ? `${zone.activeCount}/${zone.memberCount} ativos`
-            : `${zone.activeCount}/${zone.memberCount}`}
-        </span>
+      <RoomPixelFloor zone={zone} />
+
+      {/* Placa de porta flutuante estilo pixel-art de alto contraste */}
+      <div className={styles.sign()}>
+        <span className={styles.signAccentDot()} />
+        <span>{zone.label}</span>
+        {zone.activeCount > 0 && (
+          <span
+            className={`h-2 w-2 rounded-full ${
+              zone.overdueCount > 0
+                ? "bg-destructive animate-pulse"
+                : "bg-success animate-pulse"
+            }`}
+            title={`${zone.activeCount} em atividade`}
+          />
+        )}
+        {zone.kind === "sector" && (
+          <span className={styles.countPill()}>{zone.memberCount}</span>
+        )}
       </div>
 
-      {zone.kind === "briefing" && <PixelBriefingDecor />}
+      {/* Mobiliário de parede superior (Estantes, Quadros Kanban/CAD e Plantas) */}
+      <div className="pointer-events-none absolute inset-x-3 top-2 flex items-start justify-between">
+        <PixelWallBookshelf />
+        {zone.wing === "north" && <PixelWallBoard accent={boardAccent} />}
+        <PixelPottedPlant size={26} />
+      </div>
 
-      {zone.kind === "lounge" && zone.memberCount === 0 && (
-        <PixelLoungeDecor hasMembers={false} />
+      {/* Luminária quente de canto */}
+      <PixelFloorLamp className="absolute bottom-3 right-2" />
+      <PixelPottedPlant
+        size={26}
+        className="pointer-events-none absolute bottom-3 left-2.5"
+      />
+
+      {/* Cenografia dedicada para Recepção */}
+      {zone.kind === "briefing" && <PixelReceptionDecor />}
+
+      {/* Cenografia dedicada para Copa & Lounge */}
+      {zone.kind === "lounge" && (
+        <PixelCopaLoungeDecor compact={zone.memberCount > 0} />
       )}
 
-      {zone.kind === "sector" && zone.memberCount === 0 && (
-        <div className="flex h-[calc(100%-36px)] items-center justify-center px-4 text-center">
-          <span className="text-[11px] font-medium text-muted-foreground/70">
-            Sem integrantes alocados
-          </span>
+      {/* Bancadas vazias esperando alocação nos setores */}
+      {zone.kind === "sector" &&
+        zone.emptyDeskSlots.map((slot, idx) => (
+          <div
+            key={`empty-desk-${zone.id}-${idx}`}
+            className="pointer-events-none absolute opacity-85"
+            style={{ left: slot.x + 10, top: slot.y + 34 }}
+          >
+            <PixelWorkstationDesk unoccupied />
+          </div>
+        ))}
+
+      {/* Destaque temático do carro F1 na sala Pit Display */}
+      {zone.id === "PIT_DISPLAY" && (
+        <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2">
+          <PixelPitCarPedestal />
         </div>
       )}
     </div>
