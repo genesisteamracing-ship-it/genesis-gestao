@@ -4,6 +4,7 @@ import { JSDOM } from "jsdom";
 import { createElement } from "react";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import type { OfficeSnapshotDTO } from "@/types/office";
+import { OfficeAttendanceTable } from "../office-attendance-table";
 import { OfficeView } from "../office-view";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", {
@@ -218,7 +219,7 @@ test("OfficeView exibe escritório, alterna para modo Lista e filtra integrantes
   assert.ok(view.getAllByText("Lucas Mendes").length >= 1);
 });
 
-test("OfficeView permite marcar presença e exibe o registro na tabela de presença nos treinos", async () => {
+test("OfficeView permite marcar presença sem renderizar a tabela de presença no escritório", async () => {
   let markCalls = 0;
   const view = render(
     createElement(OfficeView, {
@@ -256,14 +257,36 @@ test("OfficeView permite marcar presença e exibe o registro na tabela de presen
     })
   );
 
-  assert.ok(view.getByText("Presença nos Treinos"));
+  assert.equal(view.queryByText("Presença nos Treinos"), null);
   const markBtn = view.getByRole("button", { name: /Marcar Presença/i });
   fireEvent.click(markBtn);
 
   await waitFor(() => {
     assert.equal(markCalls, 1);
     assert.ok(view.getByRole("button", { name: /Presença marcada hoje/i }));
-    assert.ok(view.getAllByText("25/11/2026").length >= 2);
-    assert.ok(view.getByText("Presente"));
   });
+});
+
+test("OfficeAttendanceTable exibe registros de presença nos treinos com data formatada", () => {
+  const view = render(
+    createElement(OfficeAttendanceTable, {
+      todayIso: "2026-11-25",
+      attendances: [
+        {
+          id: "att-1",
+          userId: "u-1",
+          userName: "Marina Silva",
+          deliveryGroup: "ENGINEERING_CAD",
+          jobTitle: "Engenheira CAD",
+          date: "2026-11-25",
+          checkedAt: "2026-11-25T16:30:00.000Z",
+          notes: null,
+        },
+      ],
+    })
+  );
+
+  assert.ok(view.getByText("Presença nos Treinos"));
+  assert.ok(view.getAllByText("25/11/2026").length >= 2);
+  assert.ok(view.getByText("Presente"));
 });

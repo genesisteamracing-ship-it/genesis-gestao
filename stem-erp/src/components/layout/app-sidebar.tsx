@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   Building2,
+  CalendarCheck2,
   CalendarClock,
   ChevronDown,
   Flag,
@@ -111,6 +112,11 @@ export const TEAM_SUB_ITEMS = [
     href: "/integrantes",
     label: "Integrantes",
     icon: Users,
+  },
+  {
+    href: "/presenca",
+    label: "Presença nos Treinos",
+    icon: CalendarCheck2,
   },
   {
     href: "/permissoes",

@@ -54,14 +54,14 @@ describe("Sidebar Submodules Contracts", () => {
   });
 
   it("deve exportar a lista de submódulos de Equipe & Acessos corretamente", () => {
-    assert.equal(TEAM_SUB_ITEMS.length, 3);
+    assert.equal(TEAM_SUB_ITEMS.length, 4);
     assert.deepEqual(
       TEAM_SUB_ITEMS.map((item) => item.href),
-      ["/equipe", "/integrantes", "/permissoes"]
+      ["/equipe", "/integrantes", "/presenca", "/permissoes"]
     );
     assert.deepEqual(
       TEAM_SUB_ITEMS.map((item) => item.label),
-      ["Equipes", "Integrantes", "Permissões de Acesso"]
+      ["Equipes", "Integrantes", "Presença nos Treinos", "Permissões de Acesso"]
     );
   });
 

@@ -16,7 +16,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DELIVERY_GROUP_SHORT_LABELS } from "@/lib/constants";
 import type { OfficeSnapshotDTO } from "@/types/office";
-import { OfficeAttendanceTable } from "./office-attendance-table";
 import { OfficeCanvas } from "./office-canvas";
 import { OfficeHudPanel } from "./office-hud-panel";
 import { officeStatusBadgeStyles } from "./office-styles";
@@ -313,12 +312,6 @@ export function OfficeView({
           onSelectMember={office.selectMember}
         />
       </div>
-
-      {/* Tabela de Presença nos Treinos */}
-      <OfficeAttendanceTable
-        attendances={office.snapshot.attendances ?? []}
-        todayIso={office.snapshot.todayIso}
-      />
     </section>
   );
 }
