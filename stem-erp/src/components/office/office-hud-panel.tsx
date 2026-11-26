@@ -87,6 +87,27 @@ export function OfficeHudPanel({
     onStatusFilterChange(statusFilter === target ? "ALL" : target);
   };
 
+  const selectedResponsibleTasks = React.useMemo(
+    () =>
+      selectedMember
+        ? selectedMember.tasks.filter((task) => task.role === "R")
+        : [],
+    [selectedMember]
+  );
+
+  const selectedActiveResponsibleCount = React.useMemo(
+    () =>
+      selectedResponsibleTasks.filter((task) => task.status === "IN_PROGRESS")
+        .length,
+    [selectedResponsibleTasks]
+  );
+
+  const selectedDoneResponsibleCount = React.useMemo(
+    () =>
+      selectedResponsibleTasks.filter((task) => task.status === "DONE").length,
+    [selectedResponsibleTasks]
+  );
+
   return (
     <aside
       aria-label="Painel do Escritório"
@@ -194,23 +215,23 @@ export function OfficeHudPanel({
               </span>
             </div>
 
-            {/* Tarefas do integrante */}
+            {/* Tarefas do integrante (apenas Responsável R) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
-                <span>Atividades ({selectedMember.tasks.length})</span>
+                <span>Atividades ({selectedResponsibleTasks.length})</span>
                 <span>
-                  {selectedMember.activeTasksCount} ativas ·{" "}
-                  {selectedMember.doneTasksCount} concluídas
+                  {selectedActiveResponsibleCount} ativas ·{" "}
+                  {selectedDoneResponsibleCount} concluídas
                 </span>
               </div>
 
-              {selectedMember.tasks.length === 0 ? (
+              {selectedResponsibleTasks.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-3 text-center text-xs text-muted-foreground">
-                  Nenhuma tarefa atribuída no momento.
+                  Nenhuma tarefa sob sua responsabilidade no momento.
                 </div>
               ) : (
                 <ul className="space-y-1.5 max-h-52 overflow-y-auto pr-0.5">
-                  {selectedMember.tasks.slice(0, 6).map((task) => (
+                  {selectedResponsibleTasks.slice(0, 6).map((task) => (
                     <li
                       key={task.id}
                       className="rounded-xl border border-border/80 bg-muted/30 px-3 py-2 text-xs"
