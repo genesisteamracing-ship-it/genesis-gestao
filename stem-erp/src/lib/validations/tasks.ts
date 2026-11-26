@@ -11,6 +11,14 @@ const assignments = z.array(assignment).refine(
   "Cada integrante só pode receber o mesmo papel uma vez.",
 );
 
+const pertDays = z
+  .number()
+  .int("Informe um número inteiro de dias.")
+  .min(1, "A estimativa mínima é 1 dia.")
+  .max(3650, "A estimativa máxima é 3650 dias.")
+  .nullable()
+  .optional();
+
 const task = z.object({
   teamId: id,
   title: z.string().trim().min(1, "Informe o título.").max(160),
@@ -18,14 +26,58 @@ const task = z.object({
   deliveryGroup: z.nativeEnum(DeliveryGroup),
   startDate: day,
   endDate: day,
+  optimisticDays: pertDays,
+  mostLikelyDays: pertDays,
+  pessimisticDays: pertDays,
   assignments,
 }).strict();
 
 const dateRange = (item: { startDate: string; endDate: string }) => item.startDate <= item.endDate;
 const invalidRange = { message: "O término deve ser igual ou posterior ao início.", path: ["endDate"] };
 
-export const createTaskSchema = task.refine(dateRange, invalidRange);
-export const editTaskSchema = task.extend({ id, revision, status: z.nativeEnum(TaskStatus) }).refine(dateRange, invalidRange);
+function validatePertEstimates(
+  item: {
+    optimisticDays?: number | null;
+    mostLikelyDays?: number | null;
+    pessimisticDays?: number | null;
+  },
+  ctx: z.RefinementCtx,
+) {
+  const values = [item.optimisticDays, item.mostLikelyDays, item.pessimisticDays];
+  const filledCount = values.filter((v) => v !== null && v !== undefined).length;
+  if (filledCount === 0) return;
+  if (filledCount < 3) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Preencha as três estimativas PERT (Otimista, Mais provável e Pessimista) ou deixe todas vazias.",
+      path: ["optimisticDays"],
+    });
+    return;
+  }
+  const o = item.optimisticDays!;
+  const m = item.mostLikelyDays!;
+  const p = item.pessimisticDays!;
+  if (o > m) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "A estimativa mais provável (M) deve ser maior ou igual à otimista (O).",
+      path: ["mostLikelyDays"],
+    });
+  }
+  if (m > p) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "A estimativa pessimista (P) deve ser maior ou igual à mais provável (M).",
+      path: ["pessimisticDays"],
+    });
+  }
+}
+
+export const createTaskSchema = task.refine(dateRange, invalidRange).superRefine(validatePertEstimates);
+export const editTaskSchema = task
+  .extend({ id, revision, status: z.nativeEnum(TaskStatus) })
+  .refine(dateRange, invalidRange)
+  .superRefine(validatePertEstimates);
 export const deleteTaskSchema = z.object({ id, teamId: id }).strict();
 export const updateMyTaskStatusSchema = z.object({
   teamId: id,

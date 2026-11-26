@@ -4,6 +4,8 @@ import { createTaskAction, editTaskAction } from "@/actions/tasks.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
+import { formatPertDays } from "@/lib/pert-engine";
+import { Label } from "@/components/ui/label";
 import { TASK_STATUS_LABELS, type TaskPerson, type TaskRecord } from "@/types/tasks";
 import { TaskDatePicker } from "./task-date-picker";
 import { TaskField, TaskSelect, TaskMultiSelect } from "./task-fields";
@@ -30,6 +32,15 @@ export function TaskForm({
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? "TODO");
   const [startDate, setStartDate] = useState<string>(task?.startDate ?? "");
   const [endDate, setEndDate] = useState<string>(task?.endDate ?? "");
+  const [optimisticDays, setOptimisticDays] = useState<string>(
+    task?.optimisticDays != null ? String(task.optimisticDays) : "",
+  );
+  const [mostLikelyDays, setMostLikelyDays] = useState<string>(
+    task?.mostLikelyDays != null ? String(task.mostLikelyDays) : "",
+  );
+  const [pessimisticDays, setPessimisticDays] = useState<string>(
+    task?.pessimisticDays != null ? String(task.pessimisticDays) : "",
+  );
 
   const people = new Map(members.map((person) => [person.key, person]));
   for (const item of task?.roles ?? []) people.set(item.person.key, item.person);
@@ -100,6 +111,13 @@ export function TaskForm({
       ...autoInformedKeys.map((memberKey) => ({ role: "I" as const, memberKey })),
     ];
 
+    const parsePertInput = (raw: string): number | null => {
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      const num = Number(trimmed);
+      return Number.isFinite(num) ? num : NaN;
+    };
+
     const input = {
       teamId,
       deliveryGroup: sector,
@@ -108,6 +126,9 @@ export function TaskForm({
       description: task?.description ?? undefined,
       startDate,
       endDate,
+      optimisticDays: parsePertInput(optimisticDays),
+      mostLikelyDays: parsePertInput(mostLikelyDays),
+      pessimisticDays: parsePertInput(pessimisticDays),
     };
 
     setPending(true);
@@ -179,6 +200,82 @@ export function TaskForm({
             />
           )}
         </TaskField>
+      </div>
+
+      {/* Estimativa PERT em 3 pontos (opcional) */}
+      <div className="space-y-2 rounded-lg border border-border/80 bg-muted/20 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-foreground">Estimativa PERT (dias, opcional)</span>
+          {(() => {
+            const o = Number(optimisticDays);
+            const m = Number(mostLikelyDays);
+            const p = Number(pessimisticDays);
+            if (optimisticDays && mostLikelyDays && pessimisticDays && o > 0 && o <= m && m <= p) {
+              const te = (o + 4 * m + p) / 6;
+              return (
+                <span className="text-xs font-medium text-primary">
+                  Te: {formatPertDays(te)} d
+                </span>
+              );
+            }
+            return null;
+          })()}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="flex flex-col justify-between space-y-1.5">
+            <Label htmlFor="pert-optimistic" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+              Otimista (O)
+            </Label>
+            <div className="mt-auto">
+              <Input
+                id="pert-optimistic"
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                placeholder="Ex: 2"
+                value={optimisticDays}
+                onChange={(e) => setOptimisticDays(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-between space-y-1.5">
+            <Label htmlFor="pert-most-likely" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+              Mais provável (M)
+            </Label>
+            <div className="mt-auto">
+              <Input
+                id="pert-most-likely"
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                placeholder="Ex: 4"
+                value={mostLikelyDays}
+                onChange={(e) => setMostLikelyDays(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-between space-y-1.5">
+            <Label htmlFor="pert-pessimistic" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+              Pessimista (P)
+            </Label>
+            <div className="mt-auto">
+              <Input
+                id="pert-pessimistic"
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                placeholder="Ex: 9"
+                value={pessimisticDays}
+                onChange={(e) => setPessimisticDays(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* A — Atribuição */}

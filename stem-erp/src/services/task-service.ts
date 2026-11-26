@@ -101,6 +101,9 @@ export async function getTaskWorkspace({
     tasks: tasks.map((task) => ({
       id: task.id, title: task.title, description: task.description, deliveryGroup: task.deliveryGroup,
       startDate: task.startDate.toISOString().slice(0, 10), endDate: task.endDate.toISOString().slice(0, 10),
+      optimisticDays: task.optimisticDays,
+      mostLikelyDays: task.mostLikelyDays,
+      pessimisticDays: task.pessimisticDays,
       status: task.status,
       completedAt: task.completedAt ? task.completedAt.toISOString() : null,
       cancelledAt: task.cancelledAt ? task.cancelledAt.toISOString() : null,
@@ -149,7 +152,14 @@ export async function saveTask(scope: Scope, input: CreateTaskInput | EditTaskIn
     const endDate = parseTaskDate(input.endDate);
     if (!startDate || !endDate || endDate < startDate) throw new TaskError("Informe um intervalo de datas válido.");
     const fields = {
-      title: input.title, description: input.description || null, deliveryGroup: input.deliveryGroup, startDate, endDate,
+      title: input.title,
+      description: input.description || null,
+      deliveryGroup: input.deliveryGroup,
+      startDate,
+      endDate,
+      optimisticDays: input.optimisticDays ?? null,
+      mostLikelyDays: input.mostLikelyDays ?? null,
+      pessimisticDays: input.pessimisticDays ?? null,
     };
     let taskId: string;
     if ("id" in input) {
