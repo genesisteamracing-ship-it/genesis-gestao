@@ -11,11 +11,12 @@ import { sidebarItemStyles } from "../sidebar-item-styles";
 import { getTaskView, TASK_VIEWS } from "@/lib/task-navigation";
 
 describe("Sidebar Submodules Contracts", () => {
-  it("maps the five task submodules and falls back to the task list", () => {
+  it("maps the six task submodules and falls back to the task list", () => {
     assert.deepEqual(TASK_VIEWS.map(({ href }) => href), [
-      "/tarefas", "/tarefas?tab=my-activities", "/tarefas?tab=gantt", "/tarefas?tab=risks", "/tarefas?tab=raci",
+      "/tarefas", "/tarefas?tab=my-activities", "/tarefas?tab=gantt", "/tarefas?tab=pert", "/tarefas?tab=risks", "/tarefas?tab=raci",
     ]);
     assert.equal(getTaskView("my-activities").title, "Minhas atividades");
+    assert.equal(getTaskView("pert").title, "Rede PERT");
     assert.equal(getTaskView("raci").title, "Matriz RACI");
     assert.equal(getTaskView("invalid").id, "tasks");
     assert.equal(getTaskView().id, "tasks");

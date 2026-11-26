@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
+import { computeTaskPertDuration, formatPertDays } from "@/lib/pert-engine";
 import { formatTaskDate, edgeKey, scheduleConflict } from "@/lib/task-schedule";
 import { TASK_STATUS_LABELS, type TaskRecord, type TaskWorkspace, type TaskEdge } from "@/types/tasks";
 
@@ -77,6 +78,15 @@ export function TaskDetail({ task, workspace }: {
           <span className="text-muted-foreground">Data de entrega: </span>
           <span className="font-medium text-foreground">{formatTaskDate(task.endDate)}</span>
         </div>
+        {task.optimisticDays != null && task.mostLikelyDays != null && task.pessimisticDays != null && (
+          <div className="sm:col-span-2">
+            <span className="text-muted-foreground">Estimativa PERT (O / M / P): </span>
+            <span className="font-medium text-foreground">
+              {task.optimisticDays} / {task.mostLikelyDays} / {task.pessimisticDays} d{" "}
+              (Te: {formatPertDays(computeTaskPertDuration(task).expectedDuration)} d)
+            </span>
+          </div>
+        )}
       </div>
 
       {task.description && (

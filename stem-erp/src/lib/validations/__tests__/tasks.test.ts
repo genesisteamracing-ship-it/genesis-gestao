@@ -47,3 +47,26 @@ test("validates updateMyTaskStatusSchema across all statuses and revision", () =
     false,
   );
 });
+
+test("validates optional 3-point PERT estimates (O <= M <= P)", () => {
+  assert.equal(
+    createTaskSchema.safeParse({ ...valid, optimisticDays: 2, mostLikelyDays: 4, pessimisticDays: 8 }).success,
+    true,
+  );
+  assert.equal(
+    createTaskSchema.safeParse({ ...valid, optimisticDays: null, mostLikelyDays: null, pessimisticDays: null }).success,
+    true,
+  );
+  assert.equal(
+    createTaskSchema.safeParse({ ...valid, optimisticDays: 2, mostLikelyDays: 4, pessimisticDays: null }).success,
+    false,
+  );
+  assert.equal(
+    createTaskSchema.safeParse({ ...valid, optimisticDays: 5, mostLikelyDays: 4, pessimisticDays: 8 }).success,
+    false,
+  );
+  assert.equal(
+    createTaskSchema.safeParse({ ...valid, optimisticDays: 2, mostLikelyDays: 9, pessimisticDays: 8 }).success,
+    false,
+  );
+});

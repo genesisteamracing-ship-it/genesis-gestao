@@ -28,6 +28,7 @@ import { TaskRaci } from "./task-raci";
 import { TaskRiskForm } from "./task-risk-form";
 import { TaskRiskView } from "./task-risk-view";
 import { MyActivitiesView } from "./my-activities-view";
+import { TaskPertView } from "./pert/task-pert-view";
 
 type Panel = { type: "task" | "detail" | "risk"; id?: string };
 type Shell = Omit<ComponentProps<typeof DashboardShell>, "title" | "subtitle" | "children">;
@@ -194,6 +195,18 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
                 open={openTask}
                 teamId={workspace.teamId}
                 canEdit={workspace.canEdit}
+              />
+            ) : (
+              empty
+            ))}
+          {viewId === "pert" &&
+            (visible.length ? (
+              <TaskPertView
+                tasks={visible}
+                edges={workspace.edges}
+                canEdit={workspace.canEdit}
+                onOpenDetail={openTask}
+                onEditTask={editTask}
               />
             ) : (
               empty

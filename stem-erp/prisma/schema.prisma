@@ -488,9 +488,12 @@ model Task {
   deliveryGroup DeliveryGroup
   title         String
   description   String?
-  startDate     DateTime         @db.Date
-  endDate       DateTime         @db.Date
-  status        TaskStatus       @default(TODO)
+  startDate       DateTime         @db.Date
+  endDate         DateTime         @db.Date
+  optimisticDays  Int?
+  mostLikelyDays  Int?
+  pessimisticDays Int?
+  status          TaskStatus       @default(TODO)
   completedAt   DateTime?
   cancelledAt   DateTime?
   creatorKey    String
