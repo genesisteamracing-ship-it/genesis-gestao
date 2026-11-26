@@ -148,15 +148,11 @@ export async function getOfficeSnapshotService(
     };
 
     for (const assignment of task.assignments) {
+      if (assignment.role !== "R") continue;
       const targetId = assignment.userId ?? assignment.memberKey;
       if (targetId) {
-        addTaskForMember(targetId, assignment.role);
+        addTaskForMember(targetId, "R");
       }
-    }
-
-    const authorId = task.creatorUserId ?? task.creatorKey;
-    if (authorId) {
-      addTaskForMember(authorId, "A");
     }
   }
 

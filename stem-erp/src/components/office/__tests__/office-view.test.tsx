@@ -290,3 +290,70 @@ test("OfficeAttendanceTable exibe registros de presença nos treinos com data fo
   assert.ok(view.getAllByText("25/11/2026").length >= 2);
   assert.ok(view.getByText("Presente"));
 });
+
+test("OfficeView exibe no inspetor lateral apenas atividades em que o integrante é Responsável (R)", () => {
+  const snapshot = makeSnapshot();
+  snapshot.members[0].tasks = [
+    {
+      id: "t-r",
+      title: "Usinagem CNC principal",
+      description: null,
+      deliveryGroup: "ENGINEERING_CAD",
+      startDate: "2026-11-01",
+      endDate: "2026-11-28",
+      status: "IN_PROGRESS",
+      role: "R",
+      isOverdue: false,
+      revision: 0,
+    },
+    {
+      id: "t-c",
+      title: "Renderizações do Ômega",
+      description: null,
+      deliveryGroup: "ENGINEERING_CAD",
+      startDate: "2026-11-01",
+      endDate: "2026-11-28",
+      status: "IN_PROGRESS",
+      role: "C",
+      isOverdue: false,
+      revision: 0,
+    },
+    {
+      id: "t-i",
+      title: "Planilhas de orçamento",
+      description: null,
+      deliveryGroup: "PROJECT_MANAGEMENT",
+      startDate: "2026-11-01",
+      endDate: "2026-11-29",
+      status: "IN_PROGRESS",
+      role: "I",
+      isOverdue: false,
+      revision: 0,
+    },
+    {
+      id: "t-a",
+      title: "Aprovação do portfólio",
+      description: null,
+      deliveryGroup: "MARKETING_SPONSOR",
+      startDate: "2026-11-01",
+      endDate: "2026-11-29",
+      status: "DONE",
+      role: "A",
+      isOverdue: false,
+      revision: 0,
+    },
+  ];
+
+  const view = render(
+    createElement(OfficeView, {
+      initialSnapshot: snapshot,
+      pollIntervalMs: 0,
+    })
+  );
+
+  assert.ok(view.getByText("Atividades (1)"));
+  assert.ok(view.getByText("Usinagem CNC principal"));
+  assert.equal(view.queryByText("Renderizações do Ômega"), null);
+  assert.equal(view.queryByText("Planilhas de orçamento"), null);
+  assert.equal(view.queryByText("Aprovação do portfólio"), null);
+});
