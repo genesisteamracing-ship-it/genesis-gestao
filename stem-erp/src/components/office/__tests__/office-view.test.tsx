@@ -206,6 +206,7 @@ test("OfficeView exibe escritório, alterna para modo Lista e filtra integrantes
 
   assert.ok(view.getByText(/Planta da Equipe — Equipe Gênesis/i));
   assert.ok(view.getAllByText("Modelagem da asa dianteira").length >= 1);
+  assert.equal(view.container.querySelector(".react-flow__minimap"), null);
 
   // Alterna para visualização em Lista
   fireEvent.click(view.getByRole("tab", { name: /Lista/i }));

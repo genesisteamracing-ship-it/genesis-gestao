@@ -4,7 +4,6 @@ import * as React from "react";
 import {
   Background,
   BackgroundVariant,
-  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
@@ -177,20 +176,6 @@ function OfficeCanvasInner({
             gap={24}
             size={1.2}
             color="var(--border)"
-          />
-          <MiniMap
-            pannable
-            zoomable
-            position="bottom-right"
-            className="!rounded-xl !border !border-border !bg-card/90 !backdrop-blur-xs !shadow-xs"
-            maskColor="color-mix(in srgb, var(--background) 70%, transparent)"
-            nodeColor={(node) => {
-              if (node.type === "officeRoom") return "var(--muted)";
-              const data = node.data as OfficeMemberNodeData | undefined;
-              if (data?.member?.status === "OVERDUE") return "var(--destructive)";
-              if (data?.member?.status === "WORKING") return "var(--success)";
-              return "var(--muted-foreground)";
-            }}
           />
         </ReactFlow>
       </div>
