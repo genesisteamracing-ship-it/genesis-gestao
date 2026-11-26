@@ -191,6 +191,26 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
         {/* Navegação dos Módulos */}
         <div className="flex-1 overflow-y-auto py-3">
         <nav className="space-y-1.5">
+          {/* Módulo: Escritório Virtual (/office) */}
+          <div className="relative px-5">
+            {(pathname === "/office" || pathname.startsWith("/office/")) && (
+              <span
+                aria-hidden="true"
+                className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
+              />
+            )}
+            <Link
+              href="/office"
+              className={sidebarItemStyles({
+                isActive:
+                  pathname === "/office" || pathname.startsWith("/office/"),
+              })}
+            >
+              <Building2 className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">Escritório Virtual</span>
+            </Link>
+          </div>
+
           {/* Combo / Grupo: Finanças */}
           {permissions.finance && (
             <div className="relative px-5">
@@ -359,26 +379,6 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
               <TaskNavGroup />
             </div>
           )}
-
-          {/* Módulo: Escritório Virtual (/office) */}
-          <div className="relative px-5">
-            {(pathname === "/office" || pathname.startsWith("/office/")) && (
-              <span
-                aria-hidden="true"
-                className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
-              />
-            )}
-            <Link
-              href="/office"
-              className={sidebarItemStyles({
-                isActive:
-                  pathname === "/office" || pathname.startsWith("/office/"),
-              })}
-            >
-              <Building2 className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">Escritório Virtual</span>
-            </Link>
-          </div>
 
           {/* Módulo: Gestão de Riscos */}
           {permissions.risks !== false && (
