@@ -72,6 +72,7 @@ export async function markTrainingAttendanceAction(
     );
 
     revalidatePath("/office");
+    revalidatePath("/presenca");
 
     return {
       success: true,
