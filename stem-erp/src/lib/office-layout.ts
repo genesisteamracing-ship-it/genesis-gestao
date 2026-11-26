@@ -57,17 +57,48 @@ export type OfficeZoneId =
   | "BRIEFING_ROOM"
   | "LOUNGE_CAFE";
 
+export type OfficeWing = "north" | "south";
+
+export type OfficeFloorStyle = "wood" | "tile" | "carpet" | "showroom";
+
+export interface OfficeEmptySlot {
+  x: number;
+  y: number;
+}
+
 export interface OfficeZoneLayout {
   id: OfficeZoneId;
   label: string;
   kind: "sector" | "briefing" | "lounge";
+  wing: OfficeWing;
+  floorStyle: OfficeFloorStyle;
   deliveryGroup?: DeliveryGroup;
   x: number;
   y: number;
   width: number;
   height: number;
+  doorOffsetX: number;
+  doorWidth: number;
   memberCount: number;
   activeCount: number;
+  overdueCount: number;
+  emptyDeskSlots: OfficeEmptySlot[];
+}
+
+export interface OfficeCorridorLayout {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  entranceWidth: number;
+  doorPositionsX: number[];
+}
+
+export interface OfficeBuildingBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface OfficeMemberPlacement {
@@ -79,6 +110,8 @@ export interface OfficeMemberPlacement {
 
 export interface OfficeFloorplanLayout {
   zones: OfficeZoneLayout[];
+  corridor: OfficeCorridorLayout;
+  building: OfficeBuildingBounds;
   placements: OfficeMemberPlacement[];
   width: number;
   height: number;
@@ -107,24 +140,82 @@ export interface PixelAvatarTraits {
   outfitTone: PixelSemanticTone;
   hasGlasses: boolean;
   hasBadgePin: boolean;
+  hasHeadset: boolean;
 }
 
 export interface OfficeFilterCriteria {
   search: string;
   sector: DeliveryGroup | "ALL";
   status: OfficeMemberStatus | "ALL";
+  role?: OfficeTaskRole | "ALL";
 }
 
-const LEFT_SECTORS: DeliveryGroup[] = [
-  "ENGINEERING_CAD",
-  "MANUFACTURING_CNC",
-  "PIT_DISPLAY",
+interface WingRoomSpec {
+  id: OfficeZoneId;
+  kind: "sector" | "briefing" | "lounge";
+  label: string;
+  floorStyle: OfficeFloorStyle;
+  deliveryGroup?: DeliveryGroup;
+}
+
+const NORTH_WING_SPECS: WingRoomSpec[] = [
+  {
+    id: "BRIEFING_ROOM",
+    kind: "briefing",
+    label: "Recepção",
+    floorStyle: "wood",
+  },
+  {
+    id: "ENGINEERING_CAD",
+    kind: "sector",
+    label: DELIVERY_GROUP_SHORT_LABELS.ENGINEERING_CAD,
+    floorStyle: "wood",
+    deliveryGroup: "ENGINEERING_CAD",
+  },
+  {
+    id: "MARKETING_SPONSOR",
+    kind: "sector",
+    label: DELIVERY_GROUP_SHORT_LABELS.MARKETING_SPONSOR,
+    floorStyle: "wood",
+    deliveryGroup: "MARKETING_SPONSOR",
+  },
+  {
+    id: "PROJECT_MANAGEMENT",
+    kind: "sector",
+    label: DELIVERY_GROUP_SHORT_LABELS.PROJECT_MANAGEMENT,
+    floorStyle: "wood",
+    deliveryGroup: "PROJECT_MANAGEMENT",
+  },
 ];
 
-const RIGHT_SECTORS: DeliveryGroup[] = [
-  "MARKETING_SPONSOR",
-  "PROJECT_MANAGEMENT",
-  "SOCIAL_PROJECT",
+const SOUTH_WING_SPECS: WingRoomSpec[] = [
+  {
+    id: "LOUNGE_CAFE",
+    kind: "lounge",
+    label: "Copa & Lounge",
+    floorStyle: "tile",
+  },
+  {
+    id: "MANUFACTURING_CNC",
+    kind: "sector",
+    label: DELIVERY_GROUP_SHORT_LABELS.MANUFACTURING_CNC,
+    floorStyle: "tile",
+    deliveryGroup: "MANUFACTURING_CNC",
+  },
+  {
+    id: "PIT_DISPLAY",
+    kind: "sector",
+    label: DELIVERY_GROUP_SHORT_LABELS.PIT_DISPLAY,
+    floorStyle: "carpet",
+    deliveryGroup: "PIT_DISPLAY",
+  },
+  {
+    id: "SOCIAL_PROJECT",
+    kind: "sector",
+    label: DELIVERY_GROUP_SHORT_LABELS.SOCIAL_PROJECT,
+    floorStyle: "wood",
+    deliveryGroup: "SOCIAL_PROJECT",
+  },
 ];
 
 export const SECTOR_TONE_MAP: Record<DeliveryGroup, PixelSemanticTone> = {
@@ -180,6 +271,7 @@ export function getAvatarTraits(
     outfitTone,
     hasGlasses: (h >> 9) % 3 === 0,
     hasBadgePin: (h >> 11) % 2 === 0,
+    hasHeadset: (h >> 13) % 3 === 0,
   };
 }
 
@@ -198,12 +290,23 @@ export function filterOfficeMembers(
       return false;
     }
 
+    if (criteria.role && criteria.role !== "ALL") {
+      const hasMatchingRole =
+        member.activeTask?.role === criteria.role ||
+        member.tasks.some((t) => t.role === criteria.role);
+      if (!hasMatchingRole) {
+        return false;
+      }
+    }
+
     if (!query) return true;
 
     const haystack = [
       member.name,
       member.jobTitle ?? "",
-      member.deliveryGroup ? DELIVERY_GROUP_SHORT_LABELS[member.deliveryGroup] : "",
+      member.deliveryGroup
+        ? DELIVERY_GROUP_SHORT_LABELS[member.deliveryGroup]
+        : "",
       member.activeTask?.title ?? "",
       ...member.tasks.map((t) => t.title),
     ]
@@ -221,26 +324,137 @@ export function getMemberInitials(name: string): string {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
+export interface OfficeSectorGroup {
+  id: DeliveryGroup | "GENERAL";
+  label: string;
+  tone: PixelSemanticTone;
+  members: OfficeMemberDTO[];
+  activeCount: number;
+  overdueCount: number;
+  doneTasksCount: number;
+  totalTasksCount: number;
+  rolesPresent: OfficeTaskRole[];
+}
+
+export function groupMembersBySector(
+  members: OfficeMemberDTO[]
+): OfficeSectorGroup[] {
+  const buckets = new Map<DeliveryGroup | "GENERAL", OfficeMemberDTO[]>();
+
+  for (const member of members) {
+    const key = member.deliveryGroup ?? "GENERAL";
+    const list = buckets.get(key) ?? [];
+    list.push(member);
+    buckets.set(key, list);
+  }
+
+  const groups: OfficeSectorGroup[] = [];
+
+  for (const [key, groupMembers] of buckets.entries()) {
+    const sortedMembers = [...groupMembers].sort((a, b) => {
+      const statusWeight: Record<OfficeMemberStatus, number> = {
+        OVERDUE: 0,
+        WORKING: 1,
+        IDLE: 2,
+      };
+      if (statusWeight[a.status] !== statusWeight[b.status]) {
+        return statusWeight[a.status] - statusWeight[b.status];
+      }
+      const roleA = a.activeTask ? ROLE_PRIORITY[a.activeTask.role] : 99;
+      const roleB = b.activeTask ? ROLE_PRIORITY[b.activeTask.role] : 99;
+      if (roleA !== roleB) {
+        return roleA - roleB;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    const uniqueTasks = new Map<string, { isDone: boolean }>();
+    const rolesSet = new Set<OfficeTaskRole>();
+
+    for (const m of sortedMembers) {
+      if (m.activeTask) {
+        rolesSet.add(m.activeTask.role);
+      }
+      for (const t of m.tasks) {
+        rolesSet.add(t.role);
+        if (!uniqueTasks.has(t.id)) {
+          uniqueTasks.set(t.id, { isDone: t.status === "DONE" });
+        }
+      }
+    }
+
+    let doneTasksCount = 0;
+    for (const item of uniqueTasks.values()) {
+      if (item.isDone) doneTasksCount += 1;
+    }
+
+    const fallbackTotal = sortedMembers.reduce(
+      (acc, m) => acc + m.activeTasksCount + m.todoTasksCount + m.doneTasksCount,
+      0
+    );
+    const fallbackDone = sortedMembers.reduce(
+      (acc, m) => acc + m.doneTasksCount,
+      0
+    );
+
+    const totalTasksCount = Math.max(uniqueTasks.size, fallbackTotal);
+    const resolvedDoneCount =
+      uniqueTasks.size > 0
+        ? Math.max(doneTasksCount, Math.min(totalTasksCount, fallbackDone))
+        : fallbackDone;
+
+    const rolesOrdered: OfficeTaskRole[] = (
+      ["R", "A", "C", "I"] as const
+    ).filter((r) => rolesSet.has(r));
+
+    groups.push({
+      id: key,
+      label:
+        key === "GENERAL" ? "Equipe Geral" : DELIVERY_GROUP_SHORT_LABELS[key],
+      tone: key === "GENERAL" ? "chart-4" : SECTOR_TONE_MAP[key],
+      members: sortedMembers,
+      activeCount: sortedMembers.filter((m) => m.status !== "IDLE").length,
+      overdueCount: sortedMembers.filter((m) => m.status === "OVERDUE").length,
+      doneTasksCount: resolvedDoneCount,
+      totalTasksCount,
+      rolesPresent: rolesOrdered,
+    });
+  }
+
+  return groups.sort((a, b) => {
+    if (a.overdueCount !== b.overdueCount) return b.overdueCount - a.overdueCount;
+    if (a.activeCount !== b.activeCount) return b.activeCount - a.activeCount;
+    return a.label.localeCompare(b.label);
+  });
+}
+
 export function buildOfficeFloorplan(
   members: OfficeMemberDTO[]
 ): OfficeFloorplanLayout {
-  const BAY_WIDTH = 440;
-  const CENTER_WIDTH = 300;
-  const GAP_X = 36;
-  const GAP_Y = 28;
-  const DESK_WIDTH = 196;
-  const DESK_HEIGHT = 152;
-  const BAY_PADDING_X = 18;
-  const BAY_HEADER_H = 44;
-  const BAY_PADDING_BOTTOM = 18;
-  const DESK_GAP_X = 12;
-  const DESK_GAP_Y = 14;
+  const EXTERIOR_MARGIN_X = 96;
+  const EXTERIOR_MARGIN_Y = 80;
+  const ROOM_WIDTH = 312;
+  const MIN_ROOM_HEIGHT = 252;
+  const CORRIDOR_HEIGHT = 86;
+  const ENTRANCE_WIDTH = 44;
+
+  const STATION_WIDTH = 136;
+  const STATION_HEIGHT = 108;
+  const STATION_GAP_X = 12;
+  const STATION_GAP_Y = 16;
+  const ROOM_SIDE_PADDING = Math.round(
+    (ROOM_WIDTH - (STATION_WIDTH * 2 + STATION_GAP_X)) / 2
+  );
+  const NORTH_TOP_DECOR_H = 74;
+  const NORTH_BOTTOM_PAD = 24;
+  const SOUTH_TOP_PAD = 46;
+  const SOUTH_BOTTOM_DECOR_H = 52;
+  const DOOR_WIDTH = 56;
 
   const grouped = new Map<OfficeZoneId, OfficeMemberDTO[]>();
-  for (const sector of [...LEFT_SECTORS, ...RIGHT_SECTORS]) {
-    grouped.set(sector, []);
+  for (const spec of [...NORTH_WING_SPECS, ...SOUTH_WING_SPECS]) {
+    grouped.set(spec.id, []);
   }
-  grouped.set("LOUNGE_CAFE", []);
 
   for (const member of members) {
     const targetZone: OfficeZoneId = member.deliveryGroup ?? "LOUNGE_CAFE";
@@ -249,120 +463,146 @@ export function buildOfficeFloorplan(
     grouped.set(targetZone, list);
   }
 
-  const zones: OfficeZoneLayout[] = [];
-  const placements: OfficeMemberPlacement[] = [];
-
-  const placeColumn = (sectors: DeliveryGroup[], startX: number): number => {
-    let cursorY = 24;
-
-    for (const sector of sectors) {
-      const bayMembers = grouped.get(sector) ?? [];
-      const rows = Math.max(1, Math.ceil(bayMembers.length / 2));
-      const height =
-        BAY_HEADER_H +
-        rows * DESK_HEIGHT +
-        Math.max(0, rows - 1) * DESK_GAP_Y +
-        BAY_PADDING_BOTTOM;
-
-      const activeCount = bayMembers.filter(
-        (m) => m.status === "WORKING" || m.status === "OVERDUE"
-      ).length;
-
-      zones.push({
-        id: sector,
-        label: DELIVERY_GROUP_SHORT_LABELS[sector],
-        kind: "sector",
-        deliveryGroup: sector,
-        x: startX,
-        y: cursorY,
-        width: BAY_WIDTH,
-        height,
-        memberCount: bayMembers.length,
-        activeCount,
-      });
-
-      bayMembers.forEach((member, idx) => {
-        const col = idx % 2;
-        const row = Math.floor(idx / 2);
-        placements.push({
-          member,
-          zoneId: sector,
-          x: startX + BAY_PADDING_X + col * (DESK_WIDTH + DESK_GAP_X),
-          y: cursorY + BAY_HEADER_H + row * (DESK_HEIGHT + DESK_GAP_Y),
-        });
-      });
-
-      cursorY += height + GAP_Y;
+  const calcWingHeight = (specs: WingRoomSpec[], wing: OfficeWing): number => {
+    let maxHeight = MIN_ROOM_HEIGHT;
+    for (const spec of specs) {
+      const roomMembers = grouped.get(spec.id) ?? [];
+      if (roomMembers.length === 0) continue;
+      const rows = Math.ceil(roomMembers.length / 2);
+      const topPad = wing === "north" ? NORTH_TOP_DECOR_H : SOUTH_TOP_PAD;
+      const bottomPad =
+        wing === "north" ? NORTH_BOTTOM_PAD : SOUTH_BOTTOM_DECOR_H;
+      const needed =
+        topPad +
+        rows * STATION_HEIGHT +
+        Math.max(0, rows - 1) * STATION_GAP_Y +
+        bottomPad;
+      if (needed > maxHeight) {
+        maxHeight = needed;
+      }
     }
-
-    return cursorY;
+    return maxHeight;
   };
 
-  const leftX = 24;
-  const centerX = leftX + BAY_WIDTH + GAP_X;
-  const rightX = centerX + CENTER_WIDTH + GAP_X;
+  const northHeight = calcWingHeight(NORTH_WING_SPECS, "north");
+  const southHeight = calcWingHeight(SOUTH_WING_SPECS, "south");
 
-  const leftBottom = placeColumn(LEFT_SECTORS, leftX);
-  const rightBottom = placeColumn(RIGHT_SECTORS, rightX);
+  const buildingX = EXTERIOR_MARGIN_X + ENTRANCE_WIDTH;
+  const buildingY = EXTERIOR_MARGIN_Y;
+  const buildingWidth = NORTH_WING_SPECS.length * ROOM_WIDTH;
+  const corridorY = buildingY + northHeight;
+  const southWingY = corridorY + CORRIDOR_HEIGHT;
+  const buildingHeight = northHeight + CORRIDOR_HEIGHT + southHeight;
 
   const totalActive = members.filter(
     (m) => m.status === "WORKING" || m.status === "OVERDUE"
   ).length;
+  const totalOverdue = members.filter((m) => m.status === "OVERDUE").length;
 
-  const briefingHeight = 250;
-  zones.push({
-    id: "BRIEFING_ROOM",
-    label: "Sala de Briefing",
-    kind: "briefing",
-    x: centerX,
-    y: 24,
-    width: CENTER_WIDTH,
-    height: briefingHeight,
-    memberCount: members.length,
-    activeCount: totalActive,
-  });
+  const zones: OfficeZoneLayout[] = [];
+  const placements: OfficeMemberPlacement[] = [];
+  const doorPositionsX: number[] = [];
 
-  const loungeMembers = grouped.get("LOUNGE_CAFE") ?? [];
-  const loungeRows = Math.max(1, loungeMembers.length);
-  const loungeY = 24 + briefingHeight + GAP_Y;
-  const loungeHeight = Math.max(
-    260,
-    BAY_HEADER_H +
-      loungeRows * DESK_HEIGHT +
-      Math.max(0, loungeRows - 1) * DESK_GAP_Y +
-      BAY_PADDING_BOTTOM
-  );
+  const buildWing = (
+    specs: WingRoomSpec[],
+    wing: OfficeWing,
+    wingY: number,
+    wingHeight: number
+  ) => {
+    specs.forEach((spec, index) => {
+      const roomX = buildingX + index * ROOM_WIDTH;
+      const roomMembers = grouped.get(spec.id) ?? [];
+      const doorOffsetX = Math.round((ROOM_WIDTH - DOOR_WIDTH) / 2);
+      doorPositionsX.push(roomX + doorOffsetX);
 
-  zones.push({
-    id: "LOUNGE_CAFE",
-    label: "Lounge & Café",
-    kind: "lounge",
-    x: centerX,
-    y: loungeY,
-    width: CENTER_WIDTH,
-    height: loungeHeight,
-    memberCount: loungeMembers.length,
-    activeCount: loungeMembers.filter(
-      (m) => m.status === "WORKING" || m.status === "OVERDUE"
-    ).length,
-  });
+      const startStationY =
+        wing === "north" ? NORTH_TOP_DECOR_H : SOUTH_TOP_PAD;
 
-  loungeMembers.forEach((member, idx) => {
-    placements.push({
-      member,
-      zoneId: "LOUNGE_CAFE",
-      x: centerX + Math.round((CENTER_WIDTH - DESK_WIDTH) / 2),
-      y: loungeY + BAY_HEADER_H + idx * (DESK_HEIGHT + DESK_GAP_Y),
+      roomMembers.forEach((member, mIdx) => {
+        const col = mIdx % 2;
+        const row = Math.floor(mIdx / 2);
+        placements.push({
+          member,
+          zoneId: spec.id,
+          x: roomX + ROOM_SIDE_PADDING + col * (STATION_WIDTH + STATION_GAP_X),
+          y: wingY + startStationY + row * (STATION_HEIGHT + STATION_GAP_Y),
+        });
+      });
+
+      const emptyDeskSlots: OfficeEmptySlot[] = [];
+      if (spec.kind === "sector") {
+        if (roomMembers.length === 0) {
+          emptyDeskSlots.push(
+            { x: ROOM_SIDE_PADDING, y: startStationY + 18 },
+            {
+              x: ROOM_SIDE_PADDING + STATION_WIDTH + STATION_GAP_X,
+              y: startStationY + 18,
+            }
+          );
+        } else if (roomMembers.length % 2 === 1) {
+          const lastRow = Math.floor((roomMembers.length - 1) / 2);
+          emptyDeskSlots.push({
+            x: ROOM_SIDE_PADDING + STATION_WIDTH + STATION_GAP_X,
+            y: startStationY + lastRow * (STATION_HEIGHT + STATION_GAP_Y) + 18,
+          });
+        }
+      }
+
+      const isBriefing = spec.kind === "briefing";
+      const memberCount = isBriefing ? members.length : roomMembers.length;
+      const activeCount = isBriefing
+        ? totalActive
+        : roomMembers.filter(
+            (m) => m.status === "WORKING" || m.status === "OVERDUE"
+          ).length;
+      const overdueCount = isBriefing
+        ? totalOverdue
+        : roomMembers.filter((m) => m.status === "OVERDUE").length;
+
+      zones.push({
+        id: spec.id,
+        label: spec.label,
+        kind: spec.kind,
+        wing,
+        floorStyle: spec.floorStyle,
+        deliveryGroup: spec.deliveryGroup,
+        x: roomX,
+        y: wingY,
+        width: ROOM_WIDTH,
+        height: wingHeight,
+        doorOffsetX,
+        doorWidth: DOOR_WIDTH,
+        memberCount,
+        activeCount,
+        overdueCount,
+        emptyDeskSlots,
+      });
     });
-  });
+  };
 
-  const totalHeight = Math.max(leftBottom, rightBottom, loungeY + loungeHeight + 24);
-  const totalWidth = rightX + BAY_WIDTH + 24;
+  buildWing(NORTH_WING_SPECS, "north", buildingY, northHeight);
+  buildWing(SOUTH_WING_SPECS, "south", southWingY, southHeight);
+
+  const uniqueDoors = Array.from(new Set(doorPositionsX)).sort((a, b) => a - b);
 
   return {
     zones,
+    corridor: {
+      x: buildingX,
+      y: corridorY,
+      width: buildingWidth,
+      height: CORRIDOR_HEIGHT,
+      entranceWidth: ENTRANCE_WIDTH,
+      doorPositionsX: uniqueDoors,
+    },
+    building: {
+      x: buildingX,
+      y: buildingY,
+      width: buildingWidth,
+      height: buildingHeight,
+    },
     placements,
-    width: totalWidth,
-    height: totalHeight,
+    width: buildingX + buildingWidth + EXTERIOR_MARGIN_X,
+    height: buildingY + buildingHeight + EXTERIOR_MARGIN_Y,
   };
 }

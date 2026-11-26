@@ -10,12 +10,15 @@ import {
 import {
   buildOfficeFloorplan,
   filterOfficeMembers,
+  groupMembersBySector,
   type OfficeFloorplanLayout,
+  type OfficeSectorGroup,
 } from "@/lib/office-layout";
 import type {
   OfficeMemberDTO,
   OfficeMemberStatus,
   OfficeSnapshotDTO,
+  OfficeTaskRole,
 } from "@/types/office";
 
 export type OfficeViewMode = "canvas" | "list";
@@ -64,6 +67,9 @@ export function useOffice({
   const [statusFilter, setStatusFilter] = React.useState<
     OfficeMemberStatus | "ALL"
   >("ALL");
+  const [roleFilter, setRoleFilter] = React.useState<OfficeTaskRole | "ALL">(
+    "ALL"
+  );
   const [selectedMemberId, setSelectedMemberId] = React.useState<string | null>(
     () =>
       initialSnapshot?.members.find((m) => m.status !== "IDLE")?.id ??
@@ -138,8 +144,14 @@ export function useOffice({
         search,
         sector: sectorFilter,
         status: statusFilter,
+        role: roleFilter,
       }),
-    [allMembers, search, sectorFilter, statusFilter]
+    [allMembers, search, sectorFilter, statusFilter, roleFilter]
+  );
+
+  const sectorGroups: OfficeSectorGroup[] = React.useMemo(
+    () => groupMembersBySector(filteredMembers),
+    [filteredMembers]
   );
 
   const filteredMemberIds = React.useMemo(
@@ -170,12 +182,14 @@ export function useOffice({
   const hasActiveFilters =
     search.trim().length > 0 ||
     sectorFilter !== "ALL" ||
-    statusFilter !== "ALL";
+    statusFilter !== "ALL" ||
+    roleFilter !== "ALL";
 
   const clearFilters = React.useCallback(() => {
     setSearch("");
     setSectorFilter("ALL");
     setStatusFilter("ALL");
+    setRoleFilter("ALL");
   }, []);
 
   return {
@@ -194,10 +208,13 @@ export function useOffice({
     setSectorFilter,
     statusFilter,
     setStatusFilter,
+    roleFilter,
+    setRoleFilter,
     hasActiveFilters,
     clearFilters,
     allMembers,
     filteredMembers,
+    sectorGroups,
     filteredMemberIds,
     floorplan,
     selectedMember,

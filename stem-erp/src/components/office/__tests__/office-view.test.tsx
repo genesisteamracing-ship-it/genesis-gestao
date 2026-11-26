@@ -62,7 +62,9 @@ afterEach(() => {
   cleanup();
 });
 
-function makeSnapshot(overrides: Partial<OfficeSnapshotDTO> = {}): OfficeSnapshotDTO {
+function makeSnapshot(
+  overrides: Partial<OfficeSnapshotDTO> = {}
+): OfficeSnapshotDTO {
   return {
     teamId: "team-1",
     teamName: "Equipe Gênesis",
@@ -112,6 +114,47 @@ function makeSnapshot(overrides: Partial<OfficeSnapshotDTO> = {}): OfficeSnapsho
         isCurrentUser: true,
       },
       {
+        id: "u-3",
+        name: "Caio Rocha",
+        email: "caio@genesis.dev",
+        jobTitle: "Projetista CAD",
+        role: "TEAM_LEAD",
+        deliveryGroup: "ENGINEERING_CAD",
+        status: "WORKING",
+        activeTask: {
+          id: "t-1",
+          title: "Modelagem da asa dianteira",
+          description: null,
+          deliveryGroup: "ENGINEERING_CAD",
+          startDate: "2026-11-01",
+          endDate: "2026-11-28",
+          status: "IN_PROGRESS",
+          role: "C",
+          isOverdue: false,
+          revision: 0,
+        },
+        activeTasksCount: 1,
+        todoTasksCount: 0,
+        doneTasksCount: 1,
+        overdueTasksCount: 0,
+        tasks: [
+          {
+            id: "t-1",
+            title: "Modelagem da asa dianteira",
+            description: null,
+            deliveryGroup: "ENGINEERING_CAD",
+            startDate: "2026-11-01",
+            endDate: "2026-11-28",
+            status: "IN_PROGRESS",
+            role: "C",
+            isOverdue: false,
+            revision: 0,
+          },
+        ],
+        lastLoginAt: null,
+        isCurrentUser: false,
+      },
+      {
         id: "u-2",
         name: "Lucas Mendes",
         email: "lucas@genesis.dev",
@@ -130,12 +173,12 @@ function makeSnapshot(overrides: Partial<OfficeSnapshotDTO> = {}): OfficeSnapsho
       },
     ],
     summary: {
-      totalMembers: 2,
-      workingCount: 1,
+      totalMembers: 3,
+      workingCount: 2,
       overdueCount: 0,
       idleCount: 1,
       totalInProgressTasks: 1,
-      totalDoneTasks: 3,
+      totalDoneTasks: 4,
     },
     ...overrides,
   };
@@ -196,7 +239,7 @@ test("OfficeView renderiza estado vazio quando não há integrantes ativos", () 
   assert.ok(view.getByText("Nenhum integrante ativo na equipe"));
 });
 
-test("OfficeView exibe escritório, alterna para modo Lista e filtra integrantes", () => {
+test("OfficeView exibe escritório pixel-art, agrupa colaboradores RACI, alterna para Lista e filtra", () => {
   const view = render(
     createElement(OfficeView, {
       initialSnapshot: makeSnapshot(),
@@ -206,13 +249,17 @@ test("OfficeView exibe escritório, alterna para modo Lista e filtra integrantes
 
   assert.ok(view.getByText(/Planta da Equipe — Equipe Gênesis/i));
   assert.ok(view.getAllByText("Modelagem da asa dianteira").length >= 1);
+  assert.ok(view.getByText(/1 colaborador na entrega/i));
   assert.equal(view.container.querySelector(".react-flow__minimap"), null);
 
-  // Alterna para visualização em Lista
+  fireEvent.click(view.getByRole("button", { name: /Consultado/i }));
+  assert.ok(view.getAllByText("Caio Rocha").length >= 1);
+
+  fireEvent.click(view.getByRole("button", { name: /Limpar/i }));
+
   fireEvent.click(view.getByRole("tab", { name: /Lista/i }));
   assert.ok(view.getByText("Nenhuma tarefa em execução"));
 
-  // Busca no HUD filtra para Lucas
   const searchInput = view.getByLabelText("Buscar integrante ou tarefa");
   fireEvent.change(searchInput, { target: { value: "Lucas" } });
   assert.ok(view.getAllByText("Lucas Mendes").length >= 1);

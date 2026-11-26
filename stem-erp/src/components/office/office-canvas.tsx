@@ -12,13 +12,22 @@ import {
 import { Building2, Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { OfficeFloorplanLayout } from "@/lib/office-layout";
-import { OfficeMemberNode, type OfficeMemberNodeData } from "./office-member-node";
+import {
+  OfficeMemberNode,
+  type OfficeMemberNodeData,
+} from "./office-member-node";
 import { OfficeRoomNode, type OfficeRoomNodeData } from "./office-room-node";
+import { OfficeWorldNode, type OfficeWorldNodeData } from "./office-world-node";
 
 const nodeTypes = {
+  officeWorld: OfficeWorldNode,
   officeRoom: OfficeRoomNode,
   officeMember: OfficeMemberNode,
 };
+
+type AnyOfficeNode = Node<
+  OfficeWorldNodeData | OfficeRoomNodeData | OfficeMemberNodeData
+>;
 
 interface OfficeCanvasProps {
   floorplan: OfficeFloorplanLayout;
@@ -45,9 +54,18 @@ function OfficeCanvasInner({
 }: OfficeCanvasProps) {
   const { zoomIn, zoomOut, fitView, setCenter } = useReactFlow();
 
-  const nodes = React.useMemo<
-    Array<Node<OfficeRoomNodeData | OfficeMemberNodeData>>
-  >(() => {
+  const nodes = React.useMemo<AnyOfficeNode[]>(() => {
+    const worldNode: Node<OfficeWorldNodeData> = {
+      id: "office-world-backdrop",
+      type: "officeWorld",
+      position: { x: 0, y: 0 },
+      data: { floorplan },
+      draggable: false,
+      selectable: false,
+      focusable: false,
+      zIndex: -1,
+    };
+
     const roomNodes: Array<Node<OfficeRoomNodeData>> = floorplan.zones.map(
       (zone) => ({
         id: `zone-${zone.id}`,
@@ -57,28 +75,31 @@ function OfficeCanvasInner({
         draggable: false,
         selectable: false,
         focusable: false,
-        zIndex: 0,
+        zIndex: 1,
       })
     );
 
     const memberNodes: Array<Node<OfficeMemberNodeData>> =
-      floorplan.placements.map((placement) => ({
-        id: `member-${placement.member.id}`,
-        type: "officeMember",
-        position: { x: placement.x, y: placement.y },
-        data: {
-          member: placement.member,
-          isSelected: placement.member.id === selectedMemberId,
-          isDimmed:
-            hasActiveFilters && !filteredMemberIds.has(placement.member.id),
-          onSelect: onSelectMember,
-        },
-        draggable: false,
-        selectable: true,
-        zIndex: 10,
-      }));
+      floorplan.placements.map((placement) => {
+        const isSelected = placement.member.id === selectedMemberId;
+        return {
+          id: `member-${placement.member.id}`,
+          type: "officeMember",
+          position: { x: placement.x, y: placement.y },
+          data: {
+            member: placement.member,
+            isSelected,
+            isDimmed:
+              hasActiveFilters && !filteredMemberIds.has(placement.member.id),
+            onSelect: onSelectMember,
+          },
+          draggable: false,
+          selectable: true,
+          zIndex: isSelected ? 25 : 12,
+        };
+      });
 
-    return [...roomNodes, ...memberNodes];
+    return [worldNode, ...roomNodes, ...memberNodes];
   }, [
     floorplan,
     selectedMemberId,
@@ -94,14 +115,14 @@ function OfficeCanvasInner({
     );
     if (!placement) return;
 
-    setCenter(placement.x + 98, placement.y + 76, {
-      zoom: 1.05,
+    setCenter(placement.x + 68, placement.y + 54, {
+      zoom: 1.12,
       duration: 380,
     });
   }, [selectedMemberId, focusRequestId, floorplan.placements, setCenter]);
 
   return (
-    <div className="relative flex h-[540px] sm:h-[640px] lg:h-[700px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
+    <div className="relative flex h-[540px] sm:h-[660px] lg:h-[740px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
       {/* Toolbar superior padronizada */}
       <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 px-4 py-2.5">
         <div className="flex items-center gap-2 min-w-0">
@@ -146,7 +167,7 @@ function OfficeCanvasInner({
             variant="outline"
             size="icon"
             className="h-8 w-8 rounded-lg"
-            onClick={() => fitView({ padding: 0.14, duration: 260 })}
+            onClick={() => fitView({ padding: 0.04, duration: 260 })}
             aria-label="Ajustar visualização"
             title="Ajustar visualização"
           >
@@ -156,15 +177,21 @@ function OfficeCanvasInner({
       </div>
 
       {/* Área interativa React Flow */}
-      <div className="relative flex-1 min-h-0">
+      <div
+        className="relative flex-1 min-h-0"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--success) 14%, var(--background))",
+        }}
+      >
         <ReactFlow
           nodes={nodes}
           edges={[]}
           nodeTypes={nodeTypes}
           fitView
-          fitViewOptions={{ padding: 0.12 }}
+          fitViewOptions={{ padding: 0.04 }}
           minZoom={0.35}
-          maxZoom={1.6}
+          maxZoom={1.75}
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable
@@ -175,7 +202,7 @@ function OfficeCanvasInner({
             variant={BackgroundVariant.Dots}
             gap={24}
             size={1.2}
-            color="var(--border)"
+            color="color-mix(in srgb, var(--success) 25%, var(--border))"
           />
         </ReactFlow>
       </div>
