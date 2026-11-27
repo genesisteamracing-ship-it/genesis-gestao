@@ -9,6 +9,10 @@ export type TaskRecord = {
   deliveryGroup: DeliveryGroup;
   startDate: string;
   endDate: string;
+  baselineStartDate?: string | null;
+  baselineEndDate?: string | null;
+  isAtRisk?: boolean;
+  isCritical?: boolean;
   optimisticDays?: number | null;
   mostLikelyDays?: number | null;
   pessimisticDays?: number | null;

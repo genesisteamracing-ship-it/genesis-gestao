@@ -32,6 +32,14 @@ export function TaskForm({
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? "TODO");
   const [startDate, setStartDate] = useState<string>(task?.startDate ?? "");
   const [endDate, setEndDate] = useState<string>(task?.endDate ?? "");
+  const [baselineStartDate, setBaselineStartDate] = useState<string>(
+    task?.baselineStartDate ?? task?.startDate ?? "",
+  );
+  const [baselineEndDate, setBaselineEndDate] = useState<string>(
+    task?.baselineEndDate ?? task?.endDate ?? "",
+  );
+  const [isAtRisk, setIsAtRisk] = useState<boolean>(task?.isAtRisk ?? false);
+  const [isCritical, setIsCritical] = useState<boolean>(task?.isCritical ?? false);
   const [optimisticDays, setOptimisticDays] = useState<string>(
     task?.optimisticDays != null ? String(task.optimisticDays) : "",
   );
@@ -126,6 +134,8 @@ export function TaskForm({
       description: task?.description ?? undefined,
       startDate,
       endDate,
+      isAtRisk,
+      isCritical,
       optimisticDays: parsePertInput(optimisticDays),
       mostLikelyDays: parsePertInput(mostLikelyDays),
       pessimisticDays: parsePertInput(pessimisticDays),
@@ -135,7 +145,15 @@ export function TaskForm({
     setMessage("");
     try {
       const result = task
-        ? await editTaskAction({ ...input, id: task.id, revision: task.revision, status })
+        ? await editTaskAction({
+            ...input,
+            id: task.id,
+            revision: task.revision,
+            status,
+            ...(baselineStartDate && baselineEndDate
+              ? { baselineStartDate, baselineEndDate }
+              : {}),
+          })
         : await createTaskAction(input);
       if (result.ok) onDone();
       else setMessage(result.message);
@@ -178,28 +196,91 @@ export function TaskForm({
 
       {/* Início e Término: um do lado do outro */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <TaskField label="Início">
-          {(id) => (
-            <TaskDatePicker
-              id={id}
-              name="startDate"
-              value={startDate}
-              onChange={setStartDate}
-              placeholder="Selecione o início"
-            />
-          )}
-        </TaskField>
-        <TaskField label="Término">
-          {(id) => (
-            <TaskDatePicker
-              id={id}
-              name="endDate"
-              value={endDate}
-              onChange={setEndDate}
-              placeholder="Selecione o término"
-            />
-          )}
-        </TaskField>
+        <div className="flex flex-col justify-between space-y-1.5">
+          <TaskField label={task ? "Início atual / previsto" : "Início (Linha de base)"}>
+            {(id) => (
+              <TaskDatePicker
+                id={id}
+                name="startDate"
+                value={startDate}
+                onChange={setStartDate}
+                placeholder="Selecione o início"
+              />
+            )}
+          </TaskField>
+        </div>
+        <div className="flex flex-col justify-between space-y-1.5">
+          <TaskField label={task ? "Término atual / previsto" : "Término (Linha de base)"}>
+            {(id) => (
+              <TaskDatePicker
+                id={id}
+                name="endDate"
+                value={endDate}
+                onChange={setEndDate}
+                placeholder="Selecione o término"
+              />
+            )}
+          </TaskField>
+        </div>
+      </div>
+
+      {/* Linha de base (editável em tarefas existentes) */}
+      {task && (
+        <div className="space-y-2 rounded-lg border border-border/80 bg-muted/20 p-3">
+          <span className="text-xs font-semibold text-foreground">Linha de base (planejado)</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label htmlFor="baseline-start" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+                Início planejado
+              </Label>
+              <div className="mt-auto">
+                <TaskDatePicker
+                  id="baseline-start"
+                  name="baselineStartDate"
+                  value={baselineStartDate}
+                  onChange={setBaselineStartDate}
+                  placeholder="Início planejado"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label htmlFor="baseline-end" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+                Término planejado
+              </Label>
+              <div className="mt-auto">
+                <TaskDatePicker
+                  id="baseline-end"
+                  name="baselineEndDate"
+                  value={baselineEndDate}
+                  onChange={setBaselineEndDate}
+                  placeholder="Término planejado"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sinais de cronograma no Gantt */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5 text-xs font-medium text-foreground">
+          <input
+            type="checkbox"
+            checked={isAtRisk}
+            onChange={(e) => setIsAtRisk(e.target.checked)}
+            className="h-4 w-4 rounded border-border accent-warning"
+          />
+          <span>Risco de atraso (Atenção)</span>
+        </label>
+        <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5 text-xs font-medium text-foreground">
+          <input
+            type="checkbox"
+            checked={isCritical}
+            onChange={(e) => setIsCritical(e.target.checked)}
+            className="h-4 w-4 rounded border-border accent-destructive"
+          />
+          <span>Atividade crítica</span>
+        </label>
       </div>
 
       {/* Estimativa PERT em 3 pontos (opcional) */}
