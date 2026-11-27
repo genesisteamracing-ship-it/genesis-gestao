@@ -1,97 +1,125 @@
 import {
-  COMMUNICATION_CHANNEL_LABELS,
-  COMMUNICATION_FREQUENCY_LABELS,
   ENGAGEMENT_LEVEL_LABELS,
-  HIERARCHY_TIER_META,
   STAKEHOLDER_GROUP_LABELS,
 } from "@/lib/communication-constants";
-import { computeHierarchyTier } from "@/lib/communication-hierarchy";
 import type {
-  CommunicationChannel,
-  CommunicationFrequency,
   StakeholderGroup,
   StakeholderWithRelations,
 } from "@/types/communication";
-import { STATEMENT_PDF_COLORS } from "./financial-statement-pdf-layout";
+import {
+  STATEMENT_PDF_COLORS,
+  type RgbColor,
+} from "./financial-statement-pdf-layout";
 
 /**
- * Reutiliza a paleta oficial Azul e Amarelo da Equipe Gênesis (padrão dos PDFs).
+ * Paleta oficial Azul e Amarelo da Equipe Gênesis para cabeçalho e rodapé.
  */
 export const STAKEHOLDERS_PDF_COLORS = STATEMENT_PDF_COLORS;
 
-export type StakeholderPdfRowKind =
-  | "STAKEHOLDER"
-  | "GROUP_SUBTOTAL"
-  | "FINAL_TOTAL";
+export type StakeholderQuadrantKey =
+  | "KEEP_SATISFIED"
+  | "MANAGE_CLOSELY"
+  | "MONITOR"
+  | "KEEP_INFORMED";
 
-export type EngagementTone = "positive" | "negative" | "neutral";
+export type StakeholderRelationKind =
+  | "NEGATIVE"
+  | "POSITIVE"
+  | "POTENTIAL_PARTNERSHIP";
 
-export interface StakeholderPdfRow {
-  kind: StakeholderPdfRowKind;
-  stakeholderPrimary: string;
-  stakeholderSecondary: string;
-  contactPrimary: string;
-  contactSecondary: string;
-  matrixPrimary: string;
-  matrixSecondary: string;
-  engagementPrimary: string;
-  engagementSecondary: string;
-  engagementTone: EngagementTone;
-  channelPrimary: string;
-  channelSecondary: string;
+export interface QuadrantVisualConfig {
+  key: StakeholderQuadrantKey;
+  title: string;
+  bgColor: RgbColor;
+  titlePosition: "top-left" | "bottom-left" | "bottom-right";
+}
+
+/**
+ * Cores e posicionamentos fiéis ao modelo de Matriz Poder × Interesse.
+ */
+export const STAKEHOLDER_QUADRANT_CONFIG: Record<
+  StakeholderQuadrantKey,
+  QuadrantVisualConfig
+> = {
+  KEEP_SATISFIED: {
+    key: "KEEP_SATISFIED",
+    title: "Manter satisfeito",
+    bgColor: [174, 219, 131], // Verde suave
+    titlePosition: "top-left",
+  },
+  MANAGE_CLOSELY: {
+    key: "MANAGE_CLOSELY",
+    title: "Gerenciar de perto e envolver",
+    bgColor: [249, 132, 132], // Vermelho / coral suave
+    titlePosition: "top-left",
+  },
+  MONITOR: {
+    key: "MONITOR",
+    title: "Monitorar",
+    bgColor: [253, 249, 156], // Amarelo claro
+    titlePosition: "bottom-left",
+  },
+  KEEP_INFORMED: {
+    key: "KEEP_INFORMED",
+    title: "Manter informado",
+    bgColor: [103, 213, 250], // Azul celeste
+    titlePosition: "bottom-right",
+  },
+};
+
+export const STAKEHOLDER_RELATION_COLORS: Record<
+  StakeholderRelationKind,
+  RgbColor
+> = {
+  NEGATIVE: [245, 180, 10], // Raio amarelo/ouro
+  POSITIVE: [220, 38, 38], // Coração vermelho
+  POTENTIAL_PARTNERSHIP: [13, 130, 146], // Ícone verde-azulado (teal)
+};
+
+export interface StakeholderMatrixCard {
+  id: string;
+  name: string;
+  subtitle: string;
+  groupLabel: string;
+  relation: StakeholderRelationKind;
+  engagementLabel: string;
+  quadrant: StakeholderQuadrantKey;
 }
 
 export interface StakeholdersPdfData {
   teamDisplayName: string;
   filterLabel: string;
   totalStakeholders: number;
-  highPowerCount: number;
-  activeGroupCount: number;
-  rows: StakeholderPdfRow[];
+  relationCounts: {
+    positive: number;
+    negative: number;
+    potential: number;
+  };
+  quadrants: Record<StakeholderQuadrantKey, StakeholderMatrixCard[]>;
 }
 
-const GROUP_ORDER: Record<StakeholderGroup, number> = {
-  SPONSORS: 0,
-  SCHOOL_LEADERSHIP: 1,
-  TECHNICAL_MENTORS: 2,
-  COMPETITION_OFFICIALS: 3,
-  PARENTS_GUARDIANS: 4,
-  COMMUNITY_FANS: 5,
-};
+export function resolveStakeholderQuadrant(
+  power: StakeholderWithRelations["power"],
+  interest: StakeholderWithRelations["interest"]
+): StakeholderQuadrantKey {
+  if (power === "HIGH" && interest === "HIGH") return "MANAGE_CLOSELY";
+  if (power === "HIGH" && interest === "LOW") return "KEEP_SATISFIED";
+  if (power === "LOW" && interest === "HIGH") return "KEEP_INFORMED";
+  return "MONITOR";
+}
 
-const SHORT_CHANNEL_LABELS: Record<CommunicationChannel, string> = {
-  WHATSAPP: "WhatsApp",
-  EMAIL: "E-mail",
-  MEETING: "Reunião",
-  REPORT_PDF: "Relatório PDF",
-};
-
-const SHORT_FREQUENCY_LABELS: Record<CommunicationFrequency, string> = {
-  WEEKLY: "Semanal",
-  BIWEEKLY: "Quinzenal",
-  MONTHLY: "Mensal",
-  BIMONTHLY: "Bimestral",
-  QUARTERLY: "Trimestral",
-  MILESTONE_EVENT: "Pós-Marco",
-};
-
-function getEngagementTone(
+export function resolveStakeholderRelation(
   engagement: StakeholderWithRelations["currentEngagement"]
-): EngagementTone {
-  if (engagement === "LEADING" || engagement === "SUPPORTIVE") {
-    return "positive";
+): StakeholderRelationKind {
+  if (engagement === "RESISTANT") return "NEGATIVE";
+  if (engagement === "SUPPORTIVE" || engagement === "LEADING") {
+    return "POSITIVE";
   }
-  if (engagement === "RESISTANT") {
-    return "negative";
-  }
-  return "neutral";
+  return "POTENTIAL_PARTNERSHIP";
 }
 
 /**
- * Constrói os dados estruturados do Relatório de Stakeholders em PDF:
- * - Agrupa por Grupo de Stakeholder, ordenado por Nível Hierárquico (Poder x Interesse) e Nome
- * - Insere linha de "Subtotal • <Grupo>" ao final de cada grupo
- * - Insere linha consolidada "T O T A L   D E   S T A K E H O L D E R S" ao final
+ * Constrói os dados estruturados da Matriz Poder × Interesse para exportação em PDF.
  */
 export function buildStakeholdersPdfData({
   stakeholders,
@@ -108,134 +136,63 @@ export function buildStakeholdersPdfData({
       ? STAKEHOLDER_GROUP_LABELS[groupFilter]
       : "Todos os Grupos";
 
+  const quadrants: Record<StakeholderQuadrantKey, StakeholderMatrixCard[]> = {
+    KEEP_SATISFIED: [],
+    MANAGE_CLOSELY: [],
+    MONITOR: [],
+    KEEP_INFORMED: [],
+  };
+
   if (stakeholders.length === 0) {
     return {
       teamDisplayName,
       filterLabel,
       totalStakeholders: 0,
-      highPowerCount: 0,
-      activeGroupCount: 0,
-      rows: [],
+      relationCounts: { positive: 0, negative: 0, potential: 0 },
+      quadrants,
     };
   }
 
-  const sorted = [...stakeholders].sort((a, b) => {
-    const groupDiff = (GROUP_ORDER[a.group] ?? 99) - (GROUP_ORDER[b.group] ?? 99);
-    if (groupDiff !== 0) return groupDiff;
+  const sorted = [...stakeholders].sort((a, b) =>
+    a.name.localeCompare(b.name, "pt-BR")
+  );
 
-    const rankA = computeHierarchyTier(a.power, a.interest).rankWeight;
-    const rankB = computeHierarchyTier(b.power, b.interest).rankWeight;
-    if (rankA !== rankB) return rankB - rankA;
+  let positive = 0;
+  let negative = 0;
+  let potential = 0;
 
-    return a.name.localeCompare(b.name, "pt-BR");
-  });
+  for (const item of sorted) {
+    const quadrant = resolveStakeholderQuadrant(item.power, item.interest);
+    const relation = resolveStakeholderRelation(item.currentEngagement);
 
-  const activeGroups = new Set<StakeholderGroup>();
-  let highPowerCount = 0;
-  let groupCount = 0;
-  let groupHighPower = 0;
-  const rows: StakeholderPdfRow[] = [];
+    if (relation === "POSITIVE") positive += 1;
+    else if (relation === "NEGATIVE") negative += 1;
+    else potential += 1;
 
-  for (let i = 0; i < sorted.length; i += 1) {
-    const item = sorted[i];
-    activeGroups.add(item.group);
-    groupCount += 1;
-
-    if (item.power === "HIGH") {
-      highPowerCount += 1;
-      groupHighPower += 1;
+    const groupLabel = STAKEHOLDER_GROUP_LABELS[item.group] || item.group;
+    const subtitleParts: string[] = [];
+    if (item.organization?.trim()) subtitleParts.push(item.organization.trim());
+    if (item.roleOrJobTitle?.trim()) {
+      subtitleParts.push(item.roleOrJobTitle.trim());
     }
 
-    const { tier } = computeHierarchyTier(item.power, item.interest);
-    const tierMeta = HIERARCHY_TIER_META[tier];
-
-    const secondaryParts: string[] = [];
-    if (item.organization) secondaryParts.push(item.organization);
-    if (item.roleOrJobTitle) secondaryParts.push(item.roleOrJobTitle);
-    if (item.sponsor) {
-      secondaryParts.push(`Patrocinador ${item.sponsor.tier}`);
-    }
-
-    const contactPrimary = item.email?.trim() || item.phone?.trim() || "—";
-    const contactSecondary =
-      item.email?.trim() && item.phone?.trim() ? item.phone.trim() : "";
-
-    const powerShort = item.power === "HIGH" ? "Alto" : "Baixo";
-    const interestShort = item.interest === "HIGH" ? "Alto" : "Baixo";
-
-    const currentLabel = ENGAGEMENT_LEVEL_LABELS[item.currentEngagement];
-    const targetLabel = ENGAGEMENT_LEVEL_LABELS[item.targetEngagement];
-    const engagementSecondary =
-      item.targetEngagement !== item.currentEngagement
-        ? `Meta: ${targetLabel}`
-        : "";
-
-    const channelPrimary =
-      SHORT_CHANNEL_LABELS[item.preferredChannel] ||
-      COMMUNICATION_CHANNEL_LABELS[item.preferredChannel];
-    const channelSecondary =
-      SHORT_FREQUENCY_LABELS[item.preferredFrequency] ||
-      COMMUNICATION_FREQUENCY_LABELS[item.preferredFrequency];
-
-    rows.push({
-      kind: "STAKEHOLDER",
-      stakeholderPrimary: item.name,
-      stakeholderSecondary: secondaryParts.join(" • "),
-      contactPrimary,
-      contactSecondary,
-      matrixPrimary: tierMeta.shortLabel,
-      matrixSecondary: `Poder: ${powerShort} • Int.: ${interestShort}`,
-      engagementPrimary: currentLabel,
-      engagementSecondary,
-      engagementTone: getEngagementTone(item.currentEngagement),
-      channelPrimary,
-      channelSecondary,
+    quadrants[quadrant].push({
+      id: item.id,
+      name: item.name,
+      subtitle: subtitleParts.join(" • ") || groupLabel,
+      groupLabel,
+      relation,
+      engagementLabel: ENGAGEMENT_LEVEL_LABELS[item.currentEngagement],
+      quadrant,
     });
-
-    const nextGroup = i + 1 < sorted.length ? sorted[i + 1].group : null;
-    if (nextGroup !== item.group) {
-      const groupLabel = STAKEHOLDER_GROUP_LABELS[item.group] || item.group;
-      rows.push({
-        kind: "GROUP_SUBTOTAL",
-        stakeholderPrimary: `Subtotal • ${groupLabel}`,
-        stakeholderSecondary: "",
-        contactPrimary: "",
-        contactSecondary: "",
-        matrixPrimary: `${groupHighPower} alto poder`,
-        matrixSecondary: "",
-        engagementPrimary: "",
-        engagementSecondary: "",
-        engagementTone: "neutral",
-        channelPrimary: `${groupCount} ${groupCount === 1 ? "cadastro" : "cadastros"}`,
-        channelSecondary: "",
-      });
-      groupCount = 0;
-      groupHighPower = 0;
-    }
   }
-
-  rows.push({
-    kind: "FINAL_TOTAL",
-    stakeholderPrimary: "T O T A L   D E   S T A K E H O L D E R S",
-    stakeholderSecondary: "",
-    contactPrimary: "",
-    contactSecondary: "",
-    matrixPrimary: `${highPowerCount} alto poder`,
-    matrixSecondary: "",
-    engagementPrimary: "",
-    engagementSecondary: "",
-    engagementTone: "positive",
-    channelPrimary: `${sorted.length} ${sorted.length === 1 ? "cadastrado" : "cadastrados"}`,
-    channelSecondary: "",
-  });
 
   return {
     teamDisplayName,
     filterLabel,
     totalStakeholders: sorted.length,
-    highPowerCount,
-    activeGroupCount: activeGroups.size,
-    rows,
+    relationCounts: { positive, negative, potential },
+    quadrants,
   };
 }
 
@@ -255,5 +212,5 @@ export function buildStakeholdersPdfFilename(
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
 
-  return `stakeholders-${slug}-${yyyy}-${mm}-${dd}.pdf`;
+  return `matriz-stakeholders-${slug}-${yyyy}-${mm}-${dd}.pdf`;
 }
