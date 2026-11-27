@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, FileText, Phone, Mail, Pencil, Settings } from "lucide-react";
+import { Plus, Trash2, FileText, Phone, Mail, Pencil, Settings, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,11 +39,13 @@ import {
 } from "@/lib/communication-constants";
 import { computeHierarchyTier } from "@/lib/communication-hierarchy";
 import { deleteStakeholderAction } from "@/actions/communication-actions";
+import { useStakeholdersPdfExport } from "@/hooks/use-stakeholders-pdf-export";
 import { EditStakeholderDialog } from "./edit-stakeholder-dialog";
 
 interface StakeholdersListTabProps {
   stakeholders: StakeholderWithRelations[];
   sponsors?: Array<{ id: string; name: string }>;
+  teamName?: string;
   onOpenCreateDialog: () => void;
   onOpenPlanDialog?: (stakeholderId: string) => void;
   onSelectForReport: (stakeholderId: string) => void;
@@ -52,6 +54,7 @@ interface StakeholdersListTabProps {
 export function StakeholdersListTab({
   stakeholders,
   sponsors = [],
+  teamName,
   onOpenCreateDialog,
   onOpenPlanDialog,
   onSelectForReport,
@@ -63,6 +66,12 @@ export function StakeholdersListTab({
   const filteredStakeholders = stakeholders.filter((s) => {
     if (filterGroup === "ALL") return true;
     return s.group === filterGroup;
+  });
+
+  const { isExportingPdf, handleExportPdf } = useStakeholdersPdfExport({
+    stakeholders: filteredStakeholders,
+    teamName,
+    groupFilter: filterGroup as StakeholderGroup | "ALL",
   });
 
   const handleDelete = async (id: string, name: string) => {
@@ -114,6 +123,22 @@ export function StakeholdersListTab({
                 ))}
               </SelectContent>
             </Select>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleExportPdf}
+              disabled={isExportingPdf || filteredStakeholders.length === 0}
+              className="text-xs font-semibold border-border bg-card text-foreground hover:bg-muted"
+            >
+              {isExportingPdf ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <FileText className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              <span>{isExportingPdf ? "Exportando..." : "Relatório PDF"}</span>
+            </Button>
 
             <Button
               type="button"

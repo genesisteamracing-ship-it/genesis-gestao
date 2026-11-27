@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
+import { FileText, Loader2, Plus } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { CommunicationScheduleTab } from "./communication-schedule-tab";
 import { CreateStakeholderDialog } from "./create-stakeholder-dialog";
 import { LogCommunicationDialog } from "./log-communication-dialog";
 import { AddFeedbackDialog } from "./add-feedback-dialog";
+import { useStakeholdersPdfExport } from "@/hooks/use-stakeholders-pdf-export";
 import type { QuickAddStakeholderPrefill } from "@/hooks/use-stakeholder-org-map";
 import type { DashboardMetricsDTO } from "@/types/financial";
 import type {
@@ -113,6 +114,11 @@ export function CommunicationView({
     handleTabChange("relatorios");
   };
 
+  const { isExportingPdf, handleExportPdf } = useStakeholdersPdfExport({
+    stakeholders,
+    teamName: dashboardMetrics.activeTeam.name,
+  });
+
   return (
     <DashboardShell
       title={currentHeader.title}
@@ -124,14 +130,32 @@ export function CommunicationView({
       budgetResources={dashboardMetrics.budgetResources}
       seasonMonths={dashboardMetrics.seasonMonths}
       headerAction={
-        <Button
-          type="button"
-          onClick={() => handleOpenCreateStakeholder()}
-          className="w-full sm:w-auto gap-2 font-semibold"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Novo Stakeholder</span>
-        </Button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          {activeTab !== "stakeholders" && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleExportPdf}
+              disabled={isExportingPdf || stakeholders.length === 0}
+              className="w-full sm:w-auto gap-2 font-semibold border-border bg-card text-foreground hover:bg-muted"
+            >
+              {isExportingPdf ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+              <span>{isExportingPdf ? "Exportando..." : "Relatório PDF"}</span>
+            </Button>
+          )}
+          <Button
+            type="button"
+            onClick={() => handleOpenCreateStakeholder()}
+            className="w-full sm:w-auto gap-2 font-semibold"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Novo Stakeholder</span>
+          </Button>
+        </div>
       }
     >
       <CommunicationKpis metrics={metrics} />
@@ -168,6 +192,7 @@ export function CommunicationView({
           <StakeholdersListTab
             stakeholders={stakeholders}
             sponsors={sponsors}
+            teamName={dashboardMetrics.activeTeam.name}
             onOpenCreateDialog={() => handleOpenCreateStakeholder()}
             onSelectForReport={handleSelectStakeholderForReport}
           />
