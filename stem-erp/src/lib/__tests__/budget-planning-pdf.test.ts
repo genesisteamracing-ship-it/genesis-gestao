@@ -5,7 +5,10 @@ import {
   buildBudgetPlanningData,
   buildBudgetPlanningFilename,
 } from "../budget-planning-pdf-layout";
-import { STATEMENT_PDF_COLORS } from "../financial-statement-pdf-layout";
+import {
+  formatCurrencyBRL,
+  STATEMENT_PDF_COLORS,
+} from "../financial-statement-pdf-layout";
 import type { BudgetResourceDTO } from "@/types/financial";
 
 function makeResource(
@@ -41,9 +44,6 @@ describe("Planejamento Orçamentário PDF (buildBudgetPlanningData)", () => {
     assert.equal(data.resourceCount, 0);
     assert.equal(data.rows.length, 0);
     assert.equal(data.totalPlannedCents, 0);
-    assert.equal(data.totalRealizedCents, 0);
-    assert.equal(data.varianceCents, 0);
-    assert.equal(data.executionPercent, 0);
     assert.equal(data.teamDisplayName, "Equipe Gênesis");
   });
 
@@ -51,7 +51,7 @@ describe("Planejamento Orçamentário PDF (buildBudgetPlanningData)", () => {
     assert.deepEqual(BUDGET_PDF_COLORS, STATEMENT_PDF_COLORS);
   });
 
-  it("deve agrupar por setor, ordenar por mês/código e calcular subtotais e total geral", () => {
+  it("deve agrupar por setor, ordenar por mês/código e calcular subtotais e total orçado em BRL", () => {
     const resources: BudgetResourceDTO[] = [
       makeResource({
         id: "res-3",
@@ -101,9 +101,6 @@ describe("Planejamento Orçamentário PDF (buildBudgetPlanningData)", () => {
     assert.equal(data.resourceCount, 3);
     assert.equal(data.scopeLabel, "Temporada 2026/2027");
     assert.equal(data.totalPlannedCents, 300000);
-    assert.equal(data.totalRealizedCents, 240000);
-    assert.equal(data.varianceCents, 60000);
-    assert.equal(data.executionPercent, 80);
 
     // 2 recursos ENG + 1 subtotal ENG + 1 recurso MKT + 1 subtotal MKT + 1 total geral = 6 linhas
     assert.equal(data.rows.length, 6);
@@ -112,32 +109,33 @@ describe("Planejamento Orçamentário PDF (buildBudgetPlanningData)", () => {
     assert.equal(data.rows[0].code, "ENG-01");
     assert.equal(data.rows[0].monthLabel, "Out/26");
     assert.equal(data.rows[0].strategyLabel, "Compra Direta");
-    assert.equal(data.rows[0].isExceeded, false);
+    assert.equal(data.rows[0].plannedFormatted, formatCurrencyBRL(150000));
 
     assert.equal(data.rows[1].kind, "RESOURCE");
     assert.equal(data.rows[1].code, "ENG-02");
     assert.equal(data.rows[1].monthLabel, "Nov/26");
     assert.equal(data.rows[1].strategyLabel, "Permuta");
+    assert.equal(data.rows[1].plannedFormatted, formatCurrencyBRL(50000));
 
     assert.equal(data.rows[2].kind, "GROUP_SUBTOTAL");
     assert.equal(data.rows[2].resourcePrimary, "Subtotal • Engenharia & CAD");
-    assert.equal(data.rows[2].isExceeded, false);
+    assert.equal(data.rows[2].plannedFormatted, formatCurrencyBRL(200000));
 
     assert.equal(data.rows[3].kind, "RESOURCE");
     assert.equal(data.rows[3].code, "MKT-01");
     assert.equal(data.rows[3].strategyLabel, "Patrocínio");
-    assert.equal(data.rows[3].isExceeded, true);
+    assert.equal(data.rows[3].plannedFormatted, formatCurrencyBRL(100000));
 
     assert.equal(data.rows[4].kind, "GROUP_SUBTOTAL");
     assert.equal(
       data.rows[4].resourcePrimary,
       "Subtotal • Marketing & Patrocínio"
     );
-    assert.equal(data.rows[4].isExceeded, true);
+    assert.equal(data.rows[4].plannedFormatted, formatCurrencyBRL(100000));
 
     assert.equal(data.rows[5].kind, "FINAL_TOTAL");
     assert.equal(data.rows[5].resourcePrimary, "T O T A L   O R Ç A D O");
-    assert.equal(data.rows[5].isExceeded, false);
+    assert.equal(data.rows[5].plannedFormatted, formatCurrencyBRL(300000));
   });
 
   it("deve derivar o escopo pelos meses quando seasonLabel não for informado e gerar nome de arquivo sanitizado", () => {

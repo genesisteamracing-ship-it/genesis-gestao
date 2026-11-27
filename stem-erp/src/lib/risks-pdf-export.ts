@@ -344,7 +344,7 @@ function drawRow(
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.7);
-  doc.setTextColor(...RISKS_PDF_COLORS.textSecondary);
+  doc.setTextColor(...RISKS_PDF_COLORS.brandBlue);
   const subStartY = nameStartY + titleLines.length * 3.5;
   subtitleLines.forEach((line, idx) => {
     doc.text(line, COL_BY_KEY.name.x + 2.5, subStartY + idx * 3.1, {
@@ -367,11 +367,7 @@ function drawRow(
   const obsStartY = y + (height - obsBlockH) / 2 + 2.5;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  doc.setTextColor(
-    ...(row.observations === "—"
-      ? RISKS_PDF_COLORS.textSecondary
-      : RISKS_PDF_COLORS.textPrimary)
-  );
+  doc.setTextColor(...RISKS_PDF_COLORS.textPrimary);
   observationLines.forEach((line, idx) => {
     doc.text(line, COL_BY_KEY.observations.x + 2.5, obsStartY + idx * 3.3, {
       align: "left",
@@ -423,7 +419,7 @@ function drawPageFooter(
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  doc.setTextColor(...RISKS_PDF_COLORS.textSecondary);
+  doc.setTextColor(...RISKS_PDF_COLORS.brandNavy);
   doc.text(
     `${teamName} • Matriz de Riscos & Oportunidades • Emitido em ${formattedDate}`,
     MARGIN_X,
