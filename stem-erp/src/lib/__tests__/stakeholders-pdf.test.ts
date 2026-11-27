@@ -4,7 +4,6 @@ import {
   buildStakeholdersPdfData,
   buildStakeholdersPdfFilename,
   resolveStakeholderQuadrant,
-  resolveStakeholderRelation,
   STAKEHOLDER_QUADRANT_CONFIG,
   STAKEHOLDERS_PDF_COLORS,
 } from "../stakeholders-pdf-layout";
@@ -50,11 +49,6 @@ describe("Matriz de Stakeholders Poder × Interesse PDF (buildStakeholdersPdfDat
     });
 
     assert.equal(data.totalStakeholders, 0);
-    assert.deepEqual(data.relationCounts, {
-      positive: 0,
-      negative: 0,
-      potential: 0,
-    });
     assert.equal(data.quadrants.KEEP_SATISFIED.length, 0);
     assert.equal(data.quadrants.MANAGE_CLOSELY.length, 0);
     assert.equal(data.quadrants.MONITOR.length, 0);
@@ -62,7 +56,7 @@ describe("Matriz de Stakeholders Poder × Interesse PDF (buildStakeholdersPdfDat
     assert.equal(data.filterLabel, "Todos os Grupos");
   });
 
-  it("deve manter paleta oficial Azul e Amarelo no cabeçalho e os 4 quadrantes nomeados corretamente", () => {
+  it("deve manter paleta Azul e Amarelo no cabeçalho e cores translúcidas suaves nos 4 quadrantes", () => {
     assert.deepEqual(STAKEHOLDERS_PDF_COLORS, STATEMENT_PDF_COLORS);
     assert.equal(
       STAKEHOLDER_QUADRANT_CONFIG.KEEP_SATISFIED.title,
@@ -77,19 +71,22 @@ describe("Matriz de Stakeholders Poder × Interesse PDF (buildStakeholdersPdfDat
       STAKEHOLDER_QUADRANT_CONFIG.KEEP_INFORMED.title,
       "Manter informado"
     );
+
+    // Todos os fundos dos quadrantes devem ser translúcidos/claros (todos canais >= 210)
+    for (const cfg of Object.values(STAKEHOLDER_QUADRANT_CONFIG)) {
+      const [r, g, b] = cfg.bgColor;
+      assert.ok(
+        r >= 210 && g >= 210 && b >= 210,
+        `Quadrante ${cfg.key} deve ter fundo translúcido claro`
+      );
+    }
   });
 
-  it("deve distribuir stakeholders nos 4 quadrantes Poder × Interesse e classificar relações", () => {
+  it("deve distribuir stakeholders nos 4 quadrantes Poder × Interesse ordenados alfabeticamente", () => {
     assert.equal(resolveStakeholderQuadrant("HIGH", "HIGH"), "MANAGE_CLOSELY");
     assert.equal(resolveStakeholderQuadrant("HIGH", "LOW"), "KEEP_SATISFIED");
     assert.equal(resolveStakeholderQuadrant("LOW", "HIGH"), "KEEP_INFORMED");
     assert.equal(resolveStakeholderQuadrant("LOW", "LOW"), "MONITOR");
-
-    assert.equal(resolveStakeholderRelation("RESISTANT"), "NEGATIVE");
-    assert.equal(resolveStakeholderRelation("SUPPORTIVE"), "POSITIVE");
-    assert.equal(resolveStakeholderRelation("LEADING"), "POSITIVE");
-    assert.equal(resolveStakeholderRelation("NEUTRAL"), "POTENTIAL_PARTNERSHIP");
-    assert.equal(resolveStakeholderRelation("UNAWARE"), "POTENTIAL_PARTNERSHIP");
 
     const stakeholders: StakeholderWithRelations[] = [
       makeStakeholder({
@@ -137,27 +134,16 @@ describe("Matriz de Stakeholders Poder × Interesse PDF (buildStakeholdersPdfDat
     });
 
     assert.equal(data.totalStakeholders, 4);
-    assert.deepEqual(data.relationCounts, {
-      positive: 2,
-      negative: 1,
-      potential: 1,
-    });
-
     assert.equal(data.quadrants.MANAGE_CLOSELY[0].name, "Ana Diretora");
-    assert.equal(data.quadrants.MANAGE_CLOSELY[0].relation, "POSITIVE");
     assert.equal(data.quadrants.MANAGE_CLOSELY[0].subtitle, "Tech Corp • CEO");
+    assert.equal(
+      data.quadrants.MANAGE_CLOSELY[0].engagementLabel,
+      "Líder Defensor"
+    );
 
     assert.equal(data.quadrants.KEEP_SATISFIED[0].name, "Bruno Conselho");
-    assert.equal(data.quadrants.KEEP_SATISFIED[0].relation, "NEGATIVE");
-
     assert.equal(data.quadrants.KEEP_INFORMED[0].name, "Carlos Mentor");
-    assert.equal(data.quadrants.KEEP_INFORMED[0].relation, "POSITIVE");
-
     assert.equal(data.quadrants.MONITOR[0].name, "Daniela Apoio");
-    assert.equal(
-      data.quadrants.MONITOR[0].relation,
-      "POTENTIAL_PARTNERSHIP"
-    );
     assert.equal(
       data.quadrants.MONITOR[0].subtitle,
       "Comunidade & Apoiadores"
