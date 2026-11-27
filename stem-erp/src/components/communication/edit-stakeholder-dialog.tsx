@@ -16,7 +16,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -34,17 +33,13 @@ import {
   COMMUNICATION_FREQUENCY_LABELS,
   ENGAGEMENT_LEVEL_LABELS,
   STAKEHOLDER_GROUP_LABELS,
-  STAKEHOLDER_INTEREST_LABELS,
-  STAKEHOLDER_POWER_LABELS,
 } from "@/lib/communication-constants";
-import { computeHierarchyTier } from "@/lib/communication-hierarchy";
+import { StakeholderQuadrantFields } from "./stakeholder-quadrant-fields";
 import type {
   CommunicationChannel,
   CommunicationFrequency,
   EngagementLevel,
   StakeholderGroup,
-  StakeholderInterest,
-  StakeholderPower,
   StakeholderWithRelations,
 } from "@/types/communication";
 
@@ -125,8 +120,6 @@ export function EditStakeholderDialog({
   const selectedFreq = watch("preferredFrequency") || "MONTHLY";
   const selectedParentId = watch("parentStakeholderId");
   const currentOrg = watch("organization");
-
-  const tierPreview = computeHierarchyTier(selectedPower, selectedInterest);
 
   // Lista de superiores possíveis da mesma organização (excluindo a si mesmo)
   const potentialParents = existingStakeholders.filter((s) => {
@@ -253,141 +246,91 @@ export function EditStakeholderDialog({
             </div>
           </div>
 
-          {/* Linha 3: Posicionamento Hierárquico (Poder × Interesse) */}
-          <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-bold text-foreground">
-                Posicionamento Hierárquico (Poder × Interesse)
-              </span>
-              <Badge variant="secondary" className="text-[11px]">
-                {tierPreview.label}
-              </Badge>
+          {/* Linha 3: Matriz Poder × Interesse */}
+          <StakeholderQuadrantFields
+            power={selectedPower}
+            interest={selectedInterest}
+            parentStakeholderId={selectedParentId}
+            parentOptions={potentialParents}
+            onPowerChange={(value) => setValue("power", value)}
+            onInterestChange={(value) => setValue("interest", value)}
+            onParentChange={(value) => setValue("parentStakeholderId", value)}
+          />
+
+          {/* Linha 4: Engajamento Atual, Canal e Frequência (nivelamento perfeito de base) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+                Nível de Engajamento
+              </Label>
+              <div className="mt-auto">
+                <Select
+                  value={selectedCurrent}
+                  onValueChange={(v) => {
+                    setValue("currentEngagement", v as EngagementLevel);
+                    setValue("targetEngagement", v as EngagementLevel);
+                  }}
+                >
+                  <SelectTrigger className="w-full text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(ENGAGEMENT_LEVEL_LABELS) as EngagementLevel[]).map((l) => (
+                      <SelectItem key={l} value={l} className="text-xs">
+                        {ENGAGEMENT_LEVEL_LABELS[l]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold">Poder sobre o Projeto</Label>
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+                Canal Preferencial
+              </Label>
+              <div className="mt-auto">
                 <Select
-                  value={selectedPower}
-                  onValueChange={(v) => setValue("power", v as StakeholderPower)}
+                  value={selectedChannel}
+                  onValueChange={(v) => setValue("preferredChannel", v as CommunicationChannel)}
                 >
-                  <SelectTrigger className="w-full text-xs bg-card">
+                  <SelectTrigger className="w-full text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(STAKEHOLDER_POWER_LABELS) as StakeholderPower[]).map((p) => (
-                      <SelectItem key={p} value={p} className="text-xs">
-                        {STAKEHOLDER_POWER_LABELS[p]}
+                    {(Object.keys(COMMUNICATION_CHANNEL_LABELS) as CommunicationChannel[]).map((c) => (
+                      <SelectItem key={c} value={c} className="text-xs">
+                        {COMMUNICATION_CHANNEL_LABELS[c]}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold">Nível de Interesse</Label>
+            </div>
+            <div className="flex flex-col justify-between space-y-1.5">
+              <Label className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+                Frequência Preferencial
+              </Label>
+              <div className="mt-auto">
                 <Select
-                  value={selectedInterest}
-                  onValueChange={(v) => setValue("interest", v as StakeholderInterest)}
-                >
-                  <SelectTrigger className="w-full text-xs bg-card">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(STAKEHOLDER_INTEREST_LABELS) as StakeholderInterest[]).map((i) => (
-                      <SelectItem key={i} value={i} className="text-xs">
-                        {STAKEHOLDER_INTEREST_LABELS[i]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold">Superior na Organização (Opcional)</Label>
-                <Select
-                  value={selectedParentId || "auto"}
+                  value={selectedFreq}
                   onValueChange={(v) =>
-                    setValue("parentStakeholderId", v === "auto" ? null : v)
+                    setValue("preferredFrequency", v as CommunicationFrequency)
                   }
                 >
-                  <SelectTrigger className="w-full text-xs bg-card">
+                  <SelectTrigger className="w-full text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto" className="text-xs">
-                      Automático (por Poder/Interesse)
-                    </SelectItem>
-                    {potentialParents.map((st) => (
-                      <SelectItem key={st.id} value={st.id} className="text-xs">
-                        {st.name}
-                      </SelectItem>
-                    ))}
+                    {(Object.keys(COMMUNICATION_FREQUENCY_LABELS) as CommunicationFrequency[]).map(
+                      (f) => (
+                        <SelectItem key={f} value={f} className="text-xs">
+                          {COMMUNICATION_FREQUENCY_LABELS[f]}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          </div>
-
-          {/* Linha 4: Engajamento Atual, Canal e Frequência */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold">Nível de Engajamento</Label>
-              <Select
-                value={selectedCurrent}
-                onValueChange={(v) => {
-                  setValue("currentEngagement", v as EngagementLevel);
-                  setValue("targetEngagement", v as EngagementLevel);
-                }}
-              >
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(ENGAGEMENT_LEVEL_LABELS) as EngagementLevel[]).map((l) => (
-                    <SelectItem key={l} value={l} className="text-xs">
-                      {ENGAGEMENT_LEVEL_LABELS[l]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold">Canal Preferencial</Label>
-              <Select
-                value={selectedChannel}
-                onValueChange={(v) => setValue("preferredChannel", v as CommunicationChannel)}
-              >
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(COMMUNICATION_CHANNEL_LABELS) as CommunicationChannel[]).map((c) => (
-                    <SelectItem key={c} value={c} className="text-xs">
-                      {COMMUNICATION_CHANNEL_LABELS[c]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold">Frequência Preferencial</Label>
-              <Select
-                value={selectedFreq}
-                onValueChange={(v) =>
-                  setValue("preferredFrequency", v as CommunicationFrequency)
-                }
-              >
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(COMMUNICATION_FREQUENCY_LABELS) as CommunicationFrequency[]).map(
-                    (f) => (
-                      <SelectItem key={f} value={f} className="text-xs">
-                        {COMMUNICATION_FREQUENCY_LABELS[f]}
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
             </div>
           </div>
 

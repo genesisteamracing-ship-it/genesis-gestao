@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Trash2, FileText, Phone, Mail, Pencil, Settings, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { tv } from "tailwind-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,14 +34,25 @@ import {
   COMMUNICATION_CHANNEL_LABELS,
   COMMUNICATION_FREQUENCY_LABELS,
   ENGAGEMENT_LEVEL_LABELS,
-  HIERARCHY_TIER_META,
   STAKEHOLDER_GROUP_LABELS,
   STAKEHOLDER_POWER_LABELS,
 } from "@/lib/communication-constants";
-import { computeHierarchyTier } from "@/lib/communication-hierarchy";
+import { resolveStakeholderMatrixQuadrant } from "@/lib/communication-hierarchy";
 import { deleteStakeholderAction } from "@/actions/communication-actions";
 import { useStakeholdersPdfExport } from "@/hooks/use-stakeholders-pdf-export";
 import { EditStakeholderDialog } from "./edit-stakeholder-dialog";
+
+const listQuadrantBadgeStyles = tv({
+  base: "w-fit text-[10px] font-semibold",
+  variants: {
+    tone: {
+      destructive: "border-destructive/30 bg-destructive/10 text-destructive",
+      success: "border-success/30 bg-success/10 text-success",
+      primary: "border-primary/30 bg-primary/10 text-primary",
+      warning: "border-warning/30 bg-warning/10 text-warning",
+    },
+  },
+});
 
 interface StakeholdersListTabProps {
   stakeholders: StakeholderWithRelations[];
@@ -218,15 +230,28 @@ export function StakeholdersListTab({
                     </TableCell>
 
                     <TableCell>
-                      <div className="flex flex-col gap-1 text-[11px]">
-                        <Badge variant="outline" className="w-fit text-[10px]">
-                          {HIERARCHY_TIER_META[computeHierarchyTier(s.power, s.interest).tier].shortLabel}
-                        </Badge>
-                        <span className="text-muted-foreground">
-                          Poder: <strong>{STAKEHOLDER_POWER_LABELS[s.power]}</strong> • Interesse:{" "}
-                          <strong>{s.interest === "HIGH" ? "Alto" : "Baixo"}</strong>
-                        </span>
-                      </div>
+                      {(() => {
+                        const quadrantInfo = resolveStakeholderMatrixQuadrant(
+                          s.power,
+                          s.interest
+                        );
+                        return (
+                          <div className="flex flex-col gap-1 text-[11px]">
+                            <Badge
+                              variant="outline"
+                              className={listQuadrantBadgeStyles({
+                                tone: quadrantInfo.tone,
+                              })}
+                            >
+                              {quadrantInfo.label}
+                            </Badge>
+                            <span className="text-muted-foreground">
+                              Poder: <strong>{STAKEHOLDER_POWER_LABELS[s.power]}</strong> • Interesse:{" "}
+                              <strong>{s.interest === "HIGH" ? "Alto" : "Baixo"}</strong>
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </TableCell>
 
                     <TableCell>

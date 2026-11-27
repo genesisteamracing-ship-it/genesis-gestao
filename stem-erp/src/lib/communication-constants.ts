@@ -97,3 +97,40 @@ export const HIERARCHY_TIER_META: Record<
     tone: "amber",
   },
 };
+
+export type StakeholderMatrixQuadrant =
+  | "MANAGE_CLOSELY"
+  | "KEEP_SATISFIED"
+  | "KEEP_INFORMED"
+  | "MONITOR";
+
+export type StakeholderQuadrantTone =
+  | "destructive"
+  | "success"
+  | "primary"
+  | "warning";
+
+export const STAKEHOLDER_MATRIX_QUADRANT_META: Record<
+  StakeholderMatrixQuadrant,
+  {
+    label: string;
+    tone: StakeholderQuadrantTone;
+  }
+> = {
+  MANAGE_CLOSELY: {
+    label: "Gerenciar de perto e envolver",
+    tone: "destructive",
+  },
+  KEEP_SATISFIED: {
+    label: "Manter satisfeito",
+    tone: "success",
+  },
+  KEEP_INFORMED: {
+    label: "Manter informado",
+    tone: "primary",
+  },
+  MONITOR: {
+    label: "Monitorar",
+    tone: "warning",
+  },
+};
