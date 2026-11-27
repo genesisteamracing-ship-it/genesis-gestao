@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   buildStakeholderHierarchyTree,
   computeHierarchyTier,
+  resolveStakeholderMatrixQuadrant,
 } from "@/lib/communication-hierarchy";
 import type { StakeholderWithRelations } from "@/types/communication";
 
@@ -181,5 +182,31 @@ describe("Motor Hierárquico de Stakeholders (communication-hierarchy)", () => {
     });
     assert.equal(filteredBySearch.totalPartners, 1);
     assert.equal(filteredBySearch.partners[0].partnerName, "Bosch");
+  });
+
+  it("resolveStakeholderMatrixQuadrant mapeia todas as 4 combinações Poder × Interesse", () => {
+    assert.deepEqual(resolveStakeholderMatrixQuadrant("HIGH", "HIGH"), {
+      quadrant: "MANAGE_CLOSELY",
+      label: "Gerenciar de perto e envolver",
+      tone: "destructive",
+    });
+
+    assert.deepEqual(resolveStakeholderMatrixQuadrant("HIGH", "LOW"), {
+      quadrant: "KEEP_SATISFIED",
+      label: "Manter satisfeito",
+      tone: "success",
+    });
+
+    assert.deepEqual(resolveStakeholderMatrixQuadrant("LOW", "HIGH"), {
+      quadrant: "KEEP_INFORMED",
+      label: "Manter informado",
+      tone: "primary",
+    });
+
+    assert.deepEqual(resolveStakeholderMatrixQuadrant("LOW", "LOW"), {
+      quadrant: "MONITOR",
+      label: "Monitorar",
+      tone: "warning",
+    });
   });
 });

@@ -2,6 +2,9 @@ import {
   COMMUNICATION_FREQUENCY_LABELS,
   HIERARCHY_TIER_META,
   STAKEHOLDER_GROUP_LABELS,
+  STAKEHOLDER_MATRIX_QUADRANT_META,
+  type StakeholderMatrixQuadrant,
+  type StakeholderQuadrantTone,
 } from "@/lib/communication-constants";
 import type {
   EngagementLevel,
@@ -52,6 +55,31 @@ export function computeHierarchyTier(
     tier: "TIER_4_OPERATIONAL",
     rankWeight: 1,
     label: HIERARCHY_TIER_META.TIER_4_OPERATIONAL.badgeLabel,
+  };
+}
+
+export function resolveStakeholderMatrixQuadrant(
+  power: StakeholderPower,
+  interest: StakeholderInterest
+): {
+  quadrant: StakeholderMatrixQuadrant;
+  label: string;
+  tone: StakeholderQuadrantTone;
+} {
+  let quadrant: StakeholderMatrixQuadrant = "MONITOR";
+  if (power === "HIGH" && interest === "HIGH") {
+    quadrant = "MANAGE_CLOSELY";
+  } else if (power === "HIGH" && interest === "LOW") {
+    quadrant = "KEEP_SATISFIED";
+  } else if (power === "LOW" && interest === "HIGH") {
+    quadrant = "KEEP_INFORMED";
+  }
+
+  const meta = STAKEHOLDER_MATRIX_QUADRANT_META[quadrant];
+  return {
+    quadrant,
+    label: meta.label,
+    tone: meta.tone,
   };
 }
 
