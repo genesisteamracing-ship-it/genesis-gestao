@@ -162,6 +162,25 @@ test("RisksView renders Success state with charts, required table columns and op
   fireEvent.click(screen.getByRole("button", { name: /Novo Risco/i }));
   assert.ok(screen.getByRole("dialog"));
   assert.ok(screen.getByText("Novo Registro de Risco"));
+
+  // Mínimo obrigatório: Plano A e Plano B sem botão de remoção
+  assert.ok(screen.getByLabelText(/Plano A \*/i));
+  assert.ok(screen.getByLabelText(/Plano B \*/i));
+  assert.equal(screen.queryByRole("button", { name: "Remover Plano A" }), null);
+  assert.equal(screen.queryByRole("button", { name: "Remover Plano B" }), null);
+
+  // Adicionar Plano C e Plano D pelo botão "Adicionar +"
+  const addPlanButton = screen.getByRole("button", { name: /Adicionar \+/i });
+  fireEvent.click(addPlanButton);
+  assert.ok(screen.getByLabelText(/Plano C \*/i));
+  assert.ok(screen.getByRole("button", { name: "Remover Plano C" }));
+
+  fireEvent.click(addPlanButton);
+  assert.ok(screen.getByLabelText(/Plano D \*/i));
+  const removeDButton = screen.getByRole("button", { name: "Remover Plano D" });
+  fireEvent.click(removeDButton);
+  assert.equal(screen.queryByLabelText(/Plano D \*/i), null);
+  assert.ok(screen.getByLabelText(/Plano C \*/i));
 });
 
 test("RisksView hides write controls for read-only users", () => {

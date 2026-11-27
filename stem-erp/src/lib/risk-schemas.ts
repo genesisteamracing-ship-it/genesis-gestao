@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  getContingencyPlanLetter,
+  MAX_CONTINGENCY_PLANS,
+  MIN_CONTINGENCY_PLANS,
+  parseContingencyPlans,
+} from "./risk-contingency-plans";
 
 export const riskEntryTypeSchema = z.enum(["RISK", "OPPORTUNITY"]);
 
@@ -47,7 +53,7 @@ const optionalUrlSchema = z
   .optional()
   .default("");
 
-export const createRiskItemSchema = z.object({
+const baseRiskItemObjectSchema = z.object({
   season: z.string().trim().min(1, "Temporada é obrigatória."),
   entryType: riskEntryTypeSchema.default("RISK"),
   title: z
@@ -60,7 +66,16 @@ export const createRiskItemSchema = z.object({
   probability: riskProbabilitySchema.default("NONE"),
   consequence: riskConsequenceSchema.default("NONE"),
   proactiveStrategy: z.string().trim().max(2000).optional().default(""),
-  contingencyPlan: z.string().trim().max(2000).optional().default(""),
+  contingencyPlan: z.string().trim().max(6000).optional().default(""),
+  contingencyPlans: z
+    .array(
+      z
+        .string()
+        .trim()
+        .max(1000, "Cada plano deve ter no máximo 1000 caracteres.")
+    )
+    .max(MAX_CONTINGENCY_PLANS, "Máximo de 10 planos de contingência.")
+    .optional(),
   observations: z.string().trim().max(2000).optional().default(""),
   evidenceNotes: z.string().trim().max(2000).optional().default(""),
   evidenceUrl: optionalUrlSchema,
@@ -68,9 +83,56 @@ export const createRiskItemSchema = z.object({
   ownerUserId: z.string().trim().optional().default(""),
 });
 
-export const updateRiskItemSchema = createRiskItemSchema.extend({
-  id: z.string().trim().min(1, "Identificador do risco é obrigatório."),
-});
+function applyContingencyValidation<T extends z.ZodRawShape>(
+  schema: z.ZodObject<T>
+) {
+  return schema.superRefine((data, ctx) => {
+    const record = data as {
+      entryType?: string;
+      contingencyPlans?: string[];
+      contingencyPlan?: string;
+    };
+
+    if (record.entryType !== "RISK") {
+      return;
+    }
+
+    const plans =
+      record.contingencyPlans !== undefined
+        ? record.contingencyPlans
+        : parseContingencyPlans(record.contingencyPlan);
+
+    if (plans.length < MIN_CONTINGENCY_PLANS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contingencyPlans"],
+        message: "Informe no mínimo 2 planos de contingência (Plano A e Plano B).",
+      });
+    }
+
+    const requiredCount = Math.max(plans.length, MIN_CONTINGENCY_PLANS);
+    for (let index = 0; index < requiredCount; index += 1) {
+      const value = (plans[index] ?? "").trim();
+      if (value.length < 3) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["contingencyPlans", index],
+          message: `O Plano ${getContingencyPlanLetter(index)} é obrigatório (mínimo de 3 caracteres).`,
+        });
+      }
+    }
+  });
+}
+
+export const createRiskItemSchema = applyContingencyValidation(
+  baseRiskItemObjectSchema
+);
+
+export const updateRiskItemSchema = applyContingencyValidation(
+  baseRiskItemObjectSchema.extend({
+    id: z.string().trim().min(1, "Identificador do risco é obrigatório."),
+  })
+);
 
 export const registerRiskReviewSchema = z.object({
   riskItemId: z.string().trim().min(1, "Identificador do risco é obrigatório."),

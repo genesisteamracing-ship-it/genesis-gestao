@@ -32,11 +32,19 @@ import {
   RISK_STATUS_LABELS,
 } from "@/lib/risk-matrix";
 import {
+  ensureMinimumContingencyPlans,
+  MAX_CONTINGENCY_PLANS,
+  MIN_CONTINGENCY_PLANS,
+  parseContingencyPlans,
+  serializeContingencyPlans,
+} from "@/lib/risk-contingency-plans";
+import {
   createRiskItemSchema,
   type CreateRiskItemInput,
   type UpdateRiskItemInput,
 } from "@/lib/risk-schemas";
 import type { RiskItemDTO, RiskTeamMemberOption } from "@/types/risks";
+import { RiskContingencyPlansField } from "./risk-contingency-plans-field";
 
 interface RiskFormDialogProps {
   open: boolean;
@@ -78,6 +86,7 @@ export function RiskFormDialog({
       consequence: "NONE",
       proactiveStrategy: "",
       contingencyPlan: "",
+      contingencyPlans: ["", ""],
       observations: "",
       evidenceNotes: "",
       evidenceUrl: "",
@@ -99,6 +108,9 @@ export function RiskFormDialog({
         consequence: editingItem.consequence,
         proactiveStrategy: editingItem.proactiveStrategy ?? "",
         contingencyPlan: editingItem.contingencyPlan ?? "",
+        contingencyPlans: ensureMinimumContingencyPlans(
+          parseContingencyPlans(editingItem.contingencyPlan)
+        ),
         observations: editingItem.observations ?? "",
         evidenceNotes: editingItem.evidenceNotes ?? "",
         evidenceUrl: editingItem.evidenceUrl ?? "",
@@ -116,6 +128,7 @@ export function RiskFormDialog({
         consequence: "NONE",
         proactiveStrategy: "",
         contingencyPlan: "",
+        contingencyPlans: ["", ""],
         observations: "",
         evidenceNotes: "",
         evidenceUrl: "",
@@ -125,11 +138,56 @@ export function RiskFormDialog({
     }
   }, [open, editingItem, season, form]);
 
+  const entryType = form.watch("entryType");
+  const watchedPlans = form.watch("contingencyPlans");
+  const contingencyPlans = ensureMinimumContingencyPlans(watchedPlans ?? []);
+
+  const handleChangePlan = (index: number, value: string) => {
+    const next = [...contingencyPlans];
+    next[index] = value;
+    form.setValue("contingencyPlans", next, {
+      shouldDirty: true,
+      shouldValidate: form.formState.isSubmitted,
+    });
+  };
+
+  const handleAddPlan = () => {
+    if (contingencyPlans.length >= MAX_CONTINGENCY_PLANS) return;
+    form.setValue("contingencyPlans", [...contingencyPlans, ""], {
+      shouldDirty: true,
+    });
+  };
+
+  const handleRemovePlan = (index: number) => {
+    if (index < MIN_CONTINGENCY_PLANS) return;
+    const next = contingencyPlans.filter((_, idx) => idx !== index);
+    form.setValue("contingencyPlans", next, {
+      shouldDirty: true,
+      shouldValidate: form.formState.isSubmitted,
+    });
+  };
+
+  const rawContingencyErrors = form.formState.errors.contingencyPlans;
+  const contingencyRootError =
+    rawContingencyErrors && !Array.isArray(rawContingencyErrors)
+      ? rawContingencyErrors.message
+      : undefined;
+  const contingencyItemErrors = Array.isArray(rawContingencyErrors)
+    ? rawContingencyErrors.map((err) => err?.message)
+    : undefined;
+
   const handleFormSubmit = form.handleSubmit(async (values) => {
+    const normalizedPlans = values.contingencyPlans ?? [];
+    const payload: CreateRiskItemInput = {
+      ...values,
+      contingencyPlans: normalizedPlans,
+      contingencyPlan: serializeContingencyPlans(normalizedPlans),
+    };
+
     if (editingItem) {
-      await onSubmit({ ...values, id: editingItem.id });
+      await onSubmit({ ...payload, id: editingItem.id });
     } else {
-      await onSubmit(values);
+      await onSubmit(payload);
     }
   });
 
@@ -346,41 +404,33 @@ export function RiskFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="flex flex-col justify-between space-y-1.5">
-              <Label
-                htmlFor="risk-proactive"
-                className="flex min-h-[2rem] items-end text-xs font-semibold leading-tight"
-              >
-                Estratégia Proativa
-              </Label>
-              <div className="mt-auto">
-                <Textarea
-                  id="risk-proactive"
-                  rows={2}
-                  placeholder="Ações preventivas ou de aproveitamento"
-                  {...form.register("proactiveStrategy")}
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-between space-y-1.5">
-              <Label
-                htmlFor="risk-contingency"
-                className="flex min-h-[2rem] items-end text-xs font-semibold leading-tight"
-              >
-                Plano de Contingência
-              </Label>
-              <div className="mt-auto">
-                <Textarea
-                  id="risk-contingency"
-                  rows={2}
-                  placeholder="Ações de resposta caso o evento ocorra"
-                  {...form.register("contingencyPlan")}
-                />
-              </div>
+          <div className="flex flex-col justify-between space-y-1.5">
+            <Label
+              htmlFor="risk-proactive"
+              className="flex min-h-[2rem] items-end text-xs font-semibold leading-tight"
+            >
+              Estratégia Proativa
+            </Label>
+            <div className="mt-auto">
+              <Textarea
+                id="risk-proactive"
+                rows={2}
+                placeholder="Ações preventivas ou de aproveitamento"
+                {...form.register("proactiveStrategy")}
+              />
             </div>
           </div>
+
+          <RiskContingencyPlansField
+            plans={contingencyPlans}
+            isRequired={entryType === "RISK"}
+            disabled={isSaving}
+            rootError={contingencyRootError}
+            itemErrors={contingencyItemErrors}
+            onChangePlan={handleChangePlan}
+            onAddPlan={handleAddPlan}
+            onRemovePlan={handleRemovePlan}
+          />
 
           <div className="flex flex-col justify-between space-y-1.5">
             <Label

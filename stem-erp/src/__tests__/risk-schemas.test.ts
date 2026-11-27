@@ -15,7 +15,10 @@ test("createRiskItemSchema validates required fields and enum options including 
     probability: "POSSIVEL",
     consequence: "MODERADA",
     proactiveStrategy: "Manter estoque mínimo de segurança",
-    contingencyPlan: "Acionar fornecedor local de contingência",
+    contingencyPlans: [
+      "Acionar fornecedor local de contingência",
+      "Produzir peça alternativa em impressão 3D",
+    ],
     observations: "Monitorar estoque semanalmente",
   });
 
@@ -33,6 +36,46 @@ test("createRiskItemSchema validates required fields and enum options including 
   });
 
   assert.equal(validNone.success, true);
+});
+
+test("createRiskItemSchema requires at least Plano A and Plano B for RISK and accepts C/D", () => {
+  const withoutPlans = createRiskItemSchema.safeParse({
+    season: "2025/2026",
+    entryType: "RISK",
+    title: "Atraso na usinagem CNC",
+    sector: "MANUFACTURING_CNC",
+    probability: "POSSIVEL",
+    consequence: "GRANDE",
+    contingencyPlans: ["Somente um plano"],
+  });
+  assert.equal(withoutPlans.success, false);
+
+  const emptyThirdPlan = createRiskItemSchema.safeParse({
+    season: "2025/2026",
+    entryType: "RISK",
+    title: "Atraso na usinagem CNC",
+    sector: "MANUFACTURING_CNC",
+    probability: "POSSIVEL",
+    consequence: "GRANDE",
+    contingencyPlans: ["Plano A válido", "Plano B válido", ""],
+  });
+  assert.equal(emptyThirdPlan.success, false);
+
+  const fourPlans = createRiskItemSchema.safeParse({
+    season: "2025/2026",
+    entryType: "RISK",
+    title: "Atraso na usinagem CNC",
+    sector: "MANUFACTURING_CNC",
+    probability: "POSSIVEL",
+    consequence: "GRANDE",
+    contingencyPlans: [
+      "Plano A reserva",
+      "Plano B impressão 3D",
+      "Plano C parceiro externo",
+      "Plano D chassi backup",
+    ],
+  });
+  assert.equal(fourPlans.success, true);
 });
 
 test("createRiskItemSchema rejects short title and invalid evidenceUrl", () => {

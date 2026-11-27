@@ -6,6 +6,10 @@ import { prisma } from "@/lib/prisma";
 import { hasModuleAccess } from "@/lib/permissions";
 import { calculateRiskPriority } from "@/lib/risk-matrix";
 import {
+  parseContingencyPlans,
+  serializeContingencyPlans,
+} from "@/lib/risk-contingency-plans";
+import {
   createRiskItemSchema,
   registerRiskReviewSchema,
   updateRiskItemSchema,
@@ -160,6 +164,13 @@ export async function createRiskItem(
       }
     }
 
+    const resolvedPlans =
+      data.contingencyPlans !== undefined
+        ? data.contingencyPlans
+        : parseContingencyPlans(data.contingencyPlan);
+    const serializedContingencyPlan =
+      serializeContingencyPlans(resolvedPlans) || null;
+
     const created = await prisma.riskItem.create({
       data: {
         teamId,
@@ -173,7 +184,7 @@ export async function createRiskItem(
         priorityScore: score,
         priorityLevel: level,
         proactiveStrategy: data.proactiveStrategy || null,
-        contingencyPlan: data.contingencyPlan || null,
+        contingencyPlan: serializedContingencyPlan,
         observations: data.observations || null,
         evidenceNotes: data.evidenceNotes || null,
         evidenceUrl: data.evidenceUrl || null,
@@ -244,6 +255,13 @@ export async function updateRiskItem(
       }
     }
 
+    const resolvedPlans =
+      data.contingencyPlans !== undefined
+        ? data.contingencyPlans
+        : parseContingencyPlans(data.contingencyPlan);
+    const serializedContingencyPlan =
+      serializeContingencyPlans(resolvedPlans) || null;
+
     const updated = await prisma.riskItem.update({
       where: { id: existing.id },
       data: {
@@ -256,7 +274,7 @@ export async function updateRiskItem(
         priorityScore: score,
         priorityLevel: level,
         proactiveStrategy: data.proactiveStrategy || null,
-        contingencyPlan: data.contingencyPlan || null,
+        contingencyPlan: serializedContingencyPlan,
         observations: data.observations || null,
         evidenceNotes: data.evidenceNotes || null,
         evidenceUrl: data.evidenceUrl || null,
