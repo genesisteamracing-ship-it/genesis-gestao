@@ -13,16 +13,24 @@ import {
   ACQUISITION_STRATEGY_LABELS,
   DELIVERY_GROUP_LABELS,
 } from "@/lib/constants";
-import { downloadCsvFile, triggerPortfolioPdfPrint } from "@/lib/export-utils";
+import { toast } from "sonner";
+import { downloadCsvFile } from "@/lib/export-utils";
+import { exportBudgetPlanningToPdf } from "@/lib/budget-planning-pdf-export";
 import { formatCurrencyFromCents } from "@/lib/utils";
 import type { BudgetResourceDTO } from "@/types/financial";
 
 export function useResourcesTable(
   resources: BudgetResourceDTO[],
-  columns: ColumnDef<BudgetResourceDTO>[]
+  columns: ColumnDef<BudgetResourceDTO>[],
+  options?: {
+    teamName?: string;
+    seasonLabel?: string;
+    monthLabels?: Record<number, string>;
+  }
 ) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
+  const [isExportingPdf, setIsExportingPdf] = React.useState(false);
 
   const table = useReactTable({
     data: resources,
@@ -90,6 +98,29 @@ export function useResourcesTable(
     );
   }, [table]);
 
+  const handleExportPdf = React.useCallback(async () => {
+    const filteredRows = table.getFilteredRowModel().rows.map((r) => r.original);
+    if (filteredRows.length === 0) {
+      toast.error("Não há orçamentos planejados para exportar.");
+      return;
+    }
+
+    try {
+      setIsExportingPdf(true);
+      const { filename } = await exportBudgetPlanningToPdf({
+        resources: filteredRows,
+        teamName: options?.teamName,
+        seasonLabel: options?.seasonLabel,
+        monthLabels: options?.monthLabels,
+      });
+      toast.success(`Planejamento orçamentário exportado: ${filename}`);
+    } catch {
+      toast.error("Não foi possível gerar o relatório de orçamentos em PDF.");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }, [table, options?.teamName, options?.seasonLabel, options?.monthLabels]);
+
   const resetFilters = React.useCallback(() => {
     setColumnFilters([]);
     setGlobalFilter("");
@@ -106,7 +137,8 @@ export function useResourcesTable(
     startRow,
     formattedEndRow,
     handleExportCsv,
-    triggerPdf: triggerPortfolioPdfPrint,
+    triggerPdf: handleExportPdf,
+    isExportingPdf,
     resetFilters,
   };
 }

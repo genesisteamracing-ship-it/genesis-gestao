@@ -35,6 +35,8 @@ export default async function PlanejamentoPage() {
         resources={metrics.budgetResources}
         categories={metrics.categories}
         teamMembers={metrics.teamMembers}
+        teamName={metrics.activeTeam.name}
+        seasonLabel={metrics.activeTeam.season.label}
       />
     </DashboardShell>
   );

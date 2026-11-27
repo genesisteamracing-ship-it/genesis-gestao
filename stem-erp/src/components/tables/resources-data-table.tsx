@@ -10,6 +10,7 @@ import {
   Download,
   FileText,
   Filter,
+  Loader2,
   RotateCcw,
   Search,
 } from "lucide-react";
@@ -57,6 +58,8 @@ interface ResourcesDataTableProps {
   resources: BudgetResourceDTO[];
   categories?: CategoryDTO[];
   teamMembers?: TeamMemberOptionDTO[];
+  teamName?: string;
+  seasonLabel?: string;
   isLoading?: boolean;
 }
 
@@ -81,10 +84,18 @@ export function ResourcesDataTable({
   resources,
   categories = [],
   teamMembers = [],
+  teamName,
+  seasonLabel,
   isLoading = false,
 }: ResourcesDataTableProps) {
   const seasonMonths = useSeasonMonths();
   const getMonthLabel = useSeasonMonthLabel();
+
+  const monthLabels = React.useMemo<Record<number, string>>(
+    () =>
+      Object.fromEntries(seasonMonths.map((month) => [month.index, month.label])),
+    [seasonMonths]
+  );
 
   const columns = React.useMemo<ColumnDef<BudgetResourceDTO>[]>(
     () => [
@@ -210,8 +221,13 @@ export function ResourcesDataTable({
     formattedEndRow,
     handleExportCsv,
     triggerPdf,
+    isExportingPdf,
     resetFilters,
-  } = useResourcesTable(resources, columns);
+  } = useResourcesTable(resources, columns, {
+    teamName,
+    seasonLabel,
+    monthLabels,
+  });
 
   if (isLoading) {
     return <StateView state="loading" />;
@@ -242,10 +258,15 @@ export function ResourcesDataTable({
           <Button
             variant="outline"
             onClick={triggerPdf}
+            disabled={isExportingPdf || totalFiltered === 0}
             className="h-10 sm:h-11 w-full sm:w-auto rounded-xl border-border bg-card font-semibold text-foreground hover:bg-muted px-4"
           >
-            <FileText className="h-4 w-4" />
-            <span>Relatório PDF</span>
+            {isExportingPdf ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            <span>{isExportingPdf ? "Exportando..." : "Relatório PDF"}</span>
           </Button>
         </div>
       </div>
