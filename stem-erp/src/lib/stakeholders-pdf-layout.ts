@@ -22,20 +22,20 @@ export type StakeholderQuadrantKey =
   | "MONITOR"
   | "KEEP_INFORMED";
 
-export type StakeholderRelationKind =
-  | "NEGATIVE"
-  | "POSITIVE"
-  | "POTENTIAL_PARTNERSHIP";
-
 export interface QuadrantVisualConfig {
   key: StakeholderQuadrantKey;
   title: string;
+  /** Cor de preenchimento translúcida (tint suave sobre branco) */
   bgColor: RgbColor;
+  /** Borda sutil harmonizada com o quadrante */
+  borderColor: RgbColor;
+  /** Filete lateral discreto dos cards internos */
+  accentColor: RgbColor;
   titlePosition: "top-left" | "bottom-left" | "bottom-right";
 }
 
 /**
- * Cores e posicionamentos fiéis ao modelo de Matriz Poder × Interesse.
+ * Paleta translúcida e corporativa dos 4 quadrantes da Matriz Poder × Interesse.
  */
 export const STAKEHOLDER_QUADRANT_CONFIG: Record<
   StakeholderQuadrantKey,
@@ -44,36 +44,35 @@ export const STAKEHOLDER_QUADRANT_CONFIG: Record<
   KEEP_SATISFIED: {
     key: "KEEP_SATISFIED",
     title: "Manter satisfeito",
-    bgColor: [174, 219, 131], // Verde suave
+    bgColor: [226, 243, 211], // Verde translúcido (~35% sobre branco)
+    borderColor: [164, 209, 126],
+    accentColor: [96, 158, 56],
     titlePosition: "top-left",
   },
   MANAGE_CLOSELY: {
     key: "MANAGE_CLOSELY",
     title: "Gerenciar de perto e envolver",
-    bgColor: [249, 132, 132], // Vermelho / coral suave
+    bgColor: [253, 224, 224], // Coral/vermelho translúcido (~35% sobre branco)
+    borderColor: [242, 150, 150],
+    accentColor: [204, 68, 68],
     titlePosition: "top-left",
   },
   MONITOR: {
     key: "MONITOR",
     title: "Monitorar",
-    bgColor: [253, 249, 156], // Amarelo claro
+    bgColor: [254, 251, 214], // Amarelo translúcido (~35% sobre branco)
+    borderColor: [232, 214, 114],
+    accentColor: [194, 154, 24],
     titlePosition: "bottom-left",
   },
   KEEP_INFORMED: {
     key: "KEEP_INFORMED",
     title: "Manter informado",
-    bgColor: [103, 213, 250], // Azul celeste
+    bgColor: [215, 243, 253], // Azul celeste translúcido (~35% sobre branco)
+    borderColor: [122, 206, 240],
+    accentColor: [29, 95, 214],
     titlePosition: "bottom-right",
   },
-};
-
-export const STAKEHOLDER_RELATION_COLORS: Record<
-  StakeholderRelationKind,
-  RgbColor
-> = {
-  NEGATIVE: [245, 180, 10], // Raio amarelo/ouro
-  POSITIVE: [220, 38, 38], // Coração vermelho
-  POTENTIAL_PARTNERSHIP: [13, 130, 146], // Ícone verde-azulado (teal)
 };
 
 export interface StakeholderMatrixCard {
@@ -81,7 +80,6 @@ export interface StakeholderMatrixCard {
   name: string;
   subtitle: string;
   groupLabel: string;
-  relation: StakeholderRelationKind;
   engagementLabel: string;
   quadrant: StakeholderQuadrantKey;
 }
@@ -90,11 +88,6 @@ export interface StakeholdersPdfData {
   teamDisplayName: string;
   filterLabel: string;
   totalStakeholders: number;
-  relationCounts: {
-    positive: number;
-    negative: number;
-    potential: number;
-  };
   quadrants: Record<StakeholderQuadrantKey, StakeholderMatrixCard[]>;
 }
 
@@ -106,16 +99,6 @@ export function resolveStakeholderQuadrant(
   if (power === "HIGH" && interest === "LOW") return "KEEP_SATISFIED";
   if (power === "LOW" && interest === "HIGH") return "KEEP_INFORMED";
   return "MONITOR";
-}
-
-export function resolveStakeholderRelation(
-  engagement: StakeholderWithRelations["currentEngagement"]
-): StakeholderRelationKind {
-  if (engagement === "RESISTANT") return "NEGATIVE";
-  if (engagement === "SUPPORTIVE" || engagement === "LEADING") {
-    return "POSITIVE";
-  }
-  return "POTENTIAL_PARTNERSHIP";
 }
 
 /**
@@ -148,7 +131,6 @@ export function buildStakeholdersPdfData({
       teamDisplayName,
       filterLabel,
       totalStakeholders: 0,
-      relationCounts: { positive: 0, negative: 0, potential: 0 },
       quadrants,
     };
   }
@@ -157,19 +139,10 @@ export function buildStakeholdersPdfData({
     a.name.localeCompare(b.name, "pt-BR")
   );
 
-  let positive = 0;
-  let negative = 0;
-  let potential = 0;
-
   for (const item of sorted) {
     const quadrant = resolveStakeholderQuadrant(item.power, item.interest);
-    const relation = resolveStakeholderRelation(item.currentEngagement);
-
-    if (relation === "POSITIVE") positive += 1;
-    else if (relation === "NEGATIVE") negative += 1;
-    else potential += 1;
-
     const groupLabel = STAKEHOLDER_GROUP_LABELS[item.group] || item.group;
+
     const subtitleParts: string[] = [];
     if (item.organization?.trim()) subtitleParts.push(item.organization.trim());
     if (item.roleOrJobTitle?.trim()) {
@@ -181,7 +154,6 @@ export function buildStakeholdersPdfData({
       name: item.name,
       subtitle: subtitleParts.join(" • ") || groupLabel,
       groupLabel,
-      relation,
       engagementLabel: ENGAGEMENT_LEVEL_LABELS[item.currentEngagement],
       quadrant,
     });
@@ -191,7 +163,6 @@ export function buildStakeholdersPdfData({
     teamDisplayName,
     filterLabel,
     totalStakeholders: sorted.length,
-    relationCounts: { positive, negative, potential },
     quadrants,
   };
 }

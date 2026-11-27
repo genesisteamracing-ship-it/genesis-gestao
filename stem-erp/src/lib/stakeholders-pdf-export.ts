@@ -7,11 +7,9 @@ import {
   buildStakeholdersPdfData,
   buildStakeholdersPdfFilename,
   STAKEHOLDER_QUADRANT_CONFIG,
-  STAKEHOLDER_RELATION_COLORS,
   STAKEHOLDERS_PDF_COLORS,
   type StakeholderMatrixCard,
   type StakeholderQuadrantKey,
-  type StakeholderRelationKind,
   type StakeholdersPdfData,
 } from "./stakeholders-pdf-layout";
 
@@ -29,25 +27,16 @@ const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_X * 2; // 273mm
 
 const MATRIX = {
   axisX: 22.5,
-  axisTopY: 28,
+  axisTopY: 32.5,
   axisBottomY: 185.5,
-  axisRightX: 237,
+  axisRightX: 284,
   leftColX: 25,
-  rightColX: 129,
-  topRowY: 28,
-  bottomRowY: 107.5,
-  quadW: 100,
-  quadH: 76,
-  dividerX: 127,
-} as const;
-
-const SIDE_PANEL = {
-  x: 241,
-  w: 44,
-  summaryY: 28,
-  summaryH: 48,
-  legendY: 108,
-  legendH: 64,
+  rightColX: 155,
+  topRowY: 32.5,
+  bottomRowY: 110,
+  quadW: 126,
+  quadH: 73.5,
+  dividerX: 153,
 } as const;
 
 const QUADRANT_RECTS: Record<
@@ -90,85 +79,7 @@ function truncateToWidth(doc: jsPDF, text: string, maxWidth: number): string {
 }
 
 /**
- * Desenha os 3 ícones vetoriais da legenda e dos cards (Raio, Coração e Parceria).
- */
-function drawRelationIcon(
-  doc: jsPDF,
-  relation: StakeholderRelationKind,
-  centerX: number,
-  centerY: number,
-  scale = 1
-): void {
-  const color = STAKEHOLDER_RELATION_COLORS[relation];
-  doc.setFillColor(...color);
-  doc.setDrawColor(...color);
-
-  if (relation === "NEGATIVE") {
-    // Raio amarelo/ouro (Negativas)
-    const s = scale;
-    doc.lines(
-      [
-        [-1.3 * s, 2.3 * s],
-        [1.1 * s, 0],
-        [-1.0 * s, 2.4 * s],
-        [2.4 * s, -2.9 * s],
-        [-1.1 * s, 0],
-        [1.0 * s, -1.8 * s],
-      ],
-      centerX + 0.3 * s,
-      centerY - 2.3 * s,
-      [1, 1],
-      "F",
-      true
-    );
-    return;
-  }
-
-  if (relation === "POSITIVE") {
-    // Coração vermelho (Positivas)
-    const r = 1.15 * scale;
-    doc.circle(centerX - r * 0.85, centerY - r * 0.45, r, "F");
-    doc.circle(centerX + r * 0.85, centerY - r * 0.45, r, "F");
-    doc.triangle(
-      centerX - r * 1.82,
-      centerY - r * 0.1,
-      centerX + r * 1.82,
-      centerY - r * 0.1,
-      centerX,
-      centerY + r * 2.05,
-      "F"
-    );
-    return;
-  }
-
-  // Potenciais parcerias (duas figuras conectadas em teal)
-  const s = scale;
-  doc.circle(centerX - 1.35 * s, centerY - 1.2 * s, 0.72 * s, "F");
-  doc.circle(centerX + 1.35 * s, centerY - 1.2 * s, 0.72 * s, "F");
-  doc.roundedRect(
-    centerX - 2.2 * s,
-    centerY - 0.15 * s,
-    1.7 * s,
-    2.1 * s,
-    0.5 * s,
-    0.5 * s,
-    "F"
-  );
-  doc.roundedRect(
-    centerX + 0.5 * s,
-    centerY - 0.15 * s,
-    1.7 * s,
-    2.1 * s,
-    0.5 * s,
-    0.5 * s,
-    "F"
-  );
-  doc.setLineWidth(0.55 * s);
-  doc.line(centerX - 0.8 * s, centerY + 0.4 * s, centerX + 0.8 * s, centerY + 0.4 * s);
-}
-
-/**
- * Cabeçalho bicolor Azul + Amarelo (padrão oficial Gênesis).
+ * Cabeçalho bicolor Azul + Amarelo (padrão oficial Gênesis) + faixa compacta de contadores.
  */
 function drawPageHeader(doc: jsPDF, data: StakeholdersPdfData): void {
   const bannerY = MARGIN_TOP;
@@ -191,9 +102,12 @@ function drawPageHeader(doc: jsPDF, data: StakeholdersPdfData): void {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandYellow);
-  doc.text("Matriz de Stakeholders (Poder × Interesse)", MARGIN_X + 4, bannerY + 6.4, {
-    align: "left",
-  });
+  doc.text(
+    "Matriz de Stakeholders (Poder × Interesse)",
+    MARGIN_X + 4,
+    bannerY + 6.4,
+    { align: "left" }
+  );
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.2);
@@ -215,6 +129,44 @@ function drawPageHeader(doc: jsPDF, data: StakeholdersPdfData): void {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6.2);
   doc.text("STAKEHOLDERS", yellowCenterX, bannerY + 11.8, { align: "center" });
+
+  // Linha de resumo horizontal limpa (sem caixa de relações)
+  const metaY = bannerY + bannerH + 4.8;
+  doc.setFontSize(7.6);
+  doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Gerenciar de perto:", MARGIN_X, metaY);
+  doc.setFont("helvetica", "normal");
+  doc.text(String(data.quadrants.MANAGE_CLOSELY.length), MARGIN_X + 28, metaY);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Manter satisfeito:", MARGIN_X + 44, metaY);
+  doc.setFont("helvetica", "normal");
+  doc.text(String(data.quadrants.KEEP_SATISFIED.length), MARGIN_X + 69.5, metaY);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Manter informado:", MARGIN_X + 86, metaY);
+  doc.setFont("helvetica", "normal");
+  doc.text(String(data.quadrants.KEEP_INFORMED.length), MARGIN_X + 112.5, metaY);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Monitorar:", MARGIN_X + 129, metaY);
+  doc.setFont("helvetica", "normal");
+  doc.text(String(data.quadrants.MONITOR.length), MARGIN_X + 144.5, metaY);
+
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandNavy);
+  doc.text(
+    `${data.totalStakeholders} ${
+      data.totalStakeholders === 1
+        ? "stakeholder mapeado"
+        : "stakeholders mapeados"
+    }`,
+    MARGIN_X + CONTENT_WIDTH,
+    metaY,
+    { align: "right" }
+  );
 }
 
 /**
@@ -222,57 +174,73 @@ function drawPageHeader(doc: jsPDF, data: StakeholdersPdfData): void {
  */
 function drawMatrixAxes(doc: jsPDF): void {
   doc.setDrawColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
-  doc.setFillColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
-  doc.setLineWidth(1.0);
+  doc.setLineWidth(0.95);
 
   // Eixo vertical (PODER)
   doc.line(MATRIX.axisX, MATRIX.axisBottomY, MATRIX.axisX, MATRIX.axisTopY);
-  // Seta superior
-  doc.line(MATRIX.axisX, MATRIX.axisTopY, MATRIX.axisX - 2.4, MATRIX.axisTopY + 3.6);
-  doc.line(MATRIX.axisX, MATRIX.axisTopY, MATRIX.axisX + 2.4, MATRIX.axisTopY + 3.6);
+  doc.line(
+    MATRIX.axisX,
+    MATRIX.axisTopY,
+    MATRIX.axisX - 2.3,
+    MATRIX.axisTopY + 3.5
+  );
+  doc.line(
+    MATRIX.axisX,
+    MATRIX.axisTopY,
+    MATRIX.axisX + 2.3,
+    MATRIX.axisTopY + 3.5
+  );
 
   // Eixo horizontal (INTERESSE)
-  doc.line(MATRIX.axisX, MATRIX.axisBottomY, MATRIX.axisRightX, MATRIX.axisBottomY);
-  // Seta direita
   doc.line(
-    MATRIX.axisRightX,
+    MATRIX.axisX,
     MATRIX.axisBottomY,
-    MATRIX.axisRightX - 3.6,
-    MATRIX.axisBottomY - 2.4
+    MATRIX.axisRightX,
+    MATRIX.axisBottomY
   );
   doc.line(
     MATRIX.axisRightX,
     MATRIX.axisBottomY,
-    MATRIX.axisRightX - 3.6,
-    MATRIX.axisBottomY + 2.4
+    MATRIX.axisRightX - 3.5,
+    MATRIX.axisBottomY - 2.3
+  );
+  doc.line(
+    MATRIX.axisRightX,
+    MATRIX.axisBottomY,
+    MATRIX.axisRightX - 3.5,
+    MATRIX.axisBottomY + 2.3
   );
 
   // Linha tracejada vertical entre quadrantes da esquerda e direita
-  doc.setDrawColor(71, 85, 105);
+  doc.setDrawColor(100, 116, 139);
   doc.setLineWidth(0.3);
   const dashLen = 2.0;
   const gapLen = 1.6;
-  for (let y = MATRIX.topRowY; y < MATRIX.axisBottomY - 2; y += dashLen + gapLen) {
+  for (
+    let y = MATRIX.topRowY;
+    y < MATRIX.axisBottomY - 2;
+    y += dashLen + gapLen
+  ) {
     const endY = Math.min(y + dashLen, MATRIX.axisBottomY - 2);
     doc.line(MATRIX.dividerX, y, MATRIX.dividerX, endY);
   }
 
   // Rótulo vertical PODER
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10.5);
+  doc.setFontSize(10);
   doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
-  doc.text("PODER", 17.5, (MATRIX.topRowY + MATRIX.axisBottomY) / 2 + 8, {
+  doc.text("PODER", 17.5, (MATRIX.topRowY + MATRIX.axisBottomY) / 2 + 7.5, {
     angle: 90,
   });
 
   // Rótulo horizontal INTERESSE
-  doc.text("INTERESSE", MATRIX.dividerX, MATRIX.axisBottomY + 6.2, {
+  doc.text("INTERESSE", MATRIX.dividerX, MATRIX.axisBottomY + 6.0, {
     align: "center",
   });
 }
 
 /**
- * Desenha os 4 quadrantes coloridos da matriz e os cards de stakeholders dentro de cada um.
+ * Desenha os 4 quadrantes translúcidos e os cards corporativos limpos (sem emojis/ícones infantis).
  */
 function drawQuadrantsPage(
   doc: jsPDF,
@@ -290,53 +258,60 @@ function drawQuadrantsPage(
     const config = STAKEHOLDER_QUADRANT_CONFIG[key];
     const items = slices[key];
 
-    // Fundo colorido do quadrante
+    // Fundo translúcido + borda sutil
     doc.setFillColor(...config.bgColor);
-    doc.rect(rect.x, rect.y, rect.w, rect.h, "F");
+    doc.setDrawColor(...config.borderColor);
+    doc.setLineWidth(0.35);
+    doc.roundedRect(rect.x, rect.y, rect.w, rect.h, 1.8, 1.8, "FD");
 
-    // Título do quadrante (mesmas posições da referência)
+    // Título do quadrante
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
+    doc.setFontSize(9.4);
     doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
 
     if (config.titlePosition === "top-left") {
-      doc.text(config.title, rect.x + 3.2, rect.y + 6.0, { align: "left" });
+      doc.text(config.title, rect.x + 3.6, rect.y + 6.0, { align: "left" });
     } else if (config.titlePosition === "bottom-left") {
-      doc.text(config.title, rect.x + 3.2, rect.y + rect.h - 3.0, {
+      doc.text(config.title, rect.x + 3.6, rect.y + rect.h - 3.0, {
         align: "left",
       });
     } else {
-      doc.text(config.title, rect.x + rect.w - 3.2, rect.y + rect.h - 3.0, {
+      doc.text(config.title, rect.x + rect.w - 3.6, rect.y + rect.h - 3.0, {
         align: "right",
       });
     }
 
     if (items.length === 0) {
       doc.setFont("helvetica", "italic");
-      doc.setFontSize(7.5);
-      doc.setTextColor(71, 85, 105);
-      doc.text("Nenhum stakeholder neste quadrante", rect.x + rect.w / 2, rect.y + rect.h / 2, {
-        align: "center",
-      });
+      doc.setFontSize(7.6);
+      doc.setTextColor(100, 116, 139);
+      doc.text(
+        "Nenhum stakeholder neste quadrante",
+        rect.x + rect.w / 2,
+        rect.y + rect.h / 2,
+        { align: "center" }
+      );
       continue;
     }
 
-    // Área útil para os cards dentro do quadrante
-    const padX = 3.0;
+    const padX = 3.4;
     const contentTopY =
       config.titlePosition === "top-left" ? rect.y + 9.0 : rect.y + 3.2;
     const contentBottomY =
       config.titlePosition === "top-left"
-        ? rect.y + rect.h - 3.0
-        : rect.y + rect.h - 8.5;
+        ? rect.y + rect.h - 3.2
+        : rect.y + rect.h - 8.4;
     const availH = contentBottomY - contentTopY;
 
     const cols = 2;
-    const gapX = 2.4;
+    const gapX = 2.8;
     const gapY = 2.0;
     const cardW = (rect.w - padX * 2 - gapX) / cols;
     const rowsNeeded = Math.ceil(items.length / cols);
-    const cardH = Math.min(10.2, Math.max(7.8, (availH - gapY * (rowsNeeded - 1)) / rowsNeeded));
+    const cardH = Math.min(
+      10.0,
+      Math.max(7.6, (availH - gapY * (rowsNeeded - 1)) / rowsNeeded)
+    );
 
     items.forEach((card, index) => {
       const col = index % cols;
@@ -344,161 +319,55 @@ function drawQuadrantsPage(
       const cx = rect.x + padX + col * (cardW + gapX);
       const cy = contentTopY + row * (cardH + gapY);
 
-      // Card branco arredondado com borda sutil
+      // Card branco limpo com borda suave
       doc.setFillColor(...STAKEHOLDERS_PDF_COLORS.white);
       doc.setDrawColor(203, 213, 225);
-      doc.setLineWidth(0.25);
-      doc.roundedRect(cx, cy, cardW, cardH, 1.4, 1.4, "FD");
+      doc.setLineWidth(0.22);
+      doc.roundedRect(cx, cy, cardW, cardH, 1.3, 1.3, "FD");
 
-      // Ícone da relação à esquerda
-      drawRelationIcon(doc, card.relation, cx + 4.0, cy + cardH / 2, 0.85);
+      // Filete lateral minimalista na cor de destaque do quadrante
+      doc.setFillColor(...config.accentColor);
+      doc.rect(cx, cy + 1.0, 1.15, cardH - 2.0, "F");
 
-      const textX = cx + 8.0;
-      const maxTextW = cardW - 9.5;
+      const textX = cx + 3.2;
+      const engagementReserve = 18;
+      const maxNameW = cardW - engagementReserve - 4.5;
+      const maxSubW = cardW - 5.0;
 
       // Nome em negrito
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(7.1);
+      doc.setFontSize(7.3);
       doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
       doc.text(
-        truncateToWidth(doc, card.name, maxTextW),
+        truncateToWidth(doc, card.name, maxNameW),
         textX,
         cy + cardH * 0.43,
         { align: "left" }
       );
 
-      // Subtítulo (Organização / Cargo)
+      // Engajamento discreto à direita (texto puro, sem emoji)
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(6.0);
+      doc.setFontSize(5.8);
       doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textSecondary);
       doc.text(
-        truncateToWidth(doc, card.subtitle, maxTextW),
+        truncateToWidth(doc, card.engagementLabel, engagementReserve),
+        cx + cardW - 2.2,
+        cy + cardH * 0.43,
+        { align: "right" }
+      );
+
+      // Subtítulo (Organização / Cargo)
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.1);
+      doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textSecondary);
+      doc.text(
+        truncateToWidth(doc, card.subtitle, maxSubW),
         textX,
-        cy + cardH * 0.78,
+        cy + cardH * 0.79,
         { align: "left" }
       );
     });
   }
-}
-
-/**
- * Painel lateral direito: Resumo da Matriz + Caixa "RELAÇÕES" (fiel à imagem de referência).
- */
-function drawSidePanel(doc: jsPDF, data: StakeholdersPdfData): void {
-  const { x, w, summaryY, summaryH, legendY, legendH } = SIDE_PANEL;
-
-  // 1. Card de resumo consolidado (Azul + Amarelo Gênesis)
-  doc.setFillColor(...STAKEHOLDERS_PDF_COLORS.white);
-  doc.setDrawColor(...STAKEHOLDERS_PDF_COLORS.brandBlue);
-  doc.setLineWidth(0.35);
-  doc.roundedRect(x, summaryY, w, summaryH, 1.6, 1.6, "FD");
-
-  // Cabeçalho azul do resumo
-  doc.setFillColor(...STAKEHOLDERS_PDF_COLORS.brandBlue);
-  doc.rect(x, summaryY, w, 7.2, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandYellow);
-  doc.text("RESUMO", x + w / 2, summaryY + 4.9, { align: "center" });
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandNavy);
-  doc.text(String(data.totalStakeholders), x + w / 2, summaryY + 15.5, {
-    align: "center",
-  });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textSecondary);
-  doc.text(
-    data.totalStakeholders === 1 ? "stakeholder mapeado" : "stakeholders mapeados",
-    x + w / 2,
-    summaryY + 19.6,
-    { align: "center" }
-  );
-
-  const summaryRows: Array<{ label: string; count: number }> = [
-    { label: "Gerenciar de perto", count: data.quadrants.MANAGE_CLOSELY.length },
-    { label: "Manter satisfeito", count: data.quadrants.KEEP_SATISFIED.length },
-    { label: "Manter informado", count: data.quadrants.KEEP_INFORMED.length },
-    { label: "Monitorar", count: data.quadrants.MONITOR.length },
-  ];
-
-  doc.setDrawColor(...STAKEHOLDERS_PDF_COLORS.dividerLine);
-  doc.setLineWidth(0.2);
-  doc.line(x + 2.5, summaryY + 22.5, x + w - 2.5, summaryY + 22.5);
-
-  summaryRows.forEach((row, idx) => {
-    const ry = summaryY + 27.5 + idx * 5.0;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.4);
-    doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
-    doc.text(row.label, x + 2.8, ry, { align: "left" });
-
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandNavy);
-    doc.text(String(row.count), x + w - 2.8, ry, { align: "right" });
-  });
-
-  // 2. Caixa de Legenda "RELAÇÕES" (com sombra suave e borda escura como na referência)
-  doc.setFillColor(203, 213, 225);
-  doc.rect(x + 1.0, legendY + 1.0, w, legendH, "F");
-
-  doc.setFillColor(...STAKEHOLDERS_PDF_COLORS.white);
-  doc.setDrawColor(...STAKEHOLDERS_PDF_COLORS.brandNavy);
-  doc.setLineWidth(0.45);
-  doc.rect(x, legendY, w, legendH, "FD");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
-  doc.text("RELAÇÕES", x + w / 2, legendY + 7.5, { align: "center" });
-
-  const legendItems: Array<{
-    relation: StakeholderRelationKind;
-    title: string;
-    subtitle: string;
-  }> = [
-    {
-      relation: "NEGATIVE",
-      title: "NEGATIVAS",
-      subtitle: `Resistente (${data.relationCounts.negative})`,
-    },
-    {
-      relation: "POSITIVE",
-      title: "POSITIVAS",
-      subtitle: `Apoiador / Líder (${data.relationCounts.positive})`,
-    },
-    {
-      relation: "POTENTIAL_PARTNERSHIP",
-      title: "POTENCIAIS PARCERIAS",
-      subtitle: `Neutro / Base (${data.relationCounts.potential})`,
-    },
-  ];
-
-  legendItems.forEach((item, idx) => {
-    const iy = legendY + 19.5 + idx * 15.5;
-    drawRelationIcon(doc, item.relation, x + 7.5, iy, 1.35);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.6);
-    doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
-    const titleLines = doc.splitTextToSize(item.title, w - 15.5) as string[];
-    titleLines.forEach((line, lineIdx) => {
-      doc.text(line, x + 13.5, iy - 1.2 + lineIdx * 2.9, { align: "left" });
-    });
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(5.9);
-    doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textSecondary);
-    doc.text(
-      item.subtitle,
-      x + 13.5,
-      iy - 1.2 + titleLines.length * 2.9 + 0.6,
-      { align: "left" }
-    );
-  });
 }
 
 function drawPageFooter(
@@ -534,7 +403,7 @@ function drawPageFooter(
 
 /**
  * Gera e dispara o download da Matriz de Stakeholders (Poder × Interesse) em PDF (A4 Paisagem),
- * com os 4 quadrantes coloridos, eixos com setas, cards com ícones de relação e legenda lateral.
+ * com os 4 quadrantes translúcidos, eixos com setas e cards corporativos limpos.
  */
 export async function exportStakeholdersToPdf({
   stakeholders,
@@ -565,7 +434,6 @@ export async function exportStakeholdersToPdf({
   const now = new Date();
   const formattedDate = now.toLocaleDateString("pt-BR");
 
-  // Até 12 cards por quadrante por página (2 colunas x 6 linhas)
   const MAX_PER_QUADRANT_PER_PAGE = 12;
   const maxItemsInAnyQuadrant = Math.max(
     data.quadrants.KEEP_SATISFIED.length,
@@ -596,7 +464,6 @@ export async function exportStakeholdersToPdf({
     drawPageHeader(doc, data);
     drawQuadrantsPage(doc, pageSlices);
     drawMatrixAxes(doc);
-    drawSidePanel(doc, data);
     drawPageFooter(
       doc,
       pageIdx + 1,
