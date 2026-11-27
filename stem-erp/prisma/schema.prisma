@@ -488,11 +488,15 @@ model Task {
   deliveryGroup DeliveryGroup
   title         String
   description   String?
-  startDate       DateTime         @db.Date
-  endDate         DateTime         @db.Date
-  optimisticDays  Int?
-  mostLikelyDays  Int?
-  pessimisticDays Int?
+  startDate         DateTime         @db.Date
+  endDate           DateTime         @db.Date
+  baselineStartDate DateTime?        @db.Date
+  baselineEndDate   DateTime?        @db.Date
+  isAtRisk          Boolean          @default(false)
+  isCritical        Boolean          @default(false)
+  optimisticDays    Int?
+  mostLikelyDays    Int?
+  pessimisticDays   Int?
   status          TaskStatus       @default(TODO)
   completedAt   DateTime?
   cancelledAt   DateTime?

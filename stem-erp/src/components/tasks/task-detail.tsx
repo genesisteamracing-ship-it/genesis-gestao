@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import { computeTaskPertDuration, formatPertDays } from "@/lib/pert-engine";
+import { buildGanttTaskMetricsMap, getTodayIsoLocal } from "@/lib/task-gantt-metrics";
 import { formatTaskDate, edgeKey, scheduleConflict } from "@/lib/task-schedule";
 import { TASK_STATUS_LABELS, type TaskRecord, type TaskWorkspace, type TaskEdge } from "@/types/tasks";
 
@@ -18,6 +19,7 @@ export function TaskDetail({ task, workspace }: {
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
 
+  const metrics = buildGanttTaskMetricsMap(workspace.tasks, workspace.edges, getTodayIsoLocal()).get(task.id);
   const linked = workspace.edges.filter((edge) => edge.predecessorId === task.id || edge.successorId === task.id);
   const byId = new Map(workspace.tasks.map((item) => [item.id, item]));
   const predecessors = new Set(linked.filter((edge) => edge.successorId === task.id).map((edge) => edge.predecessorId));
@@ -78,6 +80,19 @@ export function TaskDetail({ task, workspace }: {
           <span className="text-muted-foreground">Data de entrega: </span>
           <span className="font-medium text-foreground">{formatTaskDate(task.endDate)}</span>
         </div>
+        <div>
+          <span className="text-muted-foreground">Linha de base: </span>
+          <span className="font-medium text-foreground">
+            {formatTaskDate(task.baselineStartDate ?? task.startDate)} — {formatTaskDate(task.baselineEndDate ?? task.endDate)}
+          </span>
+        </div>
+        {metrics && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground">Prazo:</span>
+            <Badge variant="outline">{metrics.signalLabel}</Badge>
+            {metrics.isCritical && <Badge variant="destructive">Crítica</Badge>}
+          </div>
+        )}
         {task.optimisticDays != null && task.mostLikelyDays != null && task.pessimisticDays != null && (
           <div className="sm:col-span-2">
             <span className="text-muted-foreground">Estimativa PERT (O / M / P): </span>

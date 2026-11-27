@@ -101,6 +101,10 @@ export async function getTaskWorkspace({
     tasks: tasks.map((task) => ({
       id: task.id, title: task.title, description: task.description, deliveryGroup: task.deliveryGroup,
       startDate: task.startDate.toISOString().slice(0, 10), endDate: task.endDate.toISOString().slice(0, 10),
+      baselineStartDate: (task.baselineStartDate ?? task.startDate).toISOString().slice(0, 10),
+      baselineEndDate: (task.baselineEndDate ?? task.endDate).toISOString().slice(0, 10),
+      isAtRisk: task.isAtRisk,
+      isCritical: task.isCritical,
       optimisticDays: task.optimisticDays,
       mostLikelyDays: task.mostLikelyDays,
       pessimisticDays: task.pessimisticDays,
@@ -166,7 +170,15 @@ export async function saveTask(scope: Scope, input: CreateTaskInput | EditTaskIn
       taskId = input.id;
       const current = await tx.task.findFirst({
         where: { id: taskId, teamId, revision: input.revision },
-        select: { status: true, creatorUserId: true, creatorKey: true },
+        select: {
+          status: true,
+          creatorUserId: true,
+          creatorKey: true,
+          startDate: true,
+          endDate: true,
+          baselineStartDate: true,
+          baselineEndDate: true,
+        },
       });
       if (!current) throw new TaskError("Tarefa não encontrada ou atualizada. Recarregue a página.");
       if (!canManageTask(actor, current.creatorUserId ?? current.creatorKey)) {
@@ -174,10 +186,23 @@ export async function saveTask(scope: Scope, input: CreateTaskInput | EditTaskIn
           "Somente o criador da tarefa, a gestora de projetos, técnico ou administrador podem alterar esta tarefa.",
         );
       }
+      const nextBaselineStart = input.baselineStartDate
+        ? parseTaskDate(input.baselineStartDate)
+        : (current.baselineStartDate ?? current.startDate);
+      const nextBaselineEnd = input.baselineEndDate
+        ? parseTaskDate(input.baselineEndDate)
+        : (current.baselineEndDate ?? current.endDate);
+      if (!nextBaselineStart || !nextBaselineEnd || nextBaselineEnd < nextBaselineStart) {
+        throw new TaskError("Informe um intervalo de linha de base válido.");
+      }
       const { count } = await tx.task.updateMany({
         where: { id: taskId, teamId, revision: input.revision },
         data: {
           ...fields,
+          baselineStartDate: nextBaselineStart,
+          baselineEndDate: nextBaselineEnd,
+          ...(input.isAtRisk !== undefined ? { isAtRisk: input.isAtRisk } : {}),
+          ...(input.isCritical !== undefined ? { isCritical: input.isCritical } : {}),
           status: input.status,
           ...buildStatusTimestamps(input.status, current.status),
           revision: { increment: 1 },
@@ -190,6 +215,10 @@ export async function saveTask(scope: Scope, input: CreateTaskInput | EditTaskIn
       const task = await tx.task.create({
         data: {
           ...fields,
+          baselineStartDate: startDate,
+          baselineEndDate: endDate,
+          isAtRisk: input.isAtRisk ?? false,
+          isCritical: input.isCritical ?? false,
           teamId,
           sortOrder,
           creatorKey: scope.actorId,
@@ -347,7 +376,14 @@ export async function rescheduleTask(scope: Scope, input: RescheduleTaskInput) {
     }
     const current = await tx.task.findFirst({
       where: { id: input.taskId, teamId, revision: input.revision },
-      select: { creatorUserId: true, creatorKey: true },
+      select: {
+        creatorUserId: true,
+        creatorKey: true,
+        startDate: true,
+        endDate: true,
+        baselineStartDate: true,
+        baselineEndDate: true,
+      },
     });
     if (!current) throw new TaskError("Tarefa não encontrada ou atualizada. Recarregue a página.");
     if (!canManageTask(actor, current.creatorUserId ?? current.creatorKey)) {
@@ -357,7 +393,13 @@ export async function rescheduleTask(scope: Scope, input: RescheduleTaskInput) {
     }
     const { count } = await tx.task.updateMany({
       where: { id: input.taskId, teamId, revision: input.revision },
-      data: { startDate, endDate, revision: { increment: 1 } },
+      data: {
+        startDate,
+        endDate,
+        baselineStartDate: current.baselineStartDate ?? current.startDate,
+        baselineEndDate: current.baselineEndDate ?? current.endDate,
+        revision: { increment: 1 },
+      },
     });
     if (!count) throw new TaskError("Tarefa não encontrada ou atualizada. Recarregue a página.");
   });

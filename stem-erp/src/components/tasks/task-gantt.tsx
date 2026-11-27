@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { Link2, Loader2, Trash2 } from "lucide-react";
+import { Check, Link2, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
@@ -17,6 +17,12 @@ import {
 } from "@/components/ui/dialog";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import {
+  buildGanttTaskMetricsMap,
+  computeGanttSummary,
+  getTodayIsoLocal,
+  resolveBaselineDates,
+} from "@/lib/task-gantt-metrics";
+import {
   createsCycle,
   dayLabel,
   edgeKey,
@@ -29,23 +35,47 @@ import {
   taskDay,
 } from "@/lib/task-schedule";
 import { TASK_STATUS_LABELS, type TaskEdge, type TaskRecord, type TaskRisk } from "@/types/tasks";
+import { TaskGanttKpis } from "./task-gantt-kpis";
+import { TaskGanttLegend } from "./task-gantt-legend";
 
-const ROW_HEIGHT = 54;
-const LABEL_WIDTH = 170;
+const ROW_HEIGHT = 64;
+const LABEL_WIDTH = 216;
+const ID_COLUMN_WIDTH = 44;
 
 const bar = tv({
-  base: "group absolute top-2 z-10 flex h-8 items-center justify-between overflow-visible rounded-md border text-left text-xs font-semibold outline-offset-2 transition-all focus-visible:outline-2",
+  base: "group absolute top-5 z-10 flex h-7 items-center justify-between overflow-visible rounded-md border text-left text-xs font-semibold outline-offset-2 transition-all focus-visible:outline-2 shadow-2xs",
   variants: {
-    status: {
-      TODO: "border-border bg-secondary text-secondary-foreground",
-      IN_PROGRESS: "border-primary/40 bg-primary/15 text-foreground",
-      DONE: "border-success/40 bg-success/15 text-foreground",
+    signal: {
+      ON_TRACK: "border-success/70 bg-success/90 text-success-foreground",
+      AT_RISK: "border-warning/80 bg-warning text-foreground",
+      DELAYED: "border-destructive/80 bg-destructive text-destructive-foreground",
+      COMPLETED: "border-success bg-success text-success-foreground",
       CANCELLED: "border-border bg-muted text-muted-foreground line-through opacity-75",
     },
     highlighted: { true: "border-primary ring-2 ring-primary" },
     isConnectingSource: { true: "border-primary ring-2 ring-primary shadow-sm" },
-    isDropTargetValid: { true: "border-primary ring-2 ring-primary bg-primary/25 shadow-sm" },
-    isDropTargetInvalid: { true: "border-destructive ring-2 ring-destructive/80 bg-destructive/15" },
+    isDropTargetValid: { true: "border-primary ring-2 ring-primary bg-primary/25 text-foreground shadow-sm" },
+    isDropTargetInvalid: { true: "border-destructive ring-2 ring-destructive/80 bg-destructive/15 text-foreground" },
+  },
+  defaultVariants: {
+    signal: "ON_TRACK",
+  },
+});
+
+const statusTag = tv({
+  base: "pointer-events-none absolute top-1/2 -translate-y-1/2 z-10 inline-flex items-center whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-semibold leading-none shadow-2xs bg-card",
+  variants: {
+    tone: {
+      ON_TRACK: "border-success/60 text-success",
+      AT_RISK: "border-warning/80 text-warning",
+      DELAYED: "border-destructive/70 text-destructive",
+      COMPLETED: "border-success/70 text-success",
+      CRITICAL: "border-destructive text-destructive",
+      CANCELLED: "border-border text-muted-foreground",
+    },
+  },
+  defaultVariants: {
+    tone: "ON_TRACK",
   },
 });
 
@@ -163,6 +193,9 @@ export function TaskGantt({
 
   const view = useMemo(() => {
     const ranges = orderedVisible.map((task) => {
+      const { baselineStartDate, baselineEndDate } = resolveBaselineDates(task);
+      const baseStart = taskDay(baselineStartDate);
+      const baseEnd = taskDay(baselineEndDate);
       if (resizing && resizing.taskId === task.id) {
         const preview = resizeTaskDates({
           startDate: resizing.originalStartDate,
@@ -174,23 +207,46 @@ export function TaskGantt({
           task: { ...task, ...preview },
           start: taskDay(preview.startDate),
           end: taskDay(preview.endDate),
+          baseStart,
+          baseEnd,
         };
       }
-      return { task, start: taskDay(task.startDate), end: taskDay(task.endDate) };
+      return {
+        task,
+        start: taskDay(task.startDate),
+        end: taskDay(task.endDate),
+        baseStart,
+        baseEnd,
+      };
     });
-    const from = ranges.reduce((min, item) => Math.min(min, item.start), ranges[0]?.start ?? 0);
-    const last = ranges.reduce((max, item) => Math.max(max, item.end), from);
+    const from = ranges.reduce(
+      (min, item) => Math.min(min, item.start, item.baseStart),
+      ranges[0] ? Math.min(ranges[0].start, ranges[0].baseStart) : 0,
+    );
+    const last = ranges.reduce((max, item) => Math.max(max, item.end, item.baseEnd), from);
     const span = Math.max(1, last - from + 1);
     const dayWidth = Math.min(week ? 15 : 44, 160_000 / span);
     const tickStep = (week ? 7 : 1) * Math.max(1, Math.ceil(span / (week ? 1400 : 200)));
-    const rows = ranges.map(({ task, start, end }, index) => ({
+    const rows = ranges.map(({ task, start, end, baseStart, baseEnd }, index) => ({
       task,
       left: (start - from) * dayWidth,
       width: (end - start + 1) * dayWidth,
-      y: index * ROW_HEIGHT + 24,
+      baseLeft: (baseStart - from) * dayWidth,
+      baseWidth: (baseEnd - baseStart + 1) * dayWidth,
+      y: index * ROW_HEIGHT + 34,
     }));
     return { rows, span, from, dayWidth, tickStep };
   }, [orderedVisible, week, resizing]);
+
+  const todayIso = useMemo(() => getTodayIsoLocal(), []);
+  const metricsMap = useMemo(
+    () => buildGanttTaskMetricsMap(view.rows.map((row) => row.task), currentEdges, todayIso),
+    [view.rows, currentEdges, todayIso],
+  );
+  const summary = useMemo(
+    () => computeGanttSummary(view.rows.map((row) => row.task), currentEdges, todayIso),
+    [view.rows, currentEdges, todayIso],
+  );
 
   const width = view.span * view.dayWidth;
   const rows = useMemo(() => new Map(view.rows.map((row) => [row.task.id, row])), [view.rows]);
@@ -573,7 +629,9 @@ export function TaskGantt({
   const edgeToDeleteTarget = edgeToDelete ? byId.get(edgeToDelete.successorId) : null;
 
   return (
-    <section aria-label="Cronograma de Gantt" className="min-w-0 space-y-3">
+    <section aria-label="Cronograma de Gantt" className="min-w-0 space-y-4">
+      <TaskGanttKpis summary={summary} />
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -594,11 +652,6 @@ export function TaskGantt({
           </Button>
           {path && <span className="text-sm font-medium text-primary">Caminho em destaque · {path.name}</span>}
         </div>
-        {canEdit && (
-          <p className="hidden text-xs text-muted-foreground sm:block">
-            Arraste ou clique no ponto ao final da barra para conectar dependências.
-          </p>
-        )}
       </div>
 
       {activeSourceTask && (
@@ -638,83 +691,120 @@ export function TaskGantt({
         </div>
       )}
 
-      <div
-        className="max-h-[65vh] overflow-auto rounded-xl border border-border bg-card"
-        tabIndex={0}
-        aria-label="Linha do tempo rolável"
-      >
-        <div style={{ width: LABEL_WIDTH + width + 32 }}>
-          <div className="sticky top-0 z-30 flex h-10 border-b border-border bg-card text-xs font-semibold">
-            <div
-              className="sticky left-0 z-10 shrink-0 border-r border-border bg-card p-2"
-              style={{ width: LABEL_WIDTH }}
-            >
-              Tarefa / setor
-            </div>
-            <div className="relative flex-1">
-              {ticks.map((offset) => (
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_224px]">
+        <div
+          className="max-h-[65vh] min-w-0 overflow-auto rounded-xl border border-border bg-card shadow-2xs"
+          tabIndex={0}
+          aria-label="Linha do tempo rolável"
+        >
+          <div style={{ width: LABEL_WIDTH + width + 168 }}>
+            <div className="sticky top-0 z-30 flex h-10 border-b border-border bg-card text-xs font-semibold">
+              <div
+                className="sticky left-0 z-10 flex shrink-0 border-r border-border bg-primary text-primary-foreground"
+                style={{ width: LABEL_WIDTH }}
+              >
                 <span
-                  key={offset}
-                  className="absolute h-full whitespace-nowrap border-l border-border px-1 py-2"
-                  style={{ left: offset * view.dayWidth }}
+                  className="flex shrink-0 items-center justify-center border-r border-primary-foreground/20 px-1"
+                  style={{ width: ID_COLUMN_WIDTH }}
                 >
-                  {formatTaskDate(dayLabel(view.from + offset)).slice(0, 5)}
+                  ID
                 </span>
-              ))}
+                <span className="flex flex-1 items-center truncate px-2.5">Atividade</span>
+              </div>
+              <div className="relative flex-1">
+                {ticks.map((offset) => (
+                  <span
+                    key={offset}
+                    className="absolute h-full whitespace-nowrap border-l border-border px-1 py-2 text-muted-foreground"
+                    style={{ left: offset * view.dayWidth }}
+                  >
+                    {formatTaskDate(dayLabel(view.from + offset)).slice(0, 5)}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div ref={rowsContainerRef} className="relative">
-            {view.rows.map(({ task, left, width: duration, y }, index) => {
-              const isSource = connecting?.sourceId === task.id;
-              const isTargetCandidate = Boolean(connecting && !isSource && hoveredCandidate?.id === task.id);
-              const barWidth = Math.max(28, duration);
-              const canManageBar = canEdit && (task.canManage ?? true);
-              const isBeingReordered = Boolean(reordering?.isDragging && reordering.taskId === task.id);
-              const isReorderTarget = Boolean(
-                reordering?.isDragging && reordering.targetIndex === index && reordering.taskId !== task.id
-              );
+            <div ref={rowsContainerRef} className="relative">
+              {view.rows.map(({ task, left, width: duration, baseLeft, baseWidth, y }, index) => {
+                const metrics = metricsMap.get(task.id);
+                const signal = metrics?.signal ?? "ON_TRACK";
+                const isCritical = metrics?.isCritical ?? false;
+                const shortId = metrics?.shortId ?? String(index + 1);
+                const isSource = connecting?.sourceId === task.id;
+                const isTargetCandidate = Boolean(connecting && !isSource && hoveredCandidate?.id === task.id);
+                const barWidth = Math.max(28, duration);
+                const baselineBarWidth = Math.max(24, baseWidth);
+                const canManageBar = canEdit && (task.canManage ?? true);
+                const isBeingReordered = Boolean(reordering?.isDragging && reordering.taskId === task.id);
+                const isReorderTarget = Boolean(
+                  reordering?.isDragging && reordering.targetIndex === index && reordering.taskId !== task.id
+                );
+                const tagLeft = Math.max(left + barWidth, baseLeft + baselineBarWidth) + (canEdit ? 34 : 18) + (isCritical ? 14 : 0);
+                const displayTagText = isCritical ? "Crítica" : (metrics?.signalLabel ?? TASK_STATUS_LABELS[task.status]);
+                const displayTagTone = isCritical ? "CRITICAL" : signal;
 
-              return (
-                <div
-                  key={task.id}
-                  className={`flex border-b border-border last:border-b-0 transition-colors ${
-                    isBeingReordered ? "opacity-50" : ""
-                  } ${isReorderTarget ? "bg-primary/5 ring-1 ring-inset ring-primary/60" : ""}`}
-                  style={{ height: ROW_HEIGHT }}
-                >
-                  <button
-                    type="button"
-                    className="sticky left-0 z-20 shrink-0 truncate border-r border-border bg-card px-2 text-left text-xs focus-visible:outline-2"
-                    onClick={() => handleTaskBarClick(task.id)}
-                    style={{ width: LABEL_WIDTH }}
-                  >
-                    <span className="block truncate font-semibold">{task.title}</span>
-                    <span className="block truncate text-muted-foreground">
-                      {DELIVERY_GROUP_LABELS[task.deliveryGroup]}
-                    </span>
-                    {conflicts.has(task.id) && (
-                      <span className="block truncate font-medium text-destructive">Conflito de datas</span>
-                    )}
-                  </button>
-
+                return (
                   <div
-                    className="relative flex-1"
-                    style={{
-                      backgroundImage: "linear-gradient(to right, var(--border) 1px, transparent 1px)",
-                      backgroundSize: view.dayWidth * view.tickStep + "px 100%",
-                    }}
+                    key={task.id}
+                    data-critical={isCritical ? "true" : undefined}
+                    className={`flex border-b border-border last:border-b-0 transition-colors ${
+                      isBeingReordered ? "opacity-50" : ""
+                    } ${isReorderTarget ? "bg-primary/5 ring-1 ring-inset ring-primary/60" : ""} ${
+                      isCritical ? "bg-destructive/[0.03] ring-2 ring-inset ring-destructive/80" : ""
+                    }`}
+                    style={{ height: ROW_HEIGHT }}
                   >
-                    <div
-                      className={bar({
-                        status: task.status,
-                        highlighted: highlightedTasks.has(task.id),
-                        isConnectingSource: isSource,
-                        isDropTargetValid: Boolean(isTargetCandidate && isValidTarget),
-                        isDropTargetInvalid: Boolean(isTargetCandidate && !isValidTarget),
-                      })}
-                      style={{ left, width: barWidth }}
+                    <button
+                      type="button"
+                      className="sticky left-0 z-20 flex shrink-0 items-center border-r border-border bg-card text-left text-xs focus-visible:outline-2"
+                      onClick={() => handleTaskBarClick(task.id)}
+                      style={{ width: LABEL_WIDTH }}
                     >
+                      <span
+                        className="flex h-full shrink-0 items-center justify-center border-r border-border/70 font-bold text-foreground"
+                        style={{ width: ID_COLUMN_WIDTH }}
+                      >
+                        {shortId}
+                      </span>
+                      <span className="min-w-0 flex-1 px-2.5">
+                        <span className="block truncate font-semibold text-foreground">{task.title}</span>
+                        <span className="block truncate text-[11px] text-muted-foreground">
+                          {DELIVERY_GROUP_LABELS[task.deliveryGroup]}
+                        </span>
+                        {conflicts.has(task.id) && (
+                          <span className="block truncate text-[11px] font-medium text-destructive">
+                            Conflito de datas
+                          </span>
+                        )}
+                      </span>
+                    </button>
+
+                    <div
+                      className="relative flex-1"
+                      style={{
+                        backgroundImage: "linear-gradient(to right, var(--border) 1px, transparent 1px)",
+                        backgroundSize: view.dayWidth * view.tickStep + "px 100%",
+                      }}
+                    >
+                      {/* Barra Cinza: Linha de Base (Planejado) */}
+                      <div
+                        aria-hidden="true"
+                        title={`Linha de base: ${formatTaskDate(task.baselineStartDate ?? task.startDate)} — ${formatTaskDate(task.baselineEndDate ?? task.endDate)}`}
+                        className="pointer-events-none absolute top-2 z-[5] h-3.5 rounded-sm bg-muted-foreground/30"
+                        style={{ left: baseLeft, width: baselineBarWidth }}
+                      />
+
+                      {/* Barra Colorida: Execução / Status de Prazo */}
+                      <div
+                        className={bar({
+                          signal,
+                          highlighted: highlightedTasks.has(task.id),
+                          isConnectingSource: isSource,
+                          isDropTargetValid: Boolean(isTargetCandidate && isValidTarget),
+                          isDropTargetInvalid: Boolean(isTargetCandidate && !isValidTarget),
+                        })}
+                        style={{ left, width: barWidth }}
+                      >
                       {/* Left Edge Resize Handle (startDate) */}
                       {canManageBar && (
                         <div
@@ -766,7 +856,7 @@ export function TaskGantt({
                       {/* Main Bar Body (Click to open, Drag vertically away from edges to reorder) */}
                       <button
                         type="button"
-                        className={`h-full flex-1 truncate px-2.5 text-left focus-visible:outline-none ${
+                        className={`h-full flex-1 truncate px-2 text-left focus-visible:outline-none ${
                           canEdit && !connecting ? "cursor-grab active:cursor-grabbing" : ""
                         }`}
                         onPointerDown={(e) => {
@@ -785,26 +875,48 @@ export function TaskGantt({
                         }}
                         onClick={() => handleTaskBarClick(task.id)}
                         aria-label={
+                          shortId +
+                          " · " +
                           task.title +
                           " · " +
                           formatTaskDate(task.startDate) +
                           " até " +
                           formatTaskDate(task.endDate) +
                           " · " +
-                          TASK_STATUS_LABELS[task.status] +
+                          (metrics?.signalLabel ?? TASK_STATUS_LABELS[task.status]) +
+                          (isCritical ? " · Caminho crítico" : "") +
                           (highlightedTasks.has(task.id) ? " · Em destaque" : "")
                         }
                         title={
-                          formatTaskDate(task.startDate) +
-                          " — " +
-                          formatTaskDate(task.endDate) +
-                          " · " +
-                          TASK_STATUS_LABELS[task.status]
+                          `${shortId} — ${task.title}\n` +
+                          `Atual: ${formatTaskDate(task.startDate)} — ${formatTaskDate(task.endDate)}\n` +
+                          `Linha de base: ${formatTaskDate(task.baselineStartDate ?? task.startDate)} — ${formatTaskDate(task.baselineEndDate ?? task.endDate)}\n` +
+                          `Status: ${metrics?.signalLabel ?? TASK_STATUS_LABELS[task.status]}` +
+                          (isCritical ? " · Crítica" : "")
                         }
                       >
                         {highlightedTasks.has(task.id) && "★ "}
-                        {TASK_STATUS_LABELS[task.status]}
+                        <span className="sr-only">{metrics?.signalLabel ?? TASK_STATUS_LABELS[task.status]}</span>
                       </button>
+
+                      {/* Selo de verificação ✓ para atividades concluídas */}
+                      {signal === "COMPLETED" && (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute -right-2.5 top-1/2 z-20 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-success text-success-foreground ring-2 ring-card shadow-xs"
+                        >
+                          <Check className="h-3 w-3 stroke-[3]" />
+                        </span>
+                      )}
+
+                      {/* Losango vermelho ◇ para atividades do caminho crítico */}
+                      {isCritical && (
+                        <span
+                          aria-hidden="true"
+                          title="Caminho crítico (define o prazo final)"
+                          className="pointer-events-none absolute -right-2.5 top-1/2 z-20 h-4 w-4 -translate-y-1/2 rotate-45 border-2 border-destructive bg-card shadow-2xs"
+                        />
+                      )}
 
                       {/* Right Edge Resize Handle (endDate) */}
                       {canManageBar && (
@@ -895,11 +1007,19 @@ export function TaskGantt({
                           </div>
                         </>
                       )}
+                      </div>
+
+                      {/* Rótulo textual de status / criticidade ao lado da barra */}
+                      <span
+                        className={statusTag({ tone: displayTagTone })}
+                        style={{ left: tagLeft }}
+                      >
+                        {displayTagText}
+                      </span>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
 
             {/* SVG Layer for Edges and Active Connecting Line */}
             <svg
@@ -988,6 +1108,9 @@ export function TaskGantt({
             </svg>
           </div>
         </div>
+        </div>
+
+        <TaskGanttLegend />
       </div>
 
       {/* Dependencies List with Quick Remove Action */}

@@ -26,6 +26,8 @@ const task = z.object({
   deliveryGroup: z.nativeEnum(DeliveryGroup),
   startDate: day,
   endDate: day,
+  isAtRisk: z.boolean().optional(),
+  isCritical: z.boolean().optional(),
   optimisticDays: pertDays,
   mostLikelyDays: pertDays,
   pessimisticDays: pertDays,
@@ -34,6 +36,30 @@ const task = z.object({
 
 const dateRange = (item: { startDate: string; endDate: string }) => item.startDate <= item.endDate;
 const invalidRange = { message: "O término deve ser igual ou posterior ao início.", path: ["endDate"] };
+
+function validateBaselineRange(
+  item: { baselineStartDate?: string; baselineEndDate?: string },
+  ctx: z.RefinementCtx,
+) {
+  const hasStart = item.baselineStartDate !== undefined;
+  const hasEnd = item.baselineEndDate !== undefined;
+  if (!hasStart && !hasEnd) return;
+  if (!hasStart || !hasEnd) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Informe tanto o início quanto o término da linha de base.",
+      path: ["baselineEndDate"],
+    });
+    return;
+  }
+  if (item.baselineStartDate! > item.baselineEndDate!) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "O término da linha de base deve ser igual ou posterior ao início.",
+      path: ["baselineEndDate"],
+    });
+  }
+}
 
 function validatePertEstimates(
   item: {
@@ -75,8 +101,15 @@ function validatePertEstimates(
 
 export const createTaskSchema = task.refine(dateRange, invalidRange).superRefine(validatePertEstimates);
 export const editTaskSchema = task
-  .extend({ id, revision, status: z.nativeEnum(TaskStatus) })
+  .extend({
+    id,
+    revision,
+    status: z.nativeEnum(TaskStatus),
+    baselineStartDate: day.optional(),
+    baselineEndDate: day.optional(),
+  })
   .refine(dateRange, invalidRange)
+  .superRefine(validateBaselineRange)
   .superRefine(validatePertEstimates);
 export const deleteTaskSchema = z.object({ id, teamId: id }).strict();
 export const updateMyTaskStatusSchema = z.object({
