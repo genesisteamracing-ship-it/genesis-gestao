@@ -39,6 +39,7 @@ import { RiskTable } from "./risk-table";
 
 interface RisksViewProps {
   season: string;
+  teamName?: string;
   initialItems?: RiskItemDTO[];
   initialMembers?: RiskTeamMemberOption[];
   initialCanEdit?: boolean;
@@ -60,6 +61,7 @@ const SECTORS = Object.entries(DELIVERY_GROUP_SHORT_LABELS);
 
 export function RisksView({
   season,
+  teamName,
   initialItems,
   initialMembers,
   initialCanEdit = true,
@@ -301,6 +303,8 @@ export function RisksView({
           <RiskTable
             items={filteredItems}
             canEdit={canEdit}
+            teamName={teamName}
+            seasonLabel={season}
             onEdit={openEditForm}
             onReview={(item) => void openReviewModal(item)}
             onDelete={(item) => setPendingDelete(item)}

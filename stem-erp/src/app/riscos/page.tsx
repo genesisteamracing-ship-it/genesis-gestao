@@ -30,6 +30,7 @@ export default async function RiscosPage() {
     >
       <RisksView
         season={season}
+        teamName={activeTeam.name}
         initialItems={initialData.data?.items}
         initialMembers={initialData.data?.members}
         initialCanEdit={initialData.data?.canEdit ?? user.role !== "AUDITOR"}

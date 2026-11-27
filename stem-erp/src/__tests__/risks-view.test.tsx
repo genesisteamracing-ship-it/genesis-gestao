@@ -155,6 +155,9 @@ test("RisksView renders Success state with charts, required table columns and op
   assert.ok(screen.getByText("Falha no corte CNC do chassi"));
   assert.ok(screen.getByText("Acompanhar lote 2"));
 
+  // PDF export button above table
+  assert.ok(screen.getByRole("button", { name: /Relatório PDF/i }));
+
   // Open create dialog
   fireEvent.click(screen.getByRole("button", { name: /Novo Risco/i }));
   assert.ok(screen.getByRole("dialog"));

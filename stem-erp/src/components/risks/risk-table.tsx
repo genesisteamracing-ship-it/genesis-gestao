@@ -13,7 +13,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  FileText,
   History,
+  Loader2,
   Pencil,
   Settings,
   Trash2,
@@ -44,11 +46,14 @@ import {
   RISK_PROBABILITY_LABELS,
   RISK_STATUS_LABELS,
 } from "@/lib/risk-matrix";
+import { useRisksPdfExport } from "@/hooks/use-risks-pdf-export";
 import type { RiskItemDTO } from "@/types/risks";
 
 interface RiskTableProps {
   items: RiskItemDTO[];
   canEdit: boolean;
+  teamName?: string;
+  seasonLabel?: string;
   onEdit: (item: RiskItemDTO) => void;
   onReview: (item: RiskItemDTO) => void;
   onDelete: (item: RiskItemDTO) => void;
@@ -114,11 +119,18 @@ const CONSEQUENCE_TONE_MAP: Record<
 export function RiskTable({
   items,
   canEdit,
+  teamName,
+  seasonLabel,
   onEdit,
   onReview,
   onDelete,
 }: RiskTableProps) {
   const styles = tableStyles();
+  const { isExportingPdf, handleExportPdf } = useRisksPdfExport({
+    items,
+    teamName,
+    seasonLabel,
+  });
 
   const columns = React.useMemo<ColumnDef<RiskItemDTO>[]>(
     () => [
@@ -300,6 +312,26 @@ export function RiskTable({
 
   return (
     <div className={styles.wrapper()}>
+      <div className="flex flex-col items-stretch justify-between gap-2 sm:flex-row sm:items-center">
+        <h3 className="text-sm font-semibold text-foreground">
+          Registros de Riscos & Oportunidades
+        </h3>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleExportPdf}
+          disabled={isExportingPdf || totalFiltered === 0}
+          className="h-10 w-full gap-2 rounded-xl border-border bg-card px-4 font-semibold text-foreground hover:bg-muted sm:w-auto"
+        >
+          {isExportingPdf ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileText className="h-4 w-4" />
+          )}
+          <span>{isExportingPdf ? "Exportando..." : "Relatório PDF"}</span>
+        </Button>
+      </div>
+
       <div className={styles.card()}>
         <div className={styles.scroll()}>
           <Table>
