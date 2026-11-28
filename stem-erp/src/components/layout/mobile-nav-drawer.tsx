@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
+  CalendarCheck2,
   ChevronDown,
   FolderGit2,
   Layers,
@@ -39,6 +40,7 @@ import {
   DOCUMENTS_SUB_ITEMS,
   TEAM_SUB_ITEMS,
 } from "@/components/layout/app-sidebar";
+import { canAccessTrainingAttendance } from "@/lib/attendance-permissions";
 import { useSidebar } from "@/providers/sidebar-provider";
 import { sidebarItemStyles } from "./sidebar-item-styles";
 import { TaskNavGroup } from "./task-nav-group";
@@ -94,6 +96,9 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
   const [isEquipeOpen, setIsEquipeOpen] = React.useState<boolean>(false);
+  const hasTeamAccess = Boolean(permissions.team || isSuperAdmin);
+  const hasStandaloneAttendanceAccess =
+    !hasTeamAccess && canAccessTrainingAttendance(currentUser);
 
   const searchParams = useSearchParams();
   const currentTab = searchParams ? searchParams.get("tab") : null;
@@ -354,8 +359,23 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
             </Link>
           )}
 
+          {/* Módulo: Presença nos Treinos (Acesso direto para Gestores) */}
+          {hasStandaloneAttendanceAccess && (
+            <Link
+              href="/presenca"
+              onClick={() => setIsMobileOpen(false)}
+              className={sidebarItemStyles({
+                isActive:
+                  pathname === "/presenca" || pathname.startsWith("/presenca/"),
+              })}
+            >
+              <CalendarCheck2 className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">Presença nos Treinos</span>
+            </Link>
+          )}
+
           {/* Grupo: Equipe & Acessos */}
-          {(permissions.team || isSuperAdmin) && (
+          {hasTeamAccess && (
             <div className="space-y-1">
               <button
                 type="button"

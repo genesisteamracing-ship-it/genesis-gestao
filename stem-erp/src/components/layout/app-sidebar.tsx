@@ -25,6 +25,7 @@ import {
   Wallet,
 } from "lucide-react";
 import type { AuthenticatedUserDTO } from "@/types/auth";
+import { canAccessTrainingAttendance } from "@/lib/attendance-permissions";
 import { useSidebar } from "@/providers/sidebar-provider";
 
 import { sidebarItemStyles } from "./sidebar-item-styles";
@@ -167,6 +168,9 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
   const [isEquipeOpen, setIsEquipeOpen] = React.useState<boolean>(false);
+  const hasTeamAccess = Boolean(permissions.team || isSuperAdmin);
+  const hasStandaloneAttendanceAccess =
+    !hasTeamAccess && canAccessTrainingAttendance(currentUser);
 
   return (
     <aside
@@ -453,8 +457,30 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
             </div>
           )}
 
+          {/* Módulo: Presença nos Treinos (Acesso direto para Gestores) */}
+          {hasStandaloneAttendanceAccess && (
+            <div className="relative px-5">
+              {(pathname === "/presenca" || pathname.startsWith("/presenca/")) && (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-md bg-primary"
+                />
+              )}
+              <Link
+                href="/presenca"
+                className={sidebarItemStyles({
+                  isActive:
+                    pathname === "/presenca" || pathname.startsWith("/presenca/"),
+                })}
+              >
+                <CalendarCheck2 className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">Presença nos Treinos</span>
+              </Link>
+            </div>
+          )}
+
           {/* Módulo: Equipe & Acessos */}
-          {(permissions.team || isSuperAdmin) && (
+          {hasTeamAccess && (
             <div className="relative px-5">
               {isEquipeRouteActive && !isEquipeOpen && (
                 <span

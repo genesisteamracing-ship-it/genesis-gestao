@@ -37,6 +37,7 @@ import {
   getFirstAllowedRoute,
   SYSTEM_MODULES_META,
 } from "@/lib/permissions";
+import { canAccessTrainingAttendance } from "@/lib/attendance-permissions";
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutos
@@ -966,6 +967,17 @@ export async function requireModuleAccess(
   const user = await requireAuthUser();
 
   if (!user.permissions[moduleKey]) {
+    const fallbackRoute = getFirstAllowedRoute(user.permissions);
+    redirect(fallbackRoute);
+  }
+
+  return user;
+}
+
+export async function requireTrainingAttendanceAccess(): Promise<AuthenticatedUserDTO> {
+  const user = await requireAuthUser();
+
+  if (!canAccessTrainingAttendance(user)) {
     const fallbackRoute = getFirstAllowedRoute(user.permissions);
     redirect(fallbackRoute);
   }
