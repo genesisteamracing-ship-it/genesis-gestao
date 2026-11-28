@@ -107,13 +107,22 @@ export function useResourcesTable(
 
     try {
       setIsExportingPdf(true);
-      const { filename } = await exportBudgetPlanningToPdf({
-        resources: filteredRows,
-        teamName: options?.teamName,
-        seasonLabel: options?.seasonLabel,
-        monthLabels: options?.monthLabels,
-      });
-      toast.success(`Planejamento orçamentário exportado: ${filename}`);
+      const { filename, translationFallback, translationFallbackReason } =
+        await exportBudgetPlanningToPdf({
+          resources: filteredRows,
+          teamName: options?.teamName,
+          seasonLabel: options?.seasonLabel,
+          monthLabels: options?.monthLabels,
+        });
+      if (translationFallback) {
+        toast.warning(
+          translationFallbackReason === "MISSING_API_KEY"
+            ? `PDF exported (${filename}), but GEMINI_API_KEY is not configured — some custom resource names remained in Portuguese.`
+            : `PDF exported (${filename}), but the translation API was temporarily unavailable for some custom resource names.`
+        );
+      } else {
+        toast.success(`Planejamento orçamentário exportado: ${filename}`);
+      }
     } catch {
       toast.error("Não foi possível gerar o relatório de orçamentos em PDF.");
     } finally {

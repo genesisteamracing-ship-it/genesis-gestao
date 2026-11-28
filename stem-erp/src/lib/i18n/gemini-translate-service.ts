@@ -1,6 +1,7 @@
 import type { AppLocale } from "./locale-types";
 
 export const DEFAULT_GEMINI_TRANSLATION_MODEL = "gemini-2.5-flash-lite";
+export const FALLBACK_GEMINI_TRANSLATION_MODEL = "gemini-2.0-flash";
 export const MAX_GEMINI_BATCH_SIZE = 60;
 const MAX_SERVER_CACHE_ENTRIES = 2000;
 const GEMINI_REQUEST_TIMEOUT_MS = 15000;
@@ -117,7 +118,8 @@ function buildTranslationPrompt(
     contextLine,
     "Rules:",
     "- Return ONLY a valid JSON object with the exact same numeric string keys.",
-    "- Keep proper nouns unchanged (people's names, team names, company/sponsor names).",
+    "- ALWAYS translate common nouns, materials, tools, equipment, services, categories, and resource names (even if single-word, lowercase, or missing Portuguese accents — e.g., 'aerografo' -> 'Airbrush', 'lixa' -> 'Sandpaper', 'tinta' -> 'Paint').",
+    "- Keep only actual proper nouns unchanged (people's names, team names, company/sponsor names).",
     "- Keep emails, URLs, NF-e codes, WBS codes (e.g. 1.1, 2.3.1), dates, and R$ currency values unchanged.",
     "- Preserve technical acronyms such as STEM, CAD, CNC, WBS, PERT, RACI, ROI, KPI, NF-e, PIX.",
     "- Keep translations concise so they fit cleanly in PDF table cells and cards.",
@@ -341,7 +343,7 @@ export async function translateTextsWithGemini({
 
   for (let i = 0; i < pendingUnique.length; i += MAX_GEMINI_BATCH_SIZE) {
     const chunk = pendingUnique.slice(i, i + MAX_GEMINI_BATCH_SIZE);
-    const chunkResult = await translateChunkWithGemini({
+    let chunkResult = await translateChunkWithGemini({
       chunk,
       sourceLocale,
       targetLocale,
@@ -350,6 +352,22 @@ export async function translateTextsWithGemini({
       model: resolvedModel,
       fetchImpl,
     });
+
+    if (
+      !chunkResult.ok &&
+      chunkResult.reason === "PROVIDER_ERROR" &&
+      resolvedModel !== FALLBACK_GEMINI_TRANSLATION_MODEL
+    ) {
+      chunkResult = await translateChunkWithGemini({
+        chunk,
+        sourceLocale,
+        targetLocale,
+        context,
+        apiKey: trimmedApiKey,
+        model: FALLBACK_GEMINI_TRANSLATION_MODEL,
+        fetchImpl,
+      });
+    }
 
     if (!chunkResult.ok) {
       hadFallback = true;

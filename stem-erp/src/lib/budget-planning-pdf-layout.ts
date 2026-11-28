@@ -148,10 +148,14 @@ export function buildBudgetPlanningData({
         ACQUISITION_STRATEGY_LABELS[item.acquisitionStrategy] ||
         item.acquisitionStrategy;
 
+    const allocatedLabel = isEn
+      ? translateUiText(item.allocatedTo, locale)
+      : item.allocatedTo;
+
     const secondaryParts = [
       sectorLabel,
       item.categoryName,
-      `${isEn ? "Owner" : "Resp."}: ${item.allocatedTo}`,
+      `${isEn ? "Owner" : "Resp."}: ${allocatedLabel}`,
       `${item.utilizationForecast}% ${isEn ? "usage" : "uso"}`,
     ];
 
