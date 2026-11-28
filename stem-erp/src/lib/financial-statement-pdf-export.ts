@@ -253,7 +253,7 @@ function drawRow(
   // Método Comprobatório
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.3);
-  doc.setTextColor(...STATEMENT_PDF_COLORS.textSecondary);
+  doc.setTextColor(...STATEMENT_PDF_COLORS.textPrimary);
   doc.text(row.methodLabel, COL_X.method, firstBaselineY, { align: "left" });
 
   // Código da NF-e
@@ -261,7 +261,7 @@ function drawRow(
   doc.setFontSize(6.9);
   doc.setTextColor(
     ...(row.nfeCode === "—"
-      ? STATEMENT_PDF_COLORS.textSecondary
+      ? STATEMENT_PDF_COLORS.textPrimary
       : STATEMENT_PDF_COLORS.brandNavy)
   );
   nfeLines.forEach((line, idx) => {
@@ -279,7 +279,7 @@ function drawRow(
   if (secondaryLines.length > 0) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.8);
-    doc.setTextColor(...STATEMENT_PDF_COLORS.textSecondary);
+    doc.setTextColor(...STATEMENT_PDF_COLORS.brandBlue);
     const secStartY = firstBaselineY + primaryLines.length * 3.5;
     secondaryLines.forEach((line, idx) => {
       doc.text(line, COL_X.history, secStartY + idx * 3.1, { align: "left" });
@@ -313,7 +313,7 @@ function drawPageFooter(
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  doc.setTextColor(...STATEMENT_PDF_COLORS.textSecondary);
+  doc.setTextColor(...STATEMENT_PDF_COLORS.brandNavy);
   doc.text(
     `${teamName} • Extrato Financeiro • Emitido em ${formattedDate}`,
     MARGIN_X,

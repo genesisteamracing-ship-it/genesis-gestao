@@ -23,17 +23,12 @@ export interface BudgetPlanningRow {
   resourcePrimary: string;
   resourceSecondary: string;
   plannedFormatted: string;
-  realizedFormatted: string;
-  isExceeded: boolean;
 }
 
 export interface BudgetPlanningData {
   teamDisplayName: string;
   scopeLabel: string;
   totalPlannedCents: number;
-  totalRealizedCents: number;
-  varianceCents: number;
-  executionPercent: number;
   resourceCount: number;
   rows: BudgetPlanningRow[];
 }
@@ -88,9 +83,6 @@ export function buildBudgetPlanningData({
       teamDisplayName,
       scopeLabel: seasonLabel?.trim() || "Sem recursos planejados",
       totalPlannedCents: 0,
-      totalRealizedCents: 0,
-      varianceCents: 0,
-      executionPercent: 0,
       resourceCount: 0,
       rows: [],
     };
@@ -108,9 +100,7 @@ export function buildBudgetPlanningData({
   });
 
   let totalPlannedCents = 0;
-  let totalRealizedCents = 0;
   let groupPlannedCents = 0;
-  let groupRealizedCents = 0;
   let minMonth = Number.POSITIVE_INFINITY;
   let maxMonth = Number.NEGATIVE_INFINITY;
   const rows: BudgetPlanningRow[] = [];
@@ -118,9 +108,7 @@ export function buildBudgetPlanningData({
   for (let i = 0; i < sorted.length; i += 1) {
     const item = sorted[i];
     totalPlannedCents += item.plannedAmountCents;
-    totalRealizedCents += item.realizedAmountCents;
     groupPlannedCents += item.plannedAmountCents;
-    groupRealizedCents += item.realizedAmountCents;
 
     if (item.plannedMonth < minMonth) minMonth = item.plannedMonth;
     if (item.plannedMonth > maxMonth) maxMonth = item.plannedMonth;
@@ -147,8 +135,6 @@ export function buildBudgetPlanningData({
       resourcePrimary: item.resourceName,
       resourceSecondary: secondaryParts.join(" • "),
       plannedFormatted: formatCurrencyBRL(item.plannedAmountCents),
-      realizedFormatted: formatCurrencyBRL(item.realizedAmountCents),
-      isExceeded: item.realizedAmountCents > item.plannedAmountCents,
     });
 
     const nextGroup =
@@ -162,11 +148,8 @@ export function buildBudgetPlanningData({
         resourcePrimary: `Subtotal • ${sectorLabel}`,
         resourceSecondary: "",
         plannedFormatted: formatCurrencyBRL(groupPlannedCents),
-        realizedFormatted: formatCurrencyBRL(groupRealizedCents),
-        isExceeded: groupRealizedCents > groupPlannedCents,
       });
       groupPlannedCents = 0;
-      groupRealizedCents = 0;
     }
   }
 
@@ -178,8 +161,6 @@ export function buildBudgetPlanningData({
     resourcePrimary: "T O T A L   O R Ç A D O",
     resourceSecondary: "",
     plannedFormatted: formatCurrencyBRL(totalPlannedCents),
-    realizedFormatted: formatCurrencyBRL(totalRealizedCents),
-    isExceeded: totalRealizedCents > totalPlannedCents,
   });
 
   const derivedPeriod =
@@ -188,19 +169,11 @@ export function buildBudgetPlanningData({
       : `${resolveMonthLabel(minMonth, monthLabels)} a ${resolveMonthLabel(maxMonth, monthLabels)}`;
 
   const scopeLabel = seasonLabel?.trim() || derivedPeriod;
-  const varianceCents = totalPlannedCents - totalRealizedCents;
-  const executionPercent =
-    totalPlannedCents > 0
-      ? Math.round((totalRealizedCents / totalPlannedCents) * 100)
-      : 0;
 
   return {
     teamDisplayName,
     scopeLabel,
     totalPlannedCents,
-    totalRealizedCents,
-    varianceCents,
-    executionPercent,
     resourceCount: sorted.length,
     rows,
   };

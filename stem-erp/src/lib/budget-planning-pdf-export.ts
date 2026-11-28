@@ -27,15 +27,14 @@ const COL_X = {
   code: MARGIN_X + 1.5,
   month: MARGIN_X + 21,
   strategy: MARGIN_X + 41,
-  resource: MARGIN_X + 67,
-  plannedRight: MARGIN_X + CONTENT_WIDTH - 29,
-  realizedRight: MARGIN_X + CONTENT_WIDTH - 1.5,
+  resource: MARGIN_X + 68,
+  plannedRight: MARGIN_X + CONTENT_WIDTH - 1.5,
 } as const;
 
 const COL_WIDTH = {
   code: 18,
-  strategy: 24,
-  resource: 64,
+  strategy: 25,
+  resource: 88,
 } as const;
 
 /**
@@ -95,7 +94,7 @@ function drawPageHeader(doc: jsPDF, data: BudgetPlanningData): number {
     align: "center",
   });
 
-  // Linha de metadados (Temporada, Orçado, Realizado, Total de recursos)
+  // Linha de metadados (Escopo, Total Orçado, Total de recursos)
   const metaY = bannerY + bannerH + 4.8;
   doc.setFontSize(7.8);
   doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
@@ -106,20 +105,12 @@ function drawPageHeader(doc: jsPDF, data: BudgetPlanningData): number {
   doc.text(data.scopeLabel, MARGIN_X + 12.5, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Orçado:", MARGIN_X + 64, metaY);
-  doc.setFont("helvetica", "normal");
-  doc.text(formatCurrencyBRL(data.totalPlannedCents), MARGIN_X + 76.5, metaY);
+  doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
+  doc.text("Total Orçado:", MARGIN_X + 76, metaY);
+  doc.setTextColor(...BUDGET_PDF_COLORS.brandNavy);
+  doc.text(formatCurrencyBRL(data.totalPlannedCents), MARGIN_X + 97, metaY);
 
-  doc.setFont("helvetica", "bold");
-  doc.text("Realizado:", MARGIN_X + 111, metaY);
-  doc.setFont("helvetica", "normal");
-  doc.text(
-    `${formatCurrencyBRL(data.totalRealizedCents)} (${data.executionPercent}%)`,
-    MARGIN_X + 127,
-    metaY
-  );
-
-  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
   doc.text(
     `${data.resourceCount} ${data.resourceCount === 1 ? "recurso" : "recursos"}`,
     MARGIN_X + CONTENT_WIDTH,
@@ -140,7 +131,7 @@ function drawPageHeader(doc: jsPDF, data: BudgetPlanningData): number {
     align: "left",
   });
 
-  // Cabeçalho das colunas
+  // Cabeçalho das colunas (apenas Orçado, sem Realizado)
   const colHeaderY = sectionY + sectionH + 4.4;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.8);
@@ -151,7 +142,6 @@ function drawPageHeader(doc: jsPDF, data: BudgetPlanningData): number {
   doc.text("Aquisição", COL_X.strategy, colHeaderY, { align: "left" });
   doc.text("Recurso", COL_X.resource, colHeaderY, { align: "left" });
   doc.text("Orçado", COL_X.plannedRight, colHeaderY, { align: "right" });
-  doc.text("Realizado", COL_X.realizedRight, colHeaderY, { align: "right" });
 
   // Linha divisória abaixo do cabeçalho das colunas
   const headerBottomY = colHeaderY + 1.8;
@@ -265,15 +255,6 @@ function drawRow(
     doc.text(row.plannedFormatted, COL_X.plannedRight, baselineY, {
       align: "right",
     });
-
-    doc.setTextColor(
-      ...(row.isExceeded
-        ? BUDGET_PDF_COLORS.negativeValue
-        : BUDGET_PDF_COLORS.positiveValue)
-    );
-    doc.text(row.realizedFormatted, COL_X.realizedRight, baselineY, {
-      align: "right",
-    });
     return;
   }
 
@@ -293,17 +274,17 @@ function drawRow(
   doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
   doc.text(row.monthLabel, COL_X.month, firstBaselineY, { align: "left" });
 
-  // Estratégia de aquisição
+  // Estratégia de aquisição (fonte preta para alta legibilidade)
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  doc.setTextColor(...BUDGET_PDF_COLORS.textSecondary);
+  doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
   strategyLines.forEach((line, idx) => {
     doc.text(line, COL_X.strategy, firstBaselineY + idx * 3.2, {
       align: "left",
     });
   });
 
-  // Recurso (Nome + Setor/Categoria/Responsável)
+  // Recurso (Título em preto e subtítulo em azul Gênesis)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.6);
   doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
@@ -316,7 +297,7 @@ function drawRow(
   if (secondaryLines.length > 0) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.8);
-    doc.setTextColor(...BUDGET_PDF_COLORS.textSecondary);
+    doc.setTextColor(...BUDGET_PDF_COLORS.brandBlue);
     const secStartY = firstBaselineY + primaryLines.length * 3.5;
     secondaryLines.forEach((line, idx) => {
       doc.text(line, COL_X.resource, secStartY + idx * 3.1, { align: "left" });
@@ -328,18 +309,6 @@ function drawRow(
   doc.setFontSize(7.5);
   doc.setTextColor(...BUDGET_PDF_COLORS.positiveValue);
   doc.text(row.plannedFormatted, COL_X.plannedRight, firstBaselineY, {
-    align: "right",
-  });
-
-  // Valor Realizado
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(
-    ...(row.isExceeded
-      ? BUDGET_PDF_COLORS.negativeValue
-      : BUDGET_PDF_COLORS.textPrimary)
-  );
-  doc.text(row.realizedFormatted, COL_X.realizedRight, firstBaselineY, {
     align: "right",
   });
 }
@@ -360,7 +329,7 @@ function drawPageFooter(
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  doc.setTextColor(...BUDGET_PDF_COLORS.textSecondary);
+  doc.setTextColor(...BUDGET_PDF_COLORS.brandNavy);
   doc.text(
     `${teamName} • Planejamento Orçamentário • Emitido em ${formattedDate}`,
     MARGIN_X,
@@ -377,7 +346,7 @@ function drawPageFooter(
 
 /**
  * Gera e dispara o download do Relatório de Planejamento Orçamentário em PDF (A4 Retrato),
- * seguindo exatamente a identidade visual Azul e Amarelo da Equipe Gênesis do Livro Caixa.
+ * exibindo exclusivamente os valores orçados com alto contraste (preto e azul Gênesis).
  */
 export async function exportBudgetPlanningToPdf({
   resources,

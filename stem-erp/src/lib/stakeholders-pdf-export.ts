@@ -284,7 +284,7 @@ function drawQuadrantsPage(
     if (items.length === 0) {
       doc.setFont("helvetica", "italic");
       doc.setFontSize(7.6);
-      doc.setTextColor(100, 116, 139);
+      doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandNavy);
       doc.text(
         "Nenhum stakeholder neste quadrante",
         rect.x + rect.w / 2,
@@ -348,7 +348,7 @@ function drawQuadrantsPage(
       // Engajamento discreto à direita (texto puro, sem emoji)
       doc.setFont("helvetica", "normal");
       doc.setFontSize(5.8);
-      doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textSecondary);
+      doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandNavy);
       doc.text(
         truncateToWidth(doc, card.engagementLabel, engagementReserve),
         cx + cardW - 2.2,
@@ -359,7 +359,7 @@ function drawQuadrantsPage(
       // Subtítulo (Organização / Cargo)
       doc.setFont("helvetica", "normal");
       doc.setFontSize(6.1);
-      doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textSecondary);
+      doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandBlue);
       doc.text(
         truncateToWidth(doc, card.subtitle, maxSubW),
         textX,
@@ -386,7 +386,7 @@ function drawPageFooter(
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.0);
-  doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textSecondary);
+  doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandNavy);
   doc.text(
     `${teamName} • Matriz de Stakeholders (Poder × Interesse) • Emitido em ${formattedDate}`,
     MARGIN_X,
