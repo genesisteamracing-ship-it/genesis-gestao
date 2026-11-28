@@ -9,15 +9,20 @@ import {
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
+import { CalendarCheck2, Search } from "lucide-react";
+import { AttendancePaginationFooter } from "@/components/attendance/attendance-pagination-footer";
+import { AttendanceRowActions } from "@/components/attendance/attendance-row-actions";
+import { useAttendanceReports } from "@/hooks/use-attendance-reports";
 import {
-  CalendarCheck2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Search,
-} from "lucide-react";
-import { DELIVERY_GROUP_SHORT_LABELS } from "@/lib/constants";
+  buildAttendanceAnalytics,
+  formatIsoDateBR,
+  formatTimeBR,
+  getAttendanceSectorLabel,
+} from "@/lib/training-attendance";
+import type {
+  AttendanceTrackedMemberDTO,
+  TrainingAttendanceRecordDTO,
+} from "@/types/attendance";
 import type { OfficeAttendanceDTO } from "@/types/office";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,63 +39,68 @@ import {
 interface OfficeAttendanceTableProps {
   attendances: OfficeAttendanceDTO[];
   todayIso?: string;
-}
-
-function formatDateBR(isoDate: string): string {
-  const [year, month, day] = isoDate.split("-");
-  if (!year || !month || !day) return isoDate;
-  return `${day}/${month}/${year}`;
-}
-
-function formatTimeBR(isoTimestamp: string): string {
-  try {
-    return new Date(isoTimestamp).toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "--:--";
-  }
+  members?: AttendanceTrackedMemberDTO[];
+  teamName?: string;
+  seasonLabel?: string;
 }
 
 export function OfficeAttendanceTable({
   attendances,
   todayIso,
+  members,
+  teamName,
+  seasonLabel,
 }: OfficeAttendanceTableProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedDate, setSelectedDate] = React.useState<string>("ALL");
 
-  const availableDates = React.useMemo(() => {
-    const unique = Array.from(new Set(attendances.map((a) => a.date)));
-    return unique.sort((a, b) => b.localeCompare(a));
-  }, [attendances]);
+  const analytics = React.useMemo(
+    () =>
+      buildAttendanceAnalytics({
+        members,
+        attendances,
+        period: "ALL",
+        todayIso,
+      }),
+    [attendances, members, todayIso]
+  );
 
-  const filteredAttendances = React.useMemo(() => {
+  const reports = useAttendanceReports({
+    analytics,
+    allMembers: members ?? [],
+    rawAttendances: attendances,
+    currentPeriod: "ALL",
+    todayIso,
+    teamName,
+    seasonLabel,
+  });
+
+  const availableDates = analytics.trainingDates;
+
+  const filteredRecords = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return attendances.filter((item) => {
+    return analytics.records.filter((item) => {
       if (selectedDate !== "ALL" && item.date !== selectedDate) {
         return false;
       }
       if (!q) return true;
-      const sector = item.deliveryGroup
-        ? DELIVERY_GROUP_SHORT_LABELS[item.deliveryGroup].toLowerCase()
-        : "";
+      const sector = getAttendanceSectorLabel(item.deliveryGroup).toLowerCase();
       return (
         item.userName.toLowerCase().includes(q) ||
         sector.includes(q) ||
-        formatDateBR(item.date).includes(q)
+        formatIsoDateBR(item.date).includes(q)
       );
     });
-  }, [attendances, searchQuery, selectedDate]);
+  }, [analytics.records, searchQuery, selectedDate]);
 
-  const columns = React.useMemo<ColumnDef<OfficeAttendanceDTO>[]>(
+  const columns = React.useMemo<ColumnDef<TrainingAttendanceRecordDTO>[]>(
     () => [
       {
         accessorKey: "date",
         header: "DATA",
         cell: ({ row }) => (
           <span className="font-mono text-xs font-semibold text-foreground whitespace-nowrap">
-            {formatDateBR(row.original.date)}
+            {formatIsoDateBR(row.original.date)}
           </span>
         ),
       },
@@ -115,9 +125,7 @@ export function OfficeAttendanceTable({
         header: "SETOR",
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
-            {row.original.deliveryGroup
-              ? DELIVERY_GROUP_SHORT_LABELS[row.original.deliveryGroup]
-              : "Geral"}
+            {getAttendanceSectorLabel(row.original.deliveryGroup)}
           </span>
         ),
       },
@@ -133,19 +141,43 @@ export function OfficeAttendanceTable({
       {
         id: "status",
         header: "STATUS",
-        cell: () => (
-          <Badge variant="success" className="text-[11px] font-semibold">
-            Presente
-          </Badge>
+        cell: ({ row }) =>
+          row.original.status === "PRESENT" ? (
+            <Badge variant="success" className="text-[11px] font-semibold">
+              Presente
+            </Badge>
+          ) : (
+            <Badge variant="destructive" className="text-[11px] font-semibold">
+              Falta
+            </Badge>
+          ),
+      },
+      {
+        id: "actions",
+        header: () => <span className="block text-right">AÇÕES</span>,
+        cell: ({ row }) => (
+          <div className="flex justify-end">
+            <AttendanceRowActions
+              memberId={row.original.userId}
+              memberName={row.original.userName}
+              isExporting={reports.exportingMemberId === row.original.userId}
+              onExportIndividualPdf={(memberId) =>
+                void reports.handleExportIndividualPdf(memberId)
+              }
+              onExportIndividualCsv={(memberId) =>
+                void reports.handleExportIndividualCsv(memberId)
+              }
+            />
+          </div>
         ),
       },
     ],
-    []
+    [reports]
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
-    data: filteredAttendances,
+    data: filteredRecords,
     columns,
     initialState: {
       pagination: {
@@ -157,13 +189,6 @@ export function OfficeAttendanceTable({
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
-
-  const totalFiltered = filteredAttendances.length;
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
-  const startRow = totalFiltered === 0 ? 0 : pageIndex * pageSize + 1;
-  const endRow = Math.min((pageIndex + 1) * pageSize, totalFiltered);
-  const formattedEndRow = endRow > 0 && endRow < 10 ? `0${endRow}` : String(endRow);
 
   const todayCount = React.useMemo(
     () =>
@@ -219,7 +244,7 @@ export function OfficeAttendanceTable({
             <option value="ALL">Todas as datas</option>
             {availableDates.map((iso) => (
               <option key={iso} value={iso}>
-                {formatDateBR(iso)}
+                {formatIsoDateBR(iso)}
               </option>
             ))}
           </select>
@@ -276,61 +301,19 @@ export function OfficeAttendanceTable({
           </Table>
         </div>
 
-        {/* Rodapé Padrão de Paginação (Fixa em 10 itens, 4 controles) */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 pt-1">
-          <p className="text-xs sm:text-sm font-medium text-muted-foreground text-center sm:text-left">
-            Mostrando {startRow}-{formattedEndRow} de {totalFiltered} presenças
-          </p>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
-              Página {table.getState().pagination.pageIndex + 1} de{" "}
-              {Math.max(1, table.getPageCount())}
-            </span>
-            <div className="inline-flex items-center overflow-hidden rounded-lg border border-border bg-card shadow-2xs">
-              <button
-                type="button"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-                aria-label="Primeira página"
-                title="Primeira página"
-                className="flex h-8 w-8 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                aria-label="Página anterior"
-                title="Página anterior"
-                className="flex h-8 w-8 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                aria-label="Próxima página"
-                title="Próxima página"
-                className="flex h-8 w-8 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-                aria-label="Última página"
-                title="Última página"
-                className="flex h-8 w-8 items-center justify-center text-foreground transition-colors hover:bg-muted disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+        <AttendancePaginationFooter
+          totalFiltered={filteredRecords.length}
+          entityLabel="presenças"
+          pageIndex={table.getState().pagination.pageIndex}
+          pageSize={table.getState().pagination.pageSize}
+          pageCount={table.getPageCount()}
+          canPreviousPage={table.getCanPreviousPage()}
+          canNextPage={table.getCanNextPage()}
+          onFirstPage={() => table.setPageIndex(0)}
+          onPreviousPage={() => table.previousPage()}
+          onNextPage={() => table.nextPage()}
+          onLastPage={() => table.setPageIndex(table.getPageCount() - 1)}
+        />
       </CardContent>
     </Card>
   );

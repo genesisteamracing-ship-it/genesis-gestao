@@ -8,6 +8,7 @@ import {
   TEAM_SUB_ITEMS,
 } from "../app-sidebar";
 import { sidebarItemStyles } from "../sidebar-item-styles";
+import { canAccessTrainingAttendance } from "@/lib/attendance-permissions";
 import { getTaskView, TASK_VIEWS } from "@/lib/task-navigation";
 
 describe("Sidebar Submodules Contracts", () => {
@@ -118,5 +119,26 @@ describe("Sidebar Module Collapsible Logic & State Contracts", () => {
       isActive: isRouteActive && !true,
     });
     assert.ok(!stylesOpenedAndActive.includes("bg-primary"));
+  });
+
+  it("deve exibir atalho direto de Presença nos Treinos para GESTOR sem permissão administrativa team", () => {
+    const gestorUser = {
+      role: "TEAM_LEAD" as const,
+      deliveryGroup: "PROJECT_MANAGEMENT" as const,
+      jobTitle: "Gestora",
+      permissions: {
+        finance: true,
+        roi: true,
+        communication: true,
+        team: false,
+      },
+    };
+
+    const hasTeamAccess = Boolean(gestorUser.permissions.team);
+    const hasStandaloneAttendanceAccess =
+      !hasTeamAccess && canAccessTrainingAttendance(gestorUser);
+
+    assert.equal(hasTeamAccess, false);
+    assert.equal(hasStandaloneAttendanceAccess, true);
   });
 });

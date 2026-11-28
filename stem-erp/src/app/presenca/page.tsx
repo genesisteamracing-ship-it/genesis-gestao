@@ -1,6 +1,6 @@
+import { TrainingAttendanceView } from "@/components/attendance/training-attendance-view";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { OfficeAttendanceTable } from "@/components/office/office-attendance-table";
-import { requireModuleAccess } from "@/services/auth-service";
+import { requireTrainingAttendanceAccess } from "@/services/auth-service";
 import {
   getSeasonMonthsFromTeam,
   resolveActiveTeam,
@@ -10,7 +10,7 @@ import { getOfficeSnapshotService } from "@/services/office-service";
 export const dynamic = "force-dynamic";
 
 export default async function PresencaTreinosPage() {
-  const user = await requireModuleAccess("team");
+  const user = await requireTrainingAttendanceAccess();
   const { activeTeam, availableTeams } = await resolveActiveTeam(user);
   const snapshot = await getOfficeSnapshotService(
     user,
@@ -21,7 +21,7 @@ export default async function PresencaTreinosPage() {
   return (
     <DashboardShell
       title="Presença nos Treinos"
-      subtitle="Acompanhe o registro diário de presença dos integrantes nos treinos da equipe."
+      subtitle="Acompanhe presenças, faltas automáticas, dashboards de frequência e relatórios individuais nos treinos da equipe."
       currentUser={user}
       activeTeam={activeTeam}
       availableTeams={availableTeams}
@@ -31,9 +31,12 @@ export default async function PresencaTreinosPage() {
         activeTeam ? getSeasonMonthsFromTeam(activeTeam) : undefined
       }
     >
-      <OfficeAttendanceTable
+      <TrainingAttendanceView
+        members={snapshot.members}
         attendances={snapshot.attendances ?? []}
         todayIso={snapshot.todayIso}
+        teamName={activeTeam.name}
+        seasonLabel={activeTeam.season?.label}
       />
     </DashboardShell>
   );
