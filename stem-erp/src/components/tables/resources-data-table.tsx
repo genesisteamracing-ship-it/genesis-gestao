@@ -14,10 +14,13 @@ import {
   RotateCcw,
   Search,
 } from "lucide-react";
+import { useLocale } from "@/components/i18n/locale-provider";
+import { useDynamicTranslations } from "@/hooks/use-dynamic-translations";
 import {
   ACQUISITION_STRATEGY_LABELS,
   DELIVERY_GROUP_LABELS,
 } from "@/lib/constants";
+import { translateUiText } from "@/lib/i18n/translations";
 import {
   acquisitionStrategyValues,
   deliveryGroupValues,
@@ -88,8 +91,25 @@ export function ResourcesDataTable({
   seasonLabel,
   isLoading = false,
 }: ResourcesDataTableProps) {
+  const { locale } = useLocale();
+  const isEn = locale === "en-US";
   const seasonMonths = useSeasonMonths();
   const getMonthLabel = useSeasonMonthLabel();
+
+  const dynamicResourceTexts = React.useMemo(
+    () =>
+      resources.flatMap((item) => [
+        item.resourceName,
+        item.categoryName,
+        item.allocatedTo,
+      ]),
+    [resources]
+  );
+
+  const { translate: translateResourceText } = useDynamicTranslations(
+    dynamicResourceTexts,
+    "Budget Planning table (planned resources, categories, and owners)"
+  );
 
   const monthLabels = React.useMemo<Record<number, string>>(
     () =>
@@ -110,29 +130,33 @@ export function ResourcesDataTable({
       },
       {
         accessorKey: "resourceName",
-        header: "RECURSO",
+        header: isEn ? "RESOURCE" : "RECURSO",
         cell: ({ row }) => (
           <div className="space-y-0.5">
             <div className="font-semibold text-foreground">
-              {row.original.resourceName}
+              {translateResourceText(row.original.resourceName)}
             </div>
             <div className="text-xs text-muted-foreground">
-              Responsável: {row.original.allocatedTo}
+              {isEn ? "Owner" : "Responsável"}:{" "}
+              {translateResourceText(row.original.allocatedTo)}
             </div>
           </div>
         ),
       },
       {
         accessorKey: "deliveryGroup",
-        header: "GRUPO & CATEGORIA",
+        header: isEn ? "GROUP & CATEGORY" : "GRUPO & CATEGORIA",
         filterFn: "equalsString",
         cell: ({ row }) => (
           <div className="space-y-0.5">
             <div className="font-medium text-foreground">
-              {DELIVERY_GROUP_LABELS[row.original.deliveryGroup]}
+              {translateUiText(
+                DELIVERY_GROUP_LABELS[row.original.deliveryGroup],
+                locale
+              )}
             </div>
             <div className="text-xs text-muted-foreground">
-              {row.original.categoryName}
+              {translateResourceText(row.original.categoryName)}
             </div>
           </div>
         ),
@@ -140,13 +164,13 @@ export function ResourcesDataTable({
       {
         id: "plannedMonth",
         accessorFn: (row) => String(row.plannedMonth),
-        header: "CRONOGRAMA",
+        header: isEn ? "SCHEDULE" : "CRONOGRAMA",
         filterFn: "equalsString",
         cell: ({ row }) => (
           <div className="text-sm text-foreground">
             {getMonthLabel(row.original.plannedMonth)}{" "}
             <span className="text-xs text-muted-foreground">
-              ({row.original.utilizationForecast}% uso)
+              ({row.original.utilizationForecast}% {isEn ? "usage" : "uso"})
             </span>
           </div>
         ),
@@ -206,7 +230,7 @@ export function ResourcesDataTable({
         ),
       },
     ],
-    [categories, teamMembers, getMonthLabel]
+    [categories, teamMembers, getMonthLabel, isEn, locale, translateResourceText]
   );
 
   const {
