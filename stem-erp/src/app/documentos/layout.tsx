@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Documentos & WBS | Genesis Gestão",
+  title: "Documentos & WBS",
   description:
     "Estrutura Analítica do Projeto (WBS / EAP) e Governança de Escopo para escuderias STEM Racing.",
 };

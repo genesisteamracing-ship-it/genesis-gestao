@@ -42,6 +42,7 @@ import {
 import { useSidebar } from "@/providers/sidebar-provider";
 import { sidebarItemStyles } from "./sidebar-item-styles";
 import { TaskNavGroup } from "./task-nav-group";
+import { PlatformBrand } from "@/components/layout/platform-brand";
 
 interface MobileNavDrawerProps {
   currentUser: AuthenticatedUserDTO;
@@ -117,10 +118,9 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
             <Link
               href="/dashboard"
               onClick={() => setIsMobileOpen(false)}
-              className="text-lg font-extrabold tracking-tight"
+              className="inline-flex items-center"
             >
-              <span className="text-primary">Genesis</span>
-              <span className="text-foreground">Gestão</span>
+              <PlatformBrand size="md" />
             </Link>
           </SheetTitle>
         </SheetHeader>
