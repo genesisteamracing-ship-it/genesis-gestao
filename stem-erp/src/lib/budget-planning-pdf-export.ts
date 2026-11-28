@@ -430,6 +430,7 @@ export async function exportBudgetPlanningToPdf({
     const dynamicTexts: Array<string | undefined> = resources.flatMap((r) => [
       r.resourceName,
       r.categoryName,
+      r.allocatedTo,
     ]);
     if (seasonLabel) {
       dynamicTexts.push(seasonLabel);
@@ -437,7 +438,7 @@ export async function exportBudgetPlanningToPdf({
 
     const translated = await translatePdfTexts(dynamicTexts, {
       locale: resolvedLocale,
-      context: "Budget Planning PDF (planned resources and budget categories)",
+      context: "Budget Planning PDF (planned resources, budget categories, and owners)",
     });
     translationFallback = translated.usedFallback;
     translationFallbackReason = translated.reason;
@@ -451,6 +452,11 @@ export async function exportBudgetPlanningToPdf({
       ),
       categoryName: resolveTranslatedPdfText(
         r.categoryName,
+        translated.translations,
+        resolvedLocale
+      ),
+      allocatedTo: resolveTranslatedPdfText(
+        r.allocatedTo,
         translated.translations,
         resolvedLocale
       ),

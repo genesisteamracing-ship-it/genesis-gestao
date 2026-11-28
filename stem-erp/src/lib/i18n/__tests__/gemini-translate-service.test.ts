@@ -49,7 +49,7 @@ describe("gemini-translate-service", () => {
     let calls = 0;
     const mockFetch: typeof fetch = async (url, init) => {
       calls += 1;
-      assert.match(String(url), /gemini-2\.5-flash-lite:generateContent$/);
+      assert.match(String(url), /gemini-3\.5-flash-lite:generateContent$/);
       const headers = init?.headers as Record<string, string>;
       assert.equal(headers["x-goog-api-key"], "test-key-123");
 
