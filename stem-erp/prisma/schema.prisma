@@ -97,6 +97,7 @@ model Team {
   riskItems          RiskItem[]
   riskReviews        RiskReview[]
   trainingAttendances TrainingAttendance[]
+  ganttMilestones    GanttMilestone[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -199,6 +200,7 @@ model User {
   createdRisks        RiskItem[]      @relation("RiskCreator")
   riskReviews         RiskReview[]
   trainingAttendances TrainingAttendance[]
+  createdGanttMilestones GanttMilestone[] @relation("GanttMilestoneCreator")
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
@@ -512,6 +514,8 @@ model Task {
   outgoing      TaskDependency[] @relation("TaskPredecessor")
   incoming      TaskDependency[] @relation("TaskSuccessor")
   riskSteps     RiskPathStep[]
+  milestoneLinks  MilestoneTask[]
+  milestoneChecks MilestoneCriterionCheck[]
 
   @@unique([teamId, id])
   @@index([teamId, deliveryGroup])
@@ -568,6 +572,80 @@ model RiskPathStep {
 
   @@id([teamId, pathId, position])
   @@unique([teamId, pathId, taskId])
+}
+
+enum MilestoneCheckStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model GanttMilestone {
+  id            String                    @id @default(cuid())
+  teamId        String
+  team          Team                      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  targetDate    DateTime                  @db.Date
+  creatorKey    String
+  creatorName   String
+  creatorUserId String?
+  creator       User?                     @relation("GanttMilestoneCreator", fields: [creatorUserId], references: [id], onDelete: SetNull)
+  revision      Int                       @default(0)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  criteria      MilestoneCriterion[]
+  tasks         MilestoneTask[]
+  checks        MilestoneCriterionCheck[]
+
+  @@unique([teamId, id])
+  @@index([teamId, targetDate])
+}
+
+model MilestoneCriterion {
+  id          String                    @id @default(cuid())
+  teamId      String
+  milestoneId String
+  milestone   GanttMilestone            @relation(fields: [teamId, milestoneId], references: [teamId, id], onDelete: Cascade)
+  title       String
+  sortOrder   Int                       @default(0)
+  createdAt   DateTime                  @default(now())
+  checks      MilestoneCriterionCheck[]
+
+  @@unique([teamId, id])
+  @@index([teamId, milestoneId, sortOrder])
+}
+
+model MilestoneTask {
+  teamId      String
+  milestoneId String
+  taskId      String
+  milestone   GanttMilestone @relation(fields: [teamId, milestoneId], references: [teamId, id], onDelete: Cascade)
+  task        Task           @relation(fields: [teamId, taskId], references: [teamId, id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+
+  @@id([teamId, milestoneId, taskId])
+  @@index([teamId, taskId])
+}
+
+model MilestoneCriterionCheck {
+  id            String               @id @default(cuid())
+  teamId        String
+  milestoneId   String
+  criterionId   String
+  taskId        String
+  milestone     GanttMilestone       @relation(fields: [teamId, milestoneId], references: [teamId, id], onDelete: Cascade)
+  criterion     MilestoneCriterion   @relation(fields: [teamId, criterionId], references: [teamId, id], onDelete: Cascade)
+  task          Task                 @relation(fields: [teamId, taskId], references: [teamId, id], onDelete: Cascade)
+  status        MilestoneCheckStatus @default(PENDING)
+  notes         String?
+  checkedByName String?
+  checkedAt     DateTime?
+  updatedAt     DateTime             @updatedAt
+
+  @@unique([teamId, milestoneId, criterionId, taskId])
+  @@index([teamId, milestoneId])
+  @@index([teamId, taskId])
 }
 
 // ============================================================================

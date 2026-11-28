@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { Check, Link2, Loader2, Trash2 } from "lucide-react";
+import { Check, Diamond, Link2, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
@@ -22,11 +22,13 @@ import {
   getTodayIsoLocal,
   resolveBaselineDates,
 } from "@/lib/task-gantt-metrics";
+import { evaluateMilestoneSummary } from "@/lib/task-milestone-metrics";
 import {
   createsCycle,
   dayLabel,
   edgeKey,
   formatTaskDate,
+  parseTaskDate,
   pathEdges,
   reorderItems,
   resizeTaskDates,
@@ -34,15 +36,25 @@ import {
   scheduleConflict,
   taskDay,
 } from "@/lib/task-schedule";
-import { TASK_STATUS_LABELS, type TaskEdge, type TaskRecord, type TaskRisk } from "@/types/tasks";
+import {
+  TASK_STATUS_LABELS,
+  type TaskEdge,
+  type TaskMilestoneRecord,
+  type TaskRecord,
+  type TaskRisk,
+} from "@/types/tasks";
 import { TaskGanttKpis } from "./task-gantt-kpis";
 import { TaskGanttLegend } from "./task-gantt-legend";
+import { TaskGanttMilestoneFormDialog } from "./task-gantt-milestone-form-dialog";
+import { TaskGanttMilestoneTrack } from "./task-gantt-milestone-track";
+import { TaskGanttMilestoneVerifyDialog } from "./task-gantt-milestone-verify-dialog";
+import { useGanttMilestones } from "./use-gantt-milestones";
 
 const ROW_HEIGHT = 64;
 const LABEL_WIDTH = 216;
 const ID_COLUMN_WIDTH = 44;
 
-const bar = tv({
+export const bar = tv({
   base: "relative z-10 flex h-full w-full items-center justify-between overflow-visible rounded-md border text-left text-xs font-semibold outline-offset-2 transition-all focus-visible:outline-2 shadow-2xs",
   variants: {
     signal: {
@@ -52,13 +64,39 @@ const bar = tv({
       COMPLETED: "border-success bg-success text-success-foreground",
       CANCELLED: "border-border bg-muted text-muted-foreground line-through opacity-75",
     },
+    critical: {
+      true: "border-destructive bg-destructive text-destructive-foreground",
+    },
     highlighted: { true: "border-primary ring-2 ring-primary" },
     isConnectingSource: { true: "border-primary ring-2 ring-primary shadow-sm" },
     isDropTargetValid: { true: "border-primary ring-2 ring-primary bg-primary/25 text-foreground shadow-sm" },
     isDropTargetInvalid: { true: "border-destructive ring-2 ring-destructive/80 bg-destructive/15 text-foreground" },
   },
+  compoundVariants: [
+    {
+      signal: "CANCELLED",
+      critical: true,
+      class: "border-border bg-muted text-muted-foreground",
+    },
+  ],
   defaultVariants: {
     signal: "ON_TRACK",
+  },
+});
+
+const milestoneGuide = tv({
+  base: "pointer-events-none absolute inset-y-0 z-[2] border-l border-dashed",
+  variants: {
+    status: {
+      NO_TASKS: "border-primary/35",
+      PENDING: "border-warning/45",
+      APPROVED: "border-success/45",
+      REJECTED: "border-destructive/45",
+      OVERDUE: "border-destructive/45",
+    },
+  },
+  defaultVariants: {
+    status: "NO_TASKS",
   },
 });
 
@@ -150,6 +188,7 @@ export function TaskGantt({
   visible,
   tasks,
   edges,
+  milestones = [],
   path,
   open,
   teamId,
@@ -158,6 +197,7 @@ export function TaskGantt({
   visible: TaskRecord[];
   tasks: TaskRecord[];
   edges: TaskEdge[];
+  milestones?: TaskMilestoneRecord[];
   path?: TaskRisk;
   open: (id: string) => void;
   teamId?: string;
@@ -165,6 +205,13 @@ export function TaskGantt({
 }) {
   const router = useRouter();
   const [week, setWeek] = useState(false);
+  const todayIso = useMemo(() => getTodayIsoLocal(), []);
+  const milestoneControls = useGanttMilestones({
+    teamId,
+    canEdit,
+    milestones,
+    defaultDate: todayIso,
+  });
   const [optimistic, setOptimistic] = useState<{ forEdges: TaskEdge[]; list: TaskEdge[] }>({
     forEdges: edges,
     list: edges,
@@ -248,11 +295,18 @@ export function TaskGantt({
         baseEnd,
       };
     });
+    const milestoneDays = milestoneControls.currentMilestones
+      .filter((item) => parseTaskDate(item.targetDate) !== null)
+      .map((item) => taskDay(item.targetDate));
+    const initialFrom = ranges[0]
+      ? Math.min(ranges[0].start, ranges[0].baseStart, ...(milestoneDays.length ? milestoneDays : [Infinity]))
+      : milestoneDays[0] ?? 0;
     const from = ranges.reduce(
       (min, item) => Math.min(min, item.start, item.baseStart),
-      ranges[0] ? Math.min(ranges[0].start, ranges[0].baseStart) : 0,
+      initialFrom,
     );
-    const last = ranges.reduce((max, item) => Math.max(max, item.end, item.baseEnd), from);
+    const lastFromRanges = ranges.reduce((max, item) => Math.max(max, item.end, item.baseEnd), from);
+    const last = milestoneDays.reduce((max, day) => Math.max(max, day), lastFromRanges);
     const span = Math.max(1, last - from + 1);
     const dayWidth = Math.min(week ? 15 : 44, 160_000 / span);
     const tickStep = (week ? 7 : 1) * Math.max(1, Math.ceil(span / (week ? 1400 : 200)));
@@ -265,9 +319,8 @@ export function TaskGantt({
       y: index * ROW_HEIGHT + 34,
     }));
     return { rows, span, from, dayWidth, tickStep };
-  }, [orderedVisible, week, resizing]);
+  }, [orderedVisible, week, resizing, milestoneControls.currentMilestones]);
 
-  const todayIso = useMemo(() => getTodayIsoLocal(), []);
   const metricsMap = useMemo(
     () => buildGanttTaskMetricsMap(view.rows.map((row) => row.task), currentEdges, todayIso),
     [view.rows, currentEdges, todayIso],
@@ -679,6 +732,18 @@ export function TaskGantt({
           >
             Semanas
           </Button>
+          {canEdit && teamId && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => milestoneControls.openCreate(todayIso)}
+              className="gap-1.5"
+            >
+              <Diamond className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+              Novo marco
+            </Button>
+          )}
           {path && <span className="text-sm font-medium text-primary">Caminho em destaque · {path.name}</span>}
         </div>
 
@@ -756,7 +821,34 @@ export function TaskGantt({
               </div>
             </div>
 
+            <TaskGanttMilestoneTrack
+              milestones={milestoneControls.currentMilestones}
+              fromDay={view.from}
+              dayWidth={view.dayWidth}
+              ticks={ticks}
+              tickStep={view.tickStep}
+              labelWidth={LABEL_WIDTH}
+              todayIso={todayIso}
+              canEdit={Boolean(canEdit && teamId)}
+              onAddAtDate={milestoneControls.openCreate}
+              onSelectMilestone={milestoneControls.openVerify}
+            />
+
             <div ref={rowsContainerRef} className="relative">
+              {milestoneControls.currentMilestones
+                .filter((item) => parseTaskDate(item.targetDate) !== null)
+                .map((item) => {
+                  const summaryItem = evaluateMilestoneSummary(item, todayIso);
+                  const x = Math.max(8, (taskDay(item.targetDate) - view.from) * view.dayWidth + view.dayWidth / 2);
+                  return (
+                    <span
+                      key={item.id}
+                      aria-hidden="true"
+                      className={milestoneGuide({ status: summaryItem.status })}
+                      style={{ left: LABEL_WIDTH + x }}
+                    />
+                  );
+                })}
               {view.rows.map(({ task, left, width: duration, baseLeft, baseWidth, y }, index) => {
                 const metrics = metricsMap.get(task.id);
                 const signal = metrics?.signal ?? "ON_TRACK";
@@ -771,7 +863,7 @@ export function TaskGantt({
                 const isReorderTarget = Boolean(
                   reordering?.isDragging && reordering.targetIndex === index && reordering.taskId !== task.id
                 );
-                const tagLeft = Math.max(left + barWidth, baseLeft + baselineBarWidth) + (canEdit ? 34 : 18) + (isCritical ? 14 : 0);
+                const tagLeft = Math.max(left + barWidth, baseLeft + baselineBarWidth) + (canEdit ? 34 : 18);
                 const displayTagText = isCritical ? "Crítica" : (metrics?.signalLabel ?? TASK_STATUS_LABELS[task.status]);
                 const displayTagTone = isCritical ? "CRITICAL" : signal;
                 const connectorState = isSource ? "active" : connecting ? "suppressed" : "idle";
@@ -844,6 +936,7 @@ export function TaskGantt({
                         <div
                           className={bar({
                             signal,
+                            critical: isCritical,
                             highlighted: highlightedTasks.has(task.id),
                             isConnectingSource: isSource,
                             isDropTargetValid: Boolean(isTargetCandidate && isValidTarget),
@@ -952,15 +1045,6 @@ export function TaskGantt({
                         >
                           <Check className="h-3 w-3 stroke-[3]" />
                         </span>
-                      )}
-
-                      {/* Losango vermelho ◇ para atividades do caminho crítico */}
-                      {isCritical && (
-                        <span
-                          aria-hidden="true"
-                          title="Caminho crítico (define o prazo final)"
-                          className="pointer-events-none absolute -right-2.5 top-1/2 z-20 h-4 w-4 -translate-y-1/2 rotate-45 border-2 border-destructive bg-card shadow-2xs"
-                        />
                       )}
 
                       {/* Right Edge Resize Handle (endDate) */}
@@ -1229,6 +1313,35 @@ export function TaskGantt({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {teamId && (
+        <TaskGanttMilestoneFormDialog
+          open={milestoneControls.formState.open}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) milestoneControls.closeForm();
+          }}
+          teamId={teamId}
+          tasks={tasks}
+          milestone={milestoneControls.formState.milestone}
+          defaultDate={milestoneControls.formState.defaultDate ?? todayIso}
+          onSaved={() => router.refresh()}
+        />
+      )}
+
+      <TaskGanttMilestoneVerifyDialog
+        milestone={milestoneControls.selectedMilestone}
+        tasks={tasks}
+        todayIso={todayIso}
+        canEdit={Boolean(canEdit && teamId)}
+        pendingCheckKey={milestoneControls.pendingCheckKey}
+        isDeleting={milestoneControls.isDeleting}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) milestoneControls.closeVerify();
+        }}
+        onEdit={milestoneControls.openEdit}
+        onDelete={milestoneControls.handleDeleteMilestone}
+        onToggleCheck={milestoneControls.handleCheckChange}
+      />
     </section>
   );
 }

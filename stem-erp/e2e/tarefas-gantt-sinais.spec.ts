@@ -22,6 +22,7 @@ test.describe("Gantt — Sinais de status, linha de base, caminho crítico e car
     await expect(page.getByText("Marco final:")).toBeVisible();
     await expect(page.getByText("Legenda (status)")).toBeVisible();
     await expect(page.getByText("Caminho crítico")).toBeVisible();
+    await expect(page.getByText("(critérios de aceitação)")).toBeVisible();
   });
 
   test("mantém cards executivos e legenda legíveis em mobile (375x667)", async ({ page }) => {

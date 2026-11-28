@@ -4,24 +4,30 @@ import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 import {
   createTaskSchema,
+  deleteMilestoneSchema,
   deleteTaskSchema,
   editTaskSchema,
   reorderTasksSchema,
   rescheduleTaskSchema,
   riskPathSchema,
+  saveMilestoneSchema,
   taskEdgeSchema,
+  updateMilestoneCheckSchema,
   updateMyTaskStatusSchema,
 } from "@/lib/validations/tasks";
 import { getCurrentUserFromSession } from "@/services/auth-service";
 import {
   changeDependency,
+  deleteMilestone,
   deleteTask,
   reorderTasks,
   rescheduleTask,
   resolveTaskScope,
+  saveMilestone,
   saveRiskPath,
   saveTask,
   TaskError,
+  updateMilestoneCheck,
   updateTaskStatus,
 } from "@/services/task-service";
 import type { TaskActionResult } from "@/types/tasks";
@@ -74,4 +80,13 @@ export async function rescheduleTaskAction(input: unknown) {
 }
 export async function reorderTasksAction(input: unknown) {
   return mutate(reorderTasksSchema, input, reorderTasks);
+}
+export async function saveMilestoneAction(input: unknown) {
+  return mutate(saveMilestoneSchema, input, saveMilestone);
+}
+export async function deleteMilestoneAction(input: unknown) {
+  return mutate(deleteMilestoneSchema, input, deleteMilestone);
+}
+export async function updateMilestoneCheckAction(input: unknown) {
+  return mutate(updateMilestoneCheckSchema, input, updateMilestoneCheck);
 }

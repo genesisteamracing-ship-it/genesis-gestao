@@ -9,12 +9,15 @@ import {
 } from "@/lib/task-schedule";
 import type {
   CreateTaskInput,
+  DeleteMilestoneInput,
   DeleteTaskInput,
   EdgeInput,
   EditTaskInput,
   ReorderTasksInput,
   RescheduleTaskInput,
   RiskPathInput,
+  SaveMilestoneInput,
+  UpdateMilestoneCheckInput,
   UpdateMyTaskStatusInput,
 } from "@/lib/validations/tasks";
 import type { AuthenticatedUserDTO } from "@/types/auth";
@@ -88,7 +91,7 @@ export async function getTaskWorkspace({
   actorJobTitle,
   canEdit,
 }: Scope): Promise<TaskWorkspace> {
-  const [members, tasks, edges, paths] = await prisma.$transaction([
+  const [members, tasks, edges, paths, milestones] = await prisma.$transaction([
     prisma.user.findMany({ where: { teamId, isActive: true }, select: memberSelect, orderBy: [{ name: "asc" }, { id: "asc" }] }),
     prisma.task.findMany({
       where: { teamId }, orderBy: [{ sortOrder: "asc" }, { startDate: "asc" }, { title: "asc" }, { id: "asc" }],
@@ -99,6 +102,15 @@ export async function getTaskWorkspace({
     }),
     prisma.taskDependency.findMany({ where: { teamId }, select: { predecessorId: true, successorId: true } }),
     prisma.riskPath.findMany({ where: { teamId }, orderBy: [{ name: "asc" }, { id: "asc" }], include: { steps: { orderBy: { position: "asc" } } } }),
+    prisma.ganttMilestone.findMany({
+      where: { teamId },
+      orderBy: [{ targetDate: "asc" }, { title: "asc" }, { id: "asc" }],
+      include: {
+        criteria: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
+        tasks: { orderBy: { createdAt: "asc" }, select: { taskId: true } },
+        checks: true,
+      },
+    }),
   ], { isolationLevel: "RepeatableRead" });
   return {
     teamId, currentUserId: actorId, canEdit, edges,
@@ -138,6 +150,27 @@ export async function getTaskWorkspace({
       const taskIds = steps.map((step) => step.taskId);
       return { id, name, reason, revision, taskIds, missing: missingLinks(taskIds, edges) };
     }),
+    milestones: milestones.map((milestone) => ({
+      id: milestone.id,
+      title: milestone.title,
+      description: milestone.description,
+      targetDate: milestone.targetDate.toISOString().slice(0, 10),
+      revision: milestone.revision,
+      criteria: milestone.criteria.map((criterion) => ({
+        id: criterion.id,
+        title: criterion.title,
+        sortOrder: criterion.sortOrder,
+      })),
+      taskIds: milestone.tasks.map((link) => link.taskId),
+      checks: milestone.checks.map((check) => ({
+        criterionId: check.criterionId,
+        taskId: check.taskId,
+        status: check.status,
+        notes: check.notes,
+        checkedByName: check.checkedByName,
+        checkedAt: check.checkedAt ? check.checkedAt.toISOString() : null,
+      })),
+    })),
   };
 }
 
@@ -451,5 +484,200 @@ export async function reorderTasks(scope: Scope, input: ReorderTasksInput) {
         tx.task.updateMany({ where: { id, teamId }, data: { sortOrder: index } }),
       ),
     );
+  });
+}
+
+export async function saveMilestone(scope: Scope, input: SaveMilestoneInput): Promise<string> {
+  requireWrite(scope, input.teamId);
+  const { teamId } = scope;
+  const targetDate = parseTaskDate(input.targetDate);
+  if (!targetDate) throw new TaskError("Informe uma data válida para o marco.");
+
+  return serializable(async (tx) => {
+    const actor = await requireActiveEditor(tx, scope);
+
+    if (input.taskIds.length > 0) {
+      const taskCount = await tx.task.count({
+        where: { teamId, id: { in: input.taskIds } },
+      });
+      if (taskCount !== input.taskIds.length) {
+        throw new TaskError("Algumas tarefas selecionadas não pertencem à equipe ativa.");
+      }
+    }
+
+    let milestoneId: string;
+    if (input.id) {
+      milestoneId = input.id;
+      const { count } = await tx.ganttMilestone.updateMany({
+        where: { id: milestoneId, teamId, revision: input.revision ?? 0 },
+        data: {
+          title: input.title,
+          description: input.description || null,
+          targetDate,
+          revision: { increment: 1 },
+        },
+      });
+      if (!count) {
+        throw new TaskError("Marco não encontrado ou atualizado. Recarregue a página.");
+      }
+
+      const existingCriteria = await tx.milestoneCriterion.findMany({
+        where: { teamId, milestoneId },
+        select: { id: true },
+      });
+      const existingCriteriaIds = new Set(existingCriteria.map((item) => item.id));
+      const keptCriterionIds = new Set(
+        input.criteria
+          .map((item) => item.id)
+          .filter((criterionId): criterionId is string => Boolean(criterionId && existingCriteriaIds.has(criterionId))),
+      );
+
+      const removedCriteriaIds = existingCriteria
+        .map((item) => item.id)
+        .filter((criterionId) => !keptCriterionIds.has(criterionId));
+      if (removedCriteriaIds.length > 0) {
+        await tx.milestoneCriterion.deleteMany({
+          where: { teamId, milestoneId, id: { in: removedCriteriaIds } },
+        });
+      }
+
+      for (const [sortOrder, criterion] of input.criteria.entries()) {
+        if (criterion.id && existingCriteriaIds.has(criterion.id)) {
+          await tx.milestoneCriterion.updateMany({
+            where: { id: criterion.id, teamId, milestoneId },
+            data: { title: criterion.title, sortOrder },
+          });
+        } else {
+          await tx.milestoneCriterion.create({
+            data: { teamId, milestoneId, title: criterion.title, sortOrder },
+          });
+        }
+      }
+
+      const existingLinks = await tx.milestoneTask.findMany({
+        where: { teamId, milestoneId },
+        select: { taskId: true },
+      });
+      const existingTaskIds = new Set(existingLinks.map((link) => link.taskId));
+      const nextTaskIds = new Set(input.taskIds);
+
+      const removedTaskIds = existingLinks
+        .map((link) => link.taskId)
+        .filter((taskId) => !nextTaskIds.has(taskId));
+      if (removedTaskIds.length > 0) {
+        await tx.milestoneCriterionCheck.deleteMany({
+          where: { teamId, milestoneId, taskId: { in: removedTaskIds } },
+        });
+        await tx.milestoneTask.deleteMany({
+          where: { teamId, milestoneId, taskId: { in: removedTaskIds } },
+        });
+      }
+
+      const addedTaskIds = input.taskIds.filter((taskId) => !existingTaskIds.has(taskId));
+      if (addedTaskIds.length > 0) {
+        await tx.milestoneTask.createMany({
+          data: addedTaskIds.map((taskId) => ({ teamId, milestoneId, taskId })),
+        });
+      }
+    } else {
+      const created = await tx.ganttMilestone.create({
+        data: {
+          teamId,
+          title: input.title,
+          description: input.description || null,
+          targetDate,
+          creatorKey: scope.actorId,
+          creatorName: actor.name,
+          creatorUserId: scope.actorId,
+        },
+        select: { id: true },
+      });
+      milestoneId = created.id;
+
+      await tx.milestoneCriterion.createMany({
+        data: input.criteria.map((criterion, sortOrder) => ({
+          teamId,
+          milestoneId,
+          title: criterion.title,
+          sortOrder,
+        })),
+      });
+
+      if (input.taskIds.length > 0) {
+        await tx.milestoneTask.createMany({
+          data: input.taskIds.map((taskId) => ({ teamId, milestoneId, taskId })),
+        });
+      }
+    }
+
+    return milestoneId;
+  });
+}
+
+export async function deleteMilestone(scope: Scope, input: DeleteMilestoneInput): Promise<void> {
+  requireWrite(scope, input.teamId);
+  await serializable(async (tx) => {
+    await requireActiveEditor(tx, scope);
+    const { count } = await tx.ganttMilestone.deleteMany({
+      where: { id: input.id, teamId: scope.teamId },
+    });
+    if (!count) throw new TaskError("Marco não encontrado.");
+  });
+}
+
+export async function updateMilestoneCheck(
+  scope: Scope,
+  input: UpdateMilestoneCheckInput,
+): Promise<void> {
+  requireWrite(scope, input.teamId);
+  const { teamId } = scope;
+
+  await serializable(async (tx) => {
+    const actor = await requireActiveEditor(tx, scope);
+
+    const [criterion, link] = await Promise.all([
+      tx.milestoneCriterion.findFirst({
+        where: { id: input.criterionId, milestoneId: input.milestoneId, teamId },
+        select: { id: true },
+      }),
+      tx.milestoneTask.findFirst({
+        where: { milestoneId: input.milestoneId, taskId: input.taskId, teamId },
+        select: { taskId: true },
+      }),
+    ]);
+
+    if (!criterion || !link) {
+      throw new TaskError("Marco, critério ou tarefa vinculada não encontrados.");
+    }
+
+    const nextNotes = input.notes?.trim() ? input.notes.trim() : null;
+    const isPending = input.status === "PENDING";
+
+    await tx.milestoneCriterionCheck.upsert({
+      where: {
+        teamId_milestoneId_criterionId_taskId: {
+          teamId,
+          milestoneId: input.milestoneId,
+          criterionId: input.criterionId,
+          taskId: input.taskId,
+        },
+      },
+      update: {
+        status: input.status,
+        notes: nextNotes,
+        checkedByName: actor.name,
+        checkedAt: isPending ? null : new Date(),
+      },
+      create: {
+        teamId,
+        milestoneId: input.milestoneId,
+        criterionId: input.criterionId,
+        taskId: input.taskId,
+        status: input.status,
+        notes: nextNotes,
+        checkedByName: actor.name,
+        checkedAt: isPending ? null : new Date(),
+      },
+    });
   });
 }

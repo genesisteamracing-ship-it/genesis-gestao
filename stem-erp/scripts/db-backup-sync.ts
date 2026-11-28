@@ -32,6 +32,10 @@ export interface DatabaseSnapshotMetadata {
     taskDependencies?: number;
     riskPaths?: number;
     riskPathSteps?: number;
+    ganttMilestones?: number;
+    milestoneCriteria?: number;
+    milestoneTasks?: number;
+    milestoneCriterionChecks?: number;
   };
 }
 
@@ -54,6 +58,10 @@ export interface DatabaseSnapshotPayload {
     taskDependencies?: unknown[];
     riskPaths?: unknown[];
     riskPathSteps?: unknown[];
+    ganttMilestones?: unknown[];
+    milestoneCriteria?: unknown[];
+    milestoneTasks?: unknown[];
+    milestoneCriterionChecks?: unknown[];
   };
 }
 
@@ -108,9 +116,10 @@ export async function createLocalDatabaseSnapshot(
     fs.mkdirSync(backupsDir, { recursive: true });
   }
 
-  const [schema] = await prisma.$queryRaw<{ hasTasks: boolean; hasTeams: boolean }[]>`
+  const [schema] = await prisma.$queryRaw<{ hasTasks: boolean; hasTeams: boolean; hasMilestones: boolean }[]>`
     SELECT to_regclass('"Task"') IS NOT NULL AS "hasTasks",
-           to_regclass('"Team"') IS NOT NULL AS "hasTeams"
+           to_regclass('"Team"') IS NOT NULL AS "hasTeams",
+           to_regclass('"GanttMilestone"') IS NOT NULL AS "hasMilestones"
   `;
   if (!schema.hasTeams && !allowEmptyDatabase) throw new Error("O banco não contém o schema do ERP.");
 
@@ -141,13 +150,23 @@ export async function createLocalDatabaseSnapshot(
   ]) : [[], [], [], [], [], [], [], [], [], [], []];
 
   const taskData: Record<string, unknown[]> = schema.hasTasks
-    ? await prisma.$transaction(async (tx) => ({
-        tasks: await tx.task.findMany(),
-        taskAssignments: await tx.taskAssignment.findMany(),
-        taskDependencies: await tx.taskDependency.findMany(),
-        riskPaths: await tx.riskPath.findMany(),
-        riskPathSteps: await tx.riskPathStep.findMany(),
-      }), { isolationLevel: "RepeatableRead" })
+    ? await prisma.$transaction(async (tx) => {
+        const base = {
+          tasks: await tx.task.findMany(),
+          taskAssignments: await tx.taskAssignment.findMany(),
+          taskDependencies: await tx.taskDependency.findMany(),
+          riskPaths: await tx.riskPath.findMany(),
+          riskPathSteps: await tx.riskPathStep.findMany(),
+        };
+        if (!schema.hasMilestones) return base;
+        return {
+          ...base,
+          ganttMilestones: await tx.$queryRaw<unknown[]>`SELECT * FROM "GanttMilestone"`,
+          milestoneCriteria: await tx.$queryRaw<unknown[]>`SELECT * FROM "MilestoneCriterion"`,
+          milestoneTasks: await tx.$queryRaw<unknown[]>`SELECT * FROM "MilestoneTask"`,
+          milestoneCriterionChecks: await tx.$queryRaw<unknown[]>`SELECT * FROM "MilestoneCriterionCheck"`,
+        };
+      }, { isolationLevel: "RepeatableRead" })
     : {};
 
   const metadata: DatabaseSnapshotMetadata = {

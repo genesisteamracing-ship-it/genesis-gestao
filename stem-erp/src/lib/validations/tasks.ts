@@ -183,6 +183,60 @@ export const riskPathSchema = z.object({
   edit: z.object({ id, revision }).strict().optional(),
 }).strict();
 
+const milestoneCriterionSchema = z
+  .object({
+    id: id.optional(),
+    title: z
+      .string()
+      .trim()
+      .min(1, "Informe o critério de aceitação.")
+      .max(240, "Critério muito longo (máximo 240 caracteres)."),
+  })
+  .strict();
+
+export const saveMilestoneSchema = z
+  .object({
+    teamId: id,
+    id: id.optional(),
+    revision: revision.optional(),
+    title: z.string().trim().min(1, "Informe o título do marco.").max(160),
+    description: z.string().trim().max(2000).optional(),
+    targetDate: day,
+    criteria: z
+      .array(milestoneCriterionSchema)
+      .min(1, "Adicione ao menos um critério de aceitação.")
+      .max(20, "Limite de 20 critérios por marco."),
+    taskIds: z
+      .array(id)
+      .refine(
+        (items) => new Set(items).size === items.length,
+        "A lista de tarefas vinculadas não pode repetir itens.",
+      ),
+  })
+  .strict()
+  .superRefine((item, ctx) => {
+    if (item.id !== undefined && item.revision === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Revisão do marco é obrigatória para edição.",
+        path: ["revision"],
+      });
+    }
+  });
+
+export const deleteMilestoneSchema = z.object({ teamId: id, id }).strict();
+
+export const updateMilestoneCheckSchema = z
+  .object({
+    teamId: id,
+    milestoneId: id,
+    criterionId: id,
+    taskId: id,
+    status: z.enum(["PENDING", "APPROVED", "REJECTED"]),
+    notes: z.string().trim().max(500).optional(),
+  })
+  .strict();
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type EditTaskInput = z.infer<typeof editTaskSchema>;
 export type DeleteTaskInput = z.infer<typeof deleteTaskSchema>;
@@ -191,3 +245,6 @@ export type RescheduleTaskInput = z.infer<typeof rescheduleTaskSchema>;
 export type ReorderTasksInput = z.infer<typeof reorderTasksSchema>;
 export type EdgeInput = z.infer<typeof taskEdgeSchema>;
 export type RiskPathInput = z.infer<typeof riskPathSchema>;
+export type SaveMilestoneInput = z.infer<typeof saveMilestoneSchema>;
+export type DeleteMilestoneInput = z.infer<typeof deleteMilestoneSchema>;
+export type UpdateMilestoneCheckInput = z.infer<typeof updateMilestoneCheckSchema>;

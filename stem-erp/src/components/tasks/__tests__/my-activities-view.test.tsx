@@ -69,6 +69,7 @@ function makeWorkspace(tasks: TaskRecord[], canEdit = true): TaskWorkspace {
     tasks,
     edges: [],
     paths: [],
+    milestones: [],
   };
 }
 

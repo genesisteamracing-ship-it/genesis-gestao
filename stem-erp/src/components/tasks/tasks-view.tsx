@@ -191,6 +191,7 @@ export function TasksView({ shell, workspace, viewId }: { shell: Shell; workspac
                 visible={visible}
                 tasks={workspace.tasks}
                 edges={workspace.edges}
+                milestones={workspace.milestones}
                 path={highlighted}
                 open={openTask}
                 teamId={workspace.teamId}
