@@ -36,6 +36,7 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAppHeader } from "@/components/layout/use-app-header";
 import { MobileNavDrawer } from "@/components/layout/mobile-nav-drawer";
+import { PlatformBrand } from "@/components/layout/platform-brand";
 import { useSidebar } from "@/providers/sidebar-provider";
 
 interface AppHeaderProps {
@@ -72,10 +73,9 @@ export function AppHeader({
           {/* Logo Mobile */}
           <Link
             href="/dashboard"
-            className="text-base sm:text-lg font-extrabold tracking-tight lg:hidden shrink-0"
+            className="inline-flex items-center lg:hidden shrink-0"
           >
-            <span className="text-primary">Genesis</span>
-            <span className="text-foreground">Gestão</span>
+            <PlatformBrand size="sm" />
           </Link>
 
           {/* Botão de Painel Lateral para abrir/fechar a barra lateral */}

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
+import { PLATFORM_NAME, PLATFORM_TAGLINE } from "@/lib/constants";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,9 +17,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "STEM Racing Financial & Resource ERP",
-  description:
-    "Sistema web para gestão orçamentária, alocação de recursos, cronograma físico-financeiro e fluxo de caixa para equipes STEM Racing.",
+  title: {
+    default: `${PLATFORM_NAME} — ${PLATFORM_TAGLINE}`,
+    template: `%s | ${PLATFORM_NAME}`,
+  },
+  description: `${PLATFORM_NAME} — Sistema web para gestão orçamentária, alocação de recursos, cronograma físico-financeiro e fluxo de caixa para equipes STEM Racing.`,
 };
 
 export default function RootLayout({

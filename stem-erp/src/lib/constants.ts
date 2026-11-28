@@ -9,6 +9,9 @@ import type {
   UserRole,
 } from "@prisma/client";
 
+export const PLATFORM_NAME = "Éden";
+export const PLATFORM_TAGLINE = "Gestão STEM Racing";
+
 export const DELIVERY_GROUP_LABELS: Record<DeliveryGroup, string> = {
   ENGINEERING_CAD: "Engenharia & CAD",
   MANUFACTURING_CNC: "Manufatura & CNC",

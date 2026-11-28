@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { F1TrackIllustration } from "@/components/auth/f1-track-illustration";
+import { PlatformBrand } from "@/components/layout/platform-brand";
 
 export function LoginForm() {
   const router = useRouter();
@@ -68,9 +69,7 @@ export function LoginForm() {
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                 <Flag className="h-5 w-5" />
               </div>
-              <span className="text-xl font-black tracking-tight text-primary">
-                Genesis<span className="text-foreground">Gestão</span>
-              </span>
+              <PlatformBrand size="login" />
             </div>
 
             <h1 className="text-xl sm:text-2xl lg:text-[27px] font-extrabold leading-snug tracking-tight text-foreground">

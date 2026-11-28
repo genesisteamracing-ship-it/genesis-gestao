@@ -29,6 +29,7 @@ import { useSidebar } from "@/providers/sidebar-provider";
 
 import { sidebarItemStyles } from "./sidebar-item-styles";
 import { TaskNavGroup } from "./task-nav-group";
+import { PlatformBrand } from "@/components/layout/platform-brand";
 
 export const FINANCE_SUB_ITEMS = [
   {
@@ -179,12 +180,8 @@ export function AppSidebar({ currentUser }: AppSidebarProps) {
       <div className="w-60 h-full flex flex-col shrink-0">
         {/* Logo Topo */}
         <div className="flex h-[70px] shrink-0 items-center justify-center px-6 border-b border-border">
-          <Link
-            href="/office"
-            className="text-xl font-extrabold tracking-tight"
-          >
-            <span className="text-primary">Genesis</span>
-            <span className="text-foreground">Gestão</span>
+          <Link href="/office" className="inline-flex items-center">
+            <PlatformBrand size="lg" />
           </Link>
         </div>
 

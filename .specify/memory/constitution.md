@@ -1,4 +1,4 @@
-# Genesis Gestão Constitution
+# Éden Constitution
 
 ## Core Principles
 
@@ -47,7 +47,7 @@ O sistema foi concebido para suportar equipes e operações auditáveis em compe
 
 ## Padrões Tecnológicos & Restrições de Arquitetura
 
-O ecossistema do Genesis Gestão é padronizado pelas seguintes tecnologias e diretrizes de infraestrutura:
+O ecossistema do Éden é padronizado pelas seguintes tecnologias e diretrizes de infraestrutura:
 - **Framework Web**: Next.js 15+ com App Router, React Server Components (RSC) e Server Actions para mutações de dados.
 - **Camada de Dados & Persistência**: PostgreSQL hospedado no Neon Serverless, orquestrado via Prisma ORM com connection pooling e direct URL para migrações e sincronizações.
 - **Autenticação & Sessões**: Controle de autenticação stateful via tokens JWT assinados com `jose`, armazenados em cookies `httpOnly`, com suporte a revogação de sessões e trilha de auditoria contra força bruta.
@@ -72,7 +72,7 @@ Todas as alterações na base de código devem passar por validações automatiz
 
 ## Governance
 
-A Constituição do projeto é o documento soberano que rege a arquitetura, padrões de engenharia e decisões de implementação do Genesis Gestão:
+A Constituição do projeto é o documento soberano que rege a arquitetura, padrões de engenharia e decisões de implementação do Éden:
 - Nenhum pull request ou entrega de funcionalidade deve ser aceito caso viole os princípios estabelecidos neste documento.
 - Propostas de alteração ou expansão desta Constituição devem ser submetidas como emendas formais, justificando a necessidade e documentando o impacto em conformidade com o versionamento semântico:
   - **MAJOR**: Alterações ou remoções incompatíveis de princípios ou restrições arquiteturais fundamentais.
