@@ -1,7 +1,7 @@
 import type { AppLocale } from "./locale-types";
 
-export const DEFAULT_GEMINI_TRANSLATION_MODEL = "gemini-2.5-flash-lite";
-export const FALLBACK_GEMINI_TRANSLATION_MODEL = "gemini-2.0-flash";
+export const DEFAULT_GEMINI_TRANSLATION_MODEL = "gemini-3.5-flash-lite";
+export const FALLBACK_GEMINI_TRANSLATION_MODEL = "gemini-3.8-flash";
 export const MAX_GEMINI_BATCH_SIZE = 60;
 const MAX_SERVER_CACHE_ENTRIES = 2000;
 const GEMINI_REQUEST_TIMEOUT_MS = 15000;
