@@ -1,14 +1,18 @@
 import type { Page } from "@playwright/test";
 import { expect, openTaskMenu, openTaskView, test } from "./tasks.fixtures";
 
-export async function createTaskThroughForm(page: Page, title: string, sector: string, date: string) {
+export async function createTaskThroughForm(page: Page, title: string, sector: string, _date?: string) {
+  void _date;
   await page.getByRole("button", { name: "Nova tarefa" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Título").fill(title);
   await dialog.getByRole("combobox", { name: "Setor", exact: true }).click();
   await page.getByRole("option", { name: sector, exact: true }).click();
-  await dialog.getByLabel("Início", { exact: true }).fill(date);
-  await dialog.getByLabel("Término", { exact: true }).fill(date);
+  await expect(dialog.getByRole("button", { name: "Término (Linha de base)" })).toBeDisabled();
+  await dialog.getByLabel("Otimista (O)").fill("1");
+  await dialog.getByLabel("Mais provável (M)").fill("2");
+  await dialog.getByLabel("Pessimista (P)").fill("3");
+  await expect(dialog.getByRole("button", { name: "Término (Linha de base)" })).not.toHaveText(/Automático/);
   await dialog.getByRole("button", { name: "Salvar tarefa" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByRole("row").filter({ hasText: title })).toBeVisible();

@@ -1,15 +1,24 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { createTaskSchema, deleteTaskSchema, riskPathSchema, updateMyTaskStatusSchema } from "../tasks";
+import { createTaskSchema, deleteTaskSchema, editTaskSchema, riskPathSchema, updateMyTaskStatusSchema } from "../tasks";
 
 const valid = {
-  teamId: "test", title: "Montar carro", deliveryGroup: "MANUFACTURING_CNC",
-  startDate: "2026-11-09", endDate: "2026-11-09", assignments: [],
+  teamId: "test",
+  title: "Montar carro",
+  deliveryGroup: "MANUFACTURING_CNC",
+  startDate: "2026-11-09",
+  optimisticDays: 1,
+  mostLikelyDays: 2,
+  pessimisticDays: 3,
+  assignments: [],
 };
 
-test("accepts a single day and rejects reversed dates and caller-supplied A", () => {
-  assert.equal(createTaskSchema.safeParse(valid).success, true);
-  assert.equal(createTaskSchema.safeParse({ ...valid, endDate: "2026-11-08" }).success, false);
+test("calculates endDate from O+M+P and rejects caller-supplied A or extra keys", () => {
+  const parsed = createTaskSchema.safeParse(valid);
+  assert.equal(parsed.success, true);
+  if (parsed.success) {
+    assert.equal(parsed.data.endDate, "2026-11-15");
+  }
   assert.equal(createTaskSchema.safeParse({ ...valid, assignments: [{ memberKey: "a", role: "A" }] }).success, false);
   assert.equal(createTaskSchema.safeParse({ ...valid, creatorKey: "a" }).success, false);
 });
@@ -48,14 +57,14 @@ test("validates updateMyTaskStatusSchema across all statuses and revision", () =
   );
 });
 
-test("validates optional 3-point PERT estimates (O <= M <= P)", () => {
+test("requires 3-point PERT estimates on create (O <= M <= P) and keeps legacy compatibility on edit", () => {
   assert.equal(
     createTaskSchema.safeParse({ ...valid, optimisticDays: 2, mostLikelyDays: 4, pessimisticDays: 8 }).success,
     true,
   );
   assert.equal(
     createTaskSchema.safeParse({ ...valid, optimisticDays: null, mostLikelyDays: null, pessimisticDays: null }).success,
-    true,
+    false,
   );
   assert.equal(
     createTaskSchema.safeParse({ ...valid, optimisticDays: 2, mostLikelyDays: 4, pessimisticDays: null }).success,
@@ -68,5 +77,24 @@ test("validates optional 3-point PERT estimates (O <= M <= P)", () => {
   assert.equal(
     createTaskSchema.safeParse({ ...valid, optimisticDays: 2, mostLikelyDays: 9, pessimisticDays: 8 }).success,
     false,
+  );
+
+  // Edição de tarefa legada sem PERT continua válida
+  assert.equal(
+    editTaskSchema.safeParse({
+      teamId: "test",
+      title: "Tarefa legada",
+      deliveryGroup: "MANUFACTURING_CNC",
+      startDate: "2026-11-09",
+      endDate: "2026-11-12",
+      assignments: [],
+      id: "task-1",
+      revision: 0,
+      status: "TODO",
+      optimisticDays: null,
+      mostLikelyDays: null,
+      pessimisticDays: null,
+    }).success,
+    true,
   );
 });

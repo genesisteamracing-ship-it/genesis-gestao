@@ -2,19 +2,27 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createTaskSchema, editTaskSchema } from "../tasks";
 
-const baseInput = {
+const baseCreateInput = {
   teamId: "team-1",
   title: "Projeto CAD",
   deliveryGroup: "ENGINEERING_CAD" as const,
   startDate: "2026-11-01",
-  endDate: "2026-11-10",
+  optimisticDays: 2,
+  mostLikelyDays: 3,
+  pessimisticDays: 4,
   assignments: [],
 };
 
-describe("validations/tasks (linha de base e flags de cronograma)", () => {
-  it("aceita createTaskSchema com isAtRisk e isCritical opcionais", () => {
+const baseEditInput = {
+  ...baseCreateInput,
+  endDate: "2026-11-10",
+};
+
+describe("validations/tasks (linha de base, PERT obrigatório e flags de cronograma)", () => {
+  it("aceita createTaskSchema com isAtRisk/isCritical e calcula endDate por O+M+P", () => {
     const parsed = createTaskSchema.safeParse({
-      ...baseInput,
+      ...baseCreateInput,
+      endDate: "2026-11-02", // ignorado em favor de 2026-11-01 + (2+3+4 = 9 dias)
       isAtRisk: true,
       isCritical: true,
     });
@@ -22,21 +30,39 @@ describe("validations/tasks (linha de base e flags de cronograma)", () => {
     if (parsed.success) {
       assert.equal(parsed.data.isAtRisk, true);
       assert.equal(parsed.data.isCritical, true);
+      assert.equal(parsed.data.endDate, "2026-11-10");
     }
   });
 
-  it("rejeita createTaskSchema quando endDate < startDate", () => {
+  it("rejeita createTaskSchema quando faltam estimativas PERT", () => {
     const parsed = createTaskSchema.safeParse({
-      ...baseInput,
-      startDate: "2026-11-15",
-      endDate: "2026-11-10",
+      teamId: "team-1",
+      title: "Sem PERT",
+      deliveryGroup: "ENGINEERING_CAD",
+      startDate: "2026-11-01",
+      assignments: [],
     });
     assert.equal(parsed.success, false);
   });
 
-  it("aceita editTaskSchema com linha de base válida", () => {
+  it("rejeita editTaskSchema quando endDate < startDate em tarefa legada sem PERT", () => {
     const parsed = editTaskSchema.safeParse({
-      ...baseInput,
+      teamId: "team-1",
+      title: "Projeto CAD",
+      deliveryGroup: "ENGINEERING_CAD",
+      startDate: "2026-11-15",
+      endDate: "2026-11-10",
+      assignments: [],
+      id: "task-1",
+      revision: 1,
+      status: "TODO",
+    });
+    assert.equal(parsed.success, false);
+  });
+
+  it("aceita editTaskSchema com linha de base válida e recalcula endDate pelo PERT", () => {
+    const parsed = editTaskSchema.safeParse({
+      ...baseEditInput,
       id: "task-1",
       revision: 1,
       status: "IN_PROGRESS",
@@ -46,11 +72,14 @@ describe("validations/tasks (linha de base e flags de cronograma)", () => {
       isCritical: true,
     });
     assert.equal(parsed.success, true);
+    if (parsed.success) {
+      assert.equal(parsed.data.endDate, "2026-11-10");
+    }
   });
 
   it("rejeita editTaskSchema quando baselineEndDate < baselineStartDate", () => {
     const parsed = editTaskSchema.safeParse({
-      ...baseInput,
+      ...baseEditInput,
       id: "task-1",
       revision: 1,
       status: "IN_PROGRESS",
@@ -65,7 +94,7 @@ describe("validations/tasks (linha de base e flags de cronograma)", () => {
 
   it("rejeita editTaskSchema quando apenas uma data da linha de base é informada", () => {
     const parsed = editTaskSchema.safeParse({
-      ...baseInput,
+      ...baseEditInput,
       id: "task-1",
       revision: 1,
       status: "TODO",

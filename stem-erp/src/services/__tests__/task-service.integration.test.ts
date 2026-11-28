@@ -25,7 +25,8 @@ test("keeps A, enforces tenant boundaries and serializes reciprocal edges", { sk
   assert.ok(scope);
   const input = {
     teamId: team.id, title: "Projeto", deliveryGroup: "ENGINEERING_CAD" as const,
-    startDate: "2026-11-09", endDate: "2026-11-09", assignments: [],
+    startDate: "2026-11-09", endDate: "2026-11-15",
+    optimisticDays: 1, mostLikelyDays: 2, pessimisticDays: 3, assignments: [],
   };
   await assert.rejects(saveTask(scope, { ...input, assignments: [{ memberKey: outsider.id, role: "R" }] }), /integrante ativo/);
   const a = await saveTask(scope, input);

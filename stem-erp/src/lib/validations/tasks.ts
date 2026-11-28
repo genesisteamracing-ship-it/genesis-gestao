@@ -1,6 +1,6 @@
 import { DeliveryGroup, TaskStatus } from "@prisma/client";
 import { z } from "zod";
-import { parseTaskDate } from "@/lib/task-schedule";
+import { calculateEndDateFromPertSum, parseTaskDate } from "@/lib/task-schedule";
 
 const id = z.string().min(1).max(128);
 const revision = z.number().int().nonnegative();
@@ -19,20 +19,22 @@ const pertDays = z
   .nullable()
   .optional();
 
-const task = z.object({
+const requiredPertDays = z
+  .number({ message: "Informe um número inteiro de dias." })
+  .int("Informe um número inteiro de dias.")
+  .min(1, "A estimativa mínima é 1 dia.")
+  .max(3650, "A estimativa máxima é 3650 dias.");
+
+const taskBase = z.object({
   teamId: id,
   title: z.string().trim().min(1, "Informe o título.").max(160),
   description: z.string().trim().max(4000).optional(),
   deliveryGroup: z.nativeEnum(DeliveryGroup),
   startDate: day,
-  endDate: day,
   isAtRisk: z.boolean().optional(),
   isCritical: z.boolean().optional(),
-  optimisticDays: pertDays,
-  mostLikelyDays: pertDays,
-  pessimisticDays: pertDays,
   assignments,
-}).strict();
+});
 
 const dateRange = (item: { startDate: string; endDate: string }) => item.startDate <= item.endDate;
 const invalidRange = { message: "O término deve ser igual ou posterior ao início.", path: ["endDate"] };
@@ -61,6 +63,23 @@ function validateBaselineRange(
   }
 }
 
+function validatePertOrder(o: number, m: number, p: number, ctx: z.RefinementCtx) {
+  if (o > m) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "A estimativa mais provável (M) deve ser maior ou igual à otimista (O).",
+      path: ["mostLikelyDays"],
+    });
+  }
+  if (m > p) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "A estimativa pessimista (P) deve ser maior ou igual à mais provável (M).",
+      path: ["pessimisticDays"],
+    });
+  }
+}
+
 function validatePertEstimates(
   item: {
     optimisticDays?: number | null;
@@ -80,37 +99,56 @@ function validatePertEstimates(
     });
     return;
   }
-  const o = item.optimisticDays!;
-  const m = item.mostLikelyDays!;
-  const p = item.pessimisticDays!;
-  if (o > m) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "A estimativa mais provável (M) deve ser maior ou igual à otimista (O).",
-      path: ["mostLikelyDays"],
-    });
-  }
-  if (m > p) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "A estimativa pessimista (P) deve ser maior ou igual à mais provável (M).",
-      path: ["pessimisticDays"],
-    });
-  }
+  validatePertOrder(item.optimisticDays!, item.mostLikelyDays!, item.pessimisticDays!, ctx);
 }
 
-export const createTaskSchema = task.refine(dateRange, invalidRange).superRefine(validatePertEstimates);
-export const editTaskSchema = task
+export const createTaskSchema = taskBase
+  .extend({
+    endDate: day.optional(),
+    optimisticDays: requiredPertDays,
+    mostLikelyDays: requiredPertDays,
+    pessimisticDays: requiredPertDays,
+  })
+  .strict()
+  .superRefine((item, ctx) => {
+    validatePertOrder(item.optimisticDays, item.mostLikelyDays, item.pessimisticDays, ctx);
+  })
+  .transform((item) => ({
+    ...item,
+    endDate: calculateEndDateFromPertSum(
+      item.startDate,
+      item.optimisticDays,
+      item.mostLikelyDays,
+      item.pessimisticDays,
+    )!,
+  }));
+
+export const editTaskSchema = taskBase
   .extend({
     id,
     revision,
     status: z.nativeEnum(TaskStatus),
+    endDate: day,
     baselineStartDate: day.optional(),
     baselineEndDate: day.optional(),
+    optimisticDays: pertDays,
+    mostLikelyDays: pertDays,
+    pessimisticDays: pertDays,
   })
+  .strict()
   .refine(dateRange, invalidRange)
   .superRefine(validateBaselineRange)
-  .superRefine(validatePertEstimates);
+  .superRefine(validatePertEstimates)
+  .transform((item) => {
+    const derivedEnd = calculateEndDateFromPertSum(
+      item.startDate,
+      item.optimisticDays,
+      item.mostLikelyDays,
+      item.pessimisticDays,
+    );
+    return derivedEnd ? { ...item, endDate: derivedEnd } : item;
+  });
+
 export const deleteTaskSchema = z.object({ id, teamId: id }).strict();
 export const updateMyTaskStatusSchema = z.object({
   teamId: id,
