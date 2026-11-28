@@ -129,7 +129,11 @@ function drawPageHeader(
   doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
   doc.text(isEn ? "Total Budget:" : "Total Orçado:", MARGIN_X + 76, metaY);
   doc.setTextColor(...BUDGET_PDF_COLORS.brandNavy);
-  doc.text(formatCurrencyBRL(data.totalPlannedCents), MARGIN_X + 97, metaY);
+  doc.text(
+    formatCurrencyBRL(data.totalPlannedCents),
+    MARGIN_X + (isEn ? 99 : 97),
+    metaY
+  );
 
   doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
   doc.text(
@@ -404,6 +408,7 @@ export async function exportBudgetPlanningToPdf({
   filename: string;
   pageCount: number;
   translationFallback?: boolean;
+  translationFallbackReason?: string;
 }> {
   const resolvedLocale = locale ?? getStoredLocale();
   const isEn = resolvedLocale === "en-US";
@@ -419,6 +424,7 @@ export async function exportBudgetPlanningToPdf({
   let localizedResources = resources;
   let localizedSeasonLabel = seasonLabel;
   let translationFallback = false;
+  let translationFallbackReason: string | undefined;
 
   if (isEn) {
     const dynamicTexts: Array<string | undefined> = resources.flatMap((r) => [
@@ -434,6 +440,7 @@ export async function exportBudgetPlanningToPdf({
       context: "Budget Planning PDF (planned resources and budget categories)",
     });
     translationFallback = translated.usedFallback;
+    translationFallbackReason = translated.reason;
 
     localizedResources = resources.map((r) => ({
       ...r,
@@ -516,5 +523,5 @@ export async function exportBudgetPlanningToPdf({
   );
   doc.save(filename);
 
-  return { filename, pageCount, translationFallback };
+  return { filename, pageCount, translationFallback, translationFallbackReason };
 }

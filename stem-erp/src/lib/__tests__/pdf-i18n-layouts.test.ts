@@ -104,6 +104,52 @@ describe("PDF i18n layouts (en-US)", () => {
       buildBudgetPlanningFilename("Equipe Gênesis", fixedDate, "en-US"),
       "budget-planning-equipe-genesis-2026-05-15.pdf"
     );
+
+    const withSeasonMonths = buildBudgetPlanningData({
+      teamName: "Equipe Gênesis",
+      locale: "en-US",
+      monthLabels: { 1: "Out/26", 2: "Dez/2026" },
+      resources: [
+        {
+          id: "r2",
+          code: "MAN-01",
+          resourceName: "Airbrush",
+          deliveryGroup: "MANUFACTURING_CNC",
+          categoryId: "c2",
+          categoryName: "Painting",
+          acquisitionStrategy: "DIRECT_PURCHASE",
+          allocatedTo: "Engenharia",
+          plannedMonth: 1,
+          plannedAmountCents: 35000,
+          realizedAmountCents: 0,
+          utilizationForecast: 100,
+          transactionsCount: 0,
+          createdAt: "2026-05-01T00:00:00.000Z",
+        },
+        {
+          id: "r3",
+          code: "MAN-02",
+          resourceName: "Sandpaper",
+          deliveryGroup: "MANUFACTURING_CNC",
+          categoryId: "c2",
+          categoryName: "Finishing",
+          acquisitionStrategy: "OWN_FUNDS_RAFFLE",
+          allocatedTo: "Lucas",
+          plannedMonth: 2,
+          plannedAmountCents: 5000,
+          realizedAmountCents: 0,
+          utilizationForecast: 80,
+          transactionsCount: 0,
+          createdAt: "2026-05-01T00:00:00.000Z",
+        },
+      ],
+    });
+
+    assert.equal(withSeasonMonths.rows[0].monthLabel, "Oct/26");
+    assert.equal(withSeasonMonths.rows[1].monthLabel, "Dec/2026");
+    assert.equal(withSeasonMonths.scopeLabel, "Oct/26 to Dec/2026");
+    assert.match(withSeasonMonths.rows[0].resourceSecondary, /Owner: Engineering/);
+    assert.match(withSeasonMonths.rows[1].resourceSecondary, /Owner: Lucas/);
   });
 
   test("WBS e Gantt em en-US traduzem titulo, meses, setores e filenames", () => {

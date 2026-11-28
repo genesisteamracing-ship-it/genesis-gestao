@@ -1144,6 +1144,99 @@ const MONTH_ABBR_PT_TO_EN: Readonly<Record<string, string>> = {
   dez: "Dec",
 };
 
+const MONTH_FULL_PT_TO_EN: Readonly<Record<string, string>> = {
+  janeiro: "January",
+  fevereiro: "February",
+  marco: "March",
+  abril: "April",
+  maio: "May",
+  junho: "June",
+  julho: "July",
+  agosto: "August",
+  setembro: "September",
+  outubro: "October",
+  novembro: "November",
+  dezembro: "December",
+};
+
+/**
+ * Glossário normalizado (sem acentos, minúsculo) para recursos e materiais comuns
+ * em orçamentos STEM Racing — garante tradução imediata mesmo sem acentuação
+ * ou em cenários de fallback offline.
+ */
+const NORMALIZED_RESOURCE_GLOSSARY_PT_TO_EN: Readonly<Record<string, string>> = {
+  aerografo: "Airbrush",
+  compressor: "Compressor",
+  tinta: "Paint",
+  "tinta acrilica": "Acrylic Paint",
+  "tinta automotiva": "Automotive Paint",
+  verniz: "Varnish",
+  primer: "Primer",
+  lixa: "Sandpaper",
+  lixas: "Sandpapers",
+  "madeira balsa": "Balsa Wood",
+  balsa: "Balsa Wood",
+  "bloco de balsa": "Balsa Block",
+  "impressao 3d": "3D Printing",
+  filamento: "Filament",
+  resina: "Resin",
+  "usinagem cnc": "CNC Machining",
+  fresagem: "Milling",
+  rolamento: "Bearing",
+  rolamentos: "Bearings",
+  eixo: "Axle",
+  eixos: "Axles",
+  rodas: "Wheels",
+  roda: "Wheel",
+  uniforme: "Uniform",
+  uniformes: "Uniforms",
+  camiseta: "T-Shirt",
+  camisetas: "T-Shirts",
+  estande: "Pit Display Booth",
+  banner: "Banner",
+  banners: "Banners",
+  adesivos: "Stickers",
+  adesivo: "Sticker",
+  portfolio: "Portfolio",
+  portfolios: "Portfolios",
+  impressao: "Printing",
+  inscricao: "Registration",
+  transporte: "Transportation",
+  hospedagem: "Accommodation",
+  alimentacao: "Meals",
+  ferramentas: "Tools",
+  ferramenta: "Tool",
+  cola: "Glue",
+  epoxi: "Epoxy",
+  "fibra de carbono": "Carbon Fiber",
+  acrilico: "Acrylic",
+  mdf: "MDF",
+};
+
+function normalizeLookupKey(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
+function translateMonthTokenToEn(token: string): string {
+  const trimmed = token.trim();
+  const abbrWithYear = /^(Jan|Fev|Mar|Abr|Mai|Jun|Jul|Ago|Set|Out|Nov|Dez)\/(\d{2}|\d{4})$/i.exec(
+    trimmed
+  );
+  if (abbrWithYear) {
+    const enMonth = MONTH_ABBR_PT_TO_EN[abbrWithYear[1].toLowerCase()] ?? abbrWithYear[1];
+    return `${enMonth}/${abbrWithYear[2]}`;
+  }
+  const monthNumber = /^Mês\s+(\d+)$/i.exec(trimmed);
+  if (monthNumber) {
+    return `Month ${monthNumber[1]}`;
+  }
+  return trimmed;
+}
+
 interface TranslationPattern {
   regex: RegExp;
   replace: (match: RegExpExecArray) => string;
@@ -1151,11 +1244,64 @@ interface TranslationPattern {
 
 const PT_TO_EN_PATTERNS: readonly TranslationPattern[] = [
   {
-    regex: /^(Jan|Fev|Mar|Abr|Mai|Jun|Jul|Ago|Set|Out|Nov|Dez)\/(\d{4})$/i,
+    regex: /^(Jan|Fev|Mar|Abr|Mai|Jun|Jul|Ago|Set|Out|Nov|Dez)\/(\d{2}|\d{4})$/i,
     replace: (m) => {
       const enMonth = MONTH_ABBR_PT_TO_EN[m[1].toLowerCase()] ?? m[1];
       return `${enMonth}/${m[2]}`;
     },
+  },
+  {
+    regex: /^(Jan|Fev|Mar|Abr|Mai|Jun|Jul|Ago|Set|Out|Nov|Dez)\/(\d{2}|\d{4})\s*\(Mês\s+(\d+)\)$/i,
+    replace: (m) => {
+      const enMonth = MONTH_ABBR_PT_TO_EN[m[1].toLowerCase()] ?? m[1];
+      return `${enMonth}/${m[2]} (Month ${m[3]})`;
+    },
+  },
+  {
+    regex: /^((?:Jan|Fev|Mar|Abr|Mai|Jun|Jul|Ago|Set|Out|Nov|Dez)\/(?:\d{2}|\d{4})|Mês\s+\d+)\s+a\s+((?:Jan|Fev|Mar|Abr|Mai|Jun|Jul|Ago|Set|Out|Nov|Dez)\/(?:\d{2}|\d{4})|Mês\s+\d+)$/i,
+    replace: (m) =>
+      `${translateMonthTokenToEn(m[1])} to ${translateMonthTokenToEn(m[2])}`,
+  },
+  {
+    regex: /^(Janeiro|Fevereiro|Mar[cç]o|Abril|Maio|Junho|Julho|Agosto|Setembro|Outubro|Novembro|Dezembro)\s+de\s+(\d{4})$/i,
+    replace: (m) => {
+      const enMonth = MONTH_FULL_PT_TO_EN[normalizeLookupKey(m[1])] ?? m[1];
+      return `${enMonth} ${m[2]}`;
+    },
+  },
+  {
+    regex: /^(Janeiro|Fevereiro|Mar[cç]o|Abril|Maio|Junho|Julho|Agosto|Setembro|Outubro|Novembro|Dezembro)\/(\d{2}|\d{4})$/i,
+    replace: (m) => {
+      const enMonth = MONTH_FULL_PT_TO_EN[normalizeLookupKey(m[1])] ?? m[1];
+      return `${enMonth}/${m[2]}`;
+    },
+  },
+  {
+    regex: /^(Janeiro|Fevereiro|Mar[cç]o|Abril|Maio|Junho|Julho|Agosto|Setembro|Outubro|Novembro|Dezembro)$/i,
+    replace: (m) => MONTH_FULL_PT_TO_EN[normalizeLookupKey(m[1])] ?? m[1],
+  },
+  {
+    regex: /^(Fev|Abr|Mai|Ago|Set|Out|Dez)$/i,
+    replace: (m) => MONTH_ABBR_PT_TO_EN[m[1].toLowerCase()] ?? m[1],
+  },
+  {
+    regex: /^Mês do fluxo de caixa:\s*(.+)$/i,
+    replace: (m) => `Cash flow month: ${translateMonthTokenToEn(m[1])}`,
+  },
+  {
+    regex: /^Responsável:\s*(.+)$/i,
+    replace: (m) => {
+      const owner = PT_TO_EN_DICTIONARY[m[1].trim()] ?? m[1].trim();
+      return `Owner: ${owner}`;
+    },
+  },
+  {
+    regex: /^\((\d+)%\s+uso\)$/i,
+    replace: (m) => `(${m[1]}% usage)`,
+  },
+  {
+    regex: /^(\d+)%\s+uso$/i,
+    replace: (m) => `${m[1]}% usage`,
   },
   {
     regex: /^(\d+)\s+treinos?\s+no\s+período$/i,
@@ -1294,6 +1440,12 @@ function lookupExactWithOptionalSuffix(normalizedCore: string): string | null {
     if (baseMatch !== undefined) {
       return `${baseMatch} *`;
     }
+  }
+
+  const normalizedResource =
+    NORMALIZED_RESOURCE_GLOSSARY_PT_TO_EN[normalizeLookupKey(normalizedCore)];
+  if (normalizedResource !== undefined) {
+    return normalizedResource;
   }
 
   return null;

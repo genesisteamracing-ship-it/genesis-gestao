@@ -12,7 +12,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { translateUiText } from "@/lib/i18n/translations";
 import { formatCurrencyFromCents } from "@/lib/utils";
+import { useLocale } from "@/components/i18n/locale-provider";
 import type { CashFlowSummaryDTO } from "@/types/financial";
 import {
   Card,
@@ -35,15 +37,18 @@ interface CashFlowTimelineProps {
 }
 
 export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
+  const { locale } = useLocale();
+  const isEn = locale === "en-US";
+
   const chartData = React.useMemo(
     () =>
       cashFlow.months.map((m) => ({
-        name: m.monthLabel,
+        name: translateUiText(m.monthLabel, locale),
         Origens: m.originsCents / 100,
         Aplicacoes: m.applicationsCents / 100,
         SaldoAcumulado: m.accumulatedBalanceCents / 100,
       })),
-    [cashFlow.months]
+    [cashFlow.months, locale]
   );
 
   return (
@@ -126,14 +131,14 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
               <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
               <Bar
                 dataKey="Origens"
-                name="(+) Origens"
+                name={isEn ? "(+) Inflows" : "(+) Origens"}
                 fill="var(--success)"
                 radius={[6, 6, 0, 0]}
                 maxBarSize={36}
               />
               <Bar
                 dataKey="Aplicacoes"
-                name="(-) Aplicações"
+                name={isEn ? "(-) Outflows" : "(-) Aplicações"}
                 fill="var(--destructive)"
                 radius={[6, 6, 0, 0]}
                 maxBarSize={36}
@@ -141,7 +146,7 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
               <Line
                 type="monotone"
                 dataKey="SaldoAcumulado"
-                name="(=) Saldo Acumulado"
+                name={isEn ? "(=) Accumulated Balance" : "(=) Saldo Acumulado"}
                 stroke="var(--primary)"
                 strokeWidth={3}
                 dot={{ r: 5, fill: "var(--primary)", strokeWidth: 2, stroke: "var(--card)" }}
@@ -164,7 +169,7 @@ export function CashFlowTimeline({ cashFlow }: CashFlowTimelineProps) {
                     key={m.month}
                     className="py-3.5 px-3 sm:px-4 text-right text-xs font-bold uppercase tracking-wider text-foreground whitespace-nowrap"
                   >
-                    {m.monthLabel}
+                    {translateUiText(m.monthLabel, locale)}
                   </TableHead>
                 ))}
                 <TableHead className="py-3.5 px-4 sm:px-5 text-right text-xs font-bold uppercase tracking-wider text-foreground whitespace-nowrap">

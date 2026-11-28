@@ -143,6 +143,23 @@ describe("translateUiText", () => {
     assert.equal(translateUiText("Variação:", "en-US"), "Variance:");
     assert.equal(translateUiText("Ago/2025", "en-US"), "Aug/2025");
     assert.equal(translateUiText("Fev/2026", "en-US"), "Feb/2026");
+    assert.equal(translateUiText("Out/26", "en-US"), "Oct/26");
+    assert.equal(translateUiText("Dez/26", "en-US"), "Dec/26");
+    assert.equal(translateUiText("Ago/2025 (Mês 1)", "en-US"), "Aug/2025 (Month 1)");
+    assert.equal(translateUiText("Out/26 a Dez/26", "en-US"), "Oct/26 to Dec/26");
+    assert.equal(translateUiText("Novembro de 2026", "en-US"), "November 2026");
+    assert.equal(translateUiText("Fevereiro", "en-US"), "February");
+    assert.equal(translateUiText("Ago", "en-US"), "Aug");
+    assert.equal(
+      translateUiText("Mês do fluxo de caixa: Fev/2026", "en-US"),
+      "Cash flow month: Feb/2026"
+    );
+    assert.equal(translateUiText("aerografo", "en-US"), "Airbrush");
+    assert.equal(translateUiText("Aerógrafo", "en-US"), "Airbrush");
+    assert.equal(translateUiText("tinta acrilica", "en-US"), "Acrylic Paint");
+    assert.equal(translateUiText("madeira balsa", "en-US"), "Balsa Wood");
+    assert.equal(translateUiText("(100% uso)", "en-US"), "(100% usage)");
+    assert.equal(translateUiText("Responsável: Engenharia", "en-US"), "Owner: Engineering");
     assert.equal(
       translateUiText("Investimento vs. Retorno por Patrocinador", "en-US"),
       "Investment vs. Return by Sponsor"
