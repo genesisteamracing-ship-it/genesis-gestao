@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, FileText, Phone, Mail, Pencil, Settings, Loader2 } from "lucide-react";
+import { Plus, Trash2, FileText, Phone, Mail, Pencil, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +39,9 @@ import {
 } from "@/lib/communication-constants";
 import { resolveStakeholderMatrixQuadrant } from "@/lib/communication-hierarchy";
 import { deleteStakeholderAction } from "@/actions/communication-actions";
+import { useCommunicationMatrixPdfExport } from "@/hooks/use-communication-matrix-pdf-export";
 import { useStakeholdersPdfExport } from "@/hooks/use-stakeholders-pdf-export";
+import { CommunicationPdfExportMenu } from "./communication-pdf-export-menu";
 import { EditStakeholderDialog } from "./edit-stakeholder-dialog";
 
 const listQuadrantBadgeStyles = tv({
@@ -85,6 +87,13 @@ export function StakeholdersListTab({
     teamName,
     groupFilter: filterGroup as StakeholderGroup | "ALL",
   });
+
+  const { isExportingMatrixPdf, handleExportMatrixPdf } =
+    useCommunicationMatrixPdfExport({
+      stakeholders: filteredStakeholders,
+      teamName,
+      groupFilter: filterGroup as StakeholderGroup | "ALL",
+    });
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Tem certeza que deseja remover o stakeholder "${name}"?`)) {
@@ -136,21 +145,13 @@ export function StakeholdersListTab({
               </SelectContent>
             </Select>
 
-            <Button
-              type="button"
-              variant="outline"
+            <CommunicationPdfExportMenu
               size="sm"
-              onClick={handleExportPdf}
-              disabled={isExportingPdf || filteredStakeholders.length === 0}
-              className="text-xs font-semibold border-border bg-card text-foreground hover:bg-muted"
-            >
-              {isExportingPdf ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <FileText className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              <span>{isExportingPdf ? "Exportando..." : "Relatório PDF"}</span>
-            </Button>
+              disabled={filteredStakeholders.length === 0}
+              isExporting={isExportingPdf || isExportingMatrixPdf}
+              onExportCommunicationMatrix={handleExportMatrixPdf}
+              onExportStakeholdersMatrix={handleExportPdf}
+            />
 
             <Button
               type="button"
