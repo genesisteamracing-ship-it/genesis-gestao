@@ -1,4 +1,9 @@
 import type { jsPDF } from "jspdf";
+import { getStoredLocale, type AppLocale } from "@/lib/i18n/locale-types";
+import {
+  resolveTranslatedPdfText,
+  translatePdfTexts,
+} from "@/lib/i18n/pdf-translate-client";
 import type { BudgetResourceDTO } from "@/types/financial";
 import {
   BUDGET_PDF_COLORS,
@@ -14,6 +19,7 @@ export interface ExportBudgetPlanningPdfParams {
   teamName?: string;
   seasonLabel?: string;
   monthLabels?: Record<number, string>;
+  locale?: AppLocale;
 }
 
 const PAGE_WIDTH = 210; // A4 Retrato (mm)
@@ -41,7 +47,12 @@ const COL_WIDTH = {
  * Desenha o cabeçalho bicolor Azul + Amarelo com corte diagonal no topo,
  * idêntico ao Extrato Financeiro do Livro Caixa, seguido de metadados e barra da seção.
  */
-function drawPageHeader(doc: jsPDF, data: BudgetPlanningData): number {
+function drawPageHeader(
+  doc: jsPDF,
+  data: BudgetPlanningData,
+  locale: AppLocale
+): number {
+  const isEn = locale === "en-US";
   const bannerY = MARGIN_TOP;
   const bannerH = 16.5;
   const splitTopX = MARGIN_X + CONTENT_WIDTH * 0.72;
@@ -65,16 +76,21 @@ function drawPageHeader(doc: jsPDF, data: BudgetPlanningData): number {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13.5);
   doc.setTextColor(...BUDGET_PDF_COLORS.brandYellow);
-  doc.text("Planejamento Orçamentário", MARGIN_X + 3.5, bannerY + 7.2, {
-    align: "left",
-  });
+  doc.text(
+    isEn ? "Budget Planning" : "Planejamento Orçamentário",
+    MARGIN_X + 3.5,
+    bannerY + 7.2,
+    {
+      align: "left",
+    }
+  );
 
   // Nome da Equipe em Branco sobre o Azul (esquerda)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(...BUDGET_PDF_COLORS.white);
   doc.text(
-    `Equipe: ${data.teamDisplayName.toUpperCase()}`,
+    `${isEn ? "Team" : "Equipe"}: ${data.teamDisplayName.toUpperCase()}`,
     MARGIN_X + 3.5,
     bannerY + 13.4,
     { align: "left" }
@@ -90,9 +106,14 @@ function drawPageHeader(doc: jsPDF, data: BudgetPlanningData): number {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6.5);
-  doc.text("GESTÃO FINANCEIRA", yellowCenterX, bannerY + 13, {
-    align: "center",
-  });
+  doc.text(
+    isEn ? "FINANCIAL MANAGEMENT" : "GESTÃO FINANCEIRA",
+    yellowCenterX,
+    bannerY + 13,
+    {
+      align: "center",
+    }
+  );
 
   // Linha de metadados (Escopo, Total Orçado, Total de recursos)
   const metaY = bannerY + bannerH + 4.8;
@@ -100,19 +121,27 @@ function drawPageHeader(doc: jsPDF, data: BudgetPlanningData): number {
   doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Escopo:", MARGIN_X, metaY);
+  doc.text(isEn ? "Scope:" : "Escopo:", MARGIN_X, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(data.scopeLabel, MARGIN_X + 12.5, metaY);
 
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
-  doc.text("Total Orçado:", MARGIN_X + 76, metaY);
+  doc.text(isEn ? "Total Budget:" : "Total Orçado:", MARGIN_X + 76, metaY);
   doc.setTextColor(...BUDGET_PDF_COLORS.brandNavy);
   doc.text(formatCurrencyBRL(data.totalPlannedCents), MARGIN_X + 97, metaY);
 
   doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
   doc.text(
-    `${data.resourceCount} ${data.resourceCount === 1 ? "recurso" : "recursos"}`,
+    `${data.resourceCount} ${
+      isEn
+        ? data.resourceCount === 1
+          ? "resource"
+          : "resources"
+        : data.resourceCount === 1
+          ? "recurso"
+          : "recursos"
+    }`,
     MARGIN_X + CONTENT_WIDTH,
     metaY,
     { align: "right" }
@@ -127,9 +156,14 @@ function drawPageHeader(doc: jsPDF, data: BudgetPlanningData): number {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(...BUDGET_PDF_COLORS.brandBlue);
-  doc.text("Orçamentos Planejados", MARGIN_X + 2, sectionY + 4.4, {
-    align: "left",
-  });
+  doc.text(
+    isEn ? "Planned Budgets" : "Orçamentos Planejados",
+    MARGIN_X + 2,
+    sectionY + 4.4,
+    {
+      align: "left",
+    }
+  );
 
   // Cabeçalho das colunas (apenas Orçado, sem Realizado)
   const colHeaderY = sectionY + sectionH + 4.4;
@@ -137,11 +171,17 @@ function drawPageHeader(doc: jsPDF, data: BudgetPlanningData): number {
   doc.setFontSize(7.8);
   doc.setTextColor(...BUDGET_PDF_COLORS.textPrimary);
 
-  doc.text("Código", COL_X.code, colHeaderY, { align: "left" });
-  doc.text("Mês", COL_X.month, colHeaderY, { align: "left" });
-  doc.text("Aquisição", COL_X.strategy, colHeaderY, { align: "left" });
-  doc.text("Recurso", COL_X.resource, colHeaderY, { align: "left" });
-  doc.text("Orçado", COL_X.plannedRight, colHeaderY, { align: "right" });
+  doc.text(isEn ? "Code" : "Código", COL_X.code, colHeaderY, { align: "left" });
+  doc.text(isEn ? "Month" : "Mês", COL_X.month, colHeaderY, { align: "left" });
+  doc.text(isEn ? "Acquisition" : "Aquisição", COL_X.strategy, colHeaderY, {
+    align: "left",
+  });
+  doc.text(isEn ? "Resource" : "Recurso", COL_X.resource, colHeaderY, {
+    align: "left",
+  });
+  doc.text(isEn ? "Budgeted" : "Orçado", COL_X.plannedRight, colHeaderY, {
+    align: "right",
+  });
 
   // Linha divisória abaixo do cabeçalho das colunas
   const headerBottomY = colHeaderY + 1.8;
@@ -318,8 +358,10 @@ function drawPageFooter(
   pageNumber: number,
   pageCount: number,
   teamName: string,
-  formattedDate: string
+  formattedDate: string,
+  locale: AppLocale
 ): void {
+  const isEn = locale === "en-US";
   const lineY = PAGE_HEIGHT - 11;
   const textY = PAGE_HEIGHT - 7;
 
@@ -331,13 +373,17 @@ function drawPageFooter(
   doc.setFontSize(7.2);
   doc.setTextColor(...BUDGET_PDF_COLORS.brandNavy);
   doc.text(
-    `${teamName} • Planejamento Orçamentário • Emitido em ${formattedDate}`,
+    isEn
+      ? `${teamName} • Budget Planning • Issued on ${formattedDate}`
+      : `${teamName} • Planejamento Orçamentário • Emitido em ${formattedDate}`,
     MARGIN_X,
     textY,
     { align: "left" }
   );
   doc.text(
-    `Página ${pageNumber} de ${pageCount}`,
+    isEn
+      ? `Page ${pageNumber} of ${pageCount}`
+      : `Página ${pageNumber} de ${pageCount}`,
     MARGIN_X + CONTENT_WIDTH,
     textY,
     { align: "right" }
@@ -353,19 +399,71 @@ export async function exportBudgetPlanningToPdf({
   teamName,
   seasonLabel,
   monthLabels,
+  locale,
 }: ExportBudgetPlanningPdfParams): Promise<{
   filename: string;
   pageCount: number;
+  translationFallback?: boolean;
 }> {
+  const resolvedLocale = locale ?? getStoredLocale();
+  const isEn = resolvedLocale === "en-US";
+
   if (resources.length === 0) {
-    throw new Error("Não há orçamentos planejados para exportar.");
+    throw new Error(
+      isEn
+        ? "There are no planned budgets to export."
+        : "Não há orçamentos planejados para exportar."
+    );
+  }
+
+  let localizedResources = resources;
+  let localizedSeasonLabel = seasonLabel;
+  let translationFallback = false;
+
+  if (isEn) {
+    const dynamicTexts: Array<string | undefined> = resources.flatMap((r) => [
+      r.resourceName,
+      r.categoryName,
+    ]);
+    if (seasonLabel) {
+      dynamicTexts.push(seasonLabel);
+    }
+
+    const translated = await translatePdfTexts(dynamicTexts, {
+      locale: resolvedLocale,
+      context: "Budget Planning PDF (planned resources and budget categories)",
+    });
+    translationFallback = translated.usedFallback;
+
+    localizedResources = resources.map((r) => ({
+      ...r,
+      resourceName: resolveTranslatedPdfText(
+        r.resourceName,
+        translated.translations,
+        resolvedLocale
+      ),
+      categoryName: resolveTranslatedPdfText(
+        r.categoryName,
+        translated.translations,
+        resolvedLocale
+      ),
+    }));
+
+    if (seasonLabel) {
+      localizedSeasonLabel = resolveTranslatedPdfText(
+        seasonLabel,
+        translated.translations,
+        resolvedLocale
+      );
+    }
   }
 
   const data = buildBudgetPlanningData({
-    resources,
+    resources: localizedResources,
     teamName,
-    seasonLabel,
+    seasonLabel: localizedSeasonLabel,
     monthLabels,
+    locale: resolvedLocale,
   });
   const { jsPDF: JsPdfCtor } = await import("jspdf");
 
@@ -377,9 +475,9 @@ export async function exportBudgetPlanningToPdf({
   });
 
   const now = new Date();
-  const formattedDate = now.toLocaleDateString("pt-BR");
+  const formattedDate = now.toLocaleDateString(resolvedLocale);
 
-  let cursorY = drawPageHeader(doc, data);
+  let cursorY = drawPageHeader(doc, data, resolvedLocale);
   let visualIndex = 0;
 
   for (const row of data.rows) {
@@ -387,7 +485,7 @@ export async function exportBudgetPlanningToPdf({
 
     if (cursorY + measured.height > CONTENT_BOTTOM) {
       doc.addPage("a4", "portrait");
-      cursorY = drawPageHeader(doc, data);
+      cursorY = drawPageHeader(doc, data, resolvedLocale);
       visualIndex = 0;
     }
 
@@ -401,11 +499,22 @@ export async function exportBudgetPlanningToPdf({
   const pageCount = doc.getNumberOfPages();
   for (let page = 1; page <= pageCount; page += 1) {
     doc.setPage(page);
-    drawPageFooter(doc, page, pageCount, data.teamDisplayName, formattedDate);
+    drawPageFooter(
+      doc,
+      page,
+      pageCount,
+      data.teamDisplayName,
+      formattedDate,
+      resolvedLocale
+    );
   }
 
-  const filename = buildBudgetPlanningFilename(data.teamDisplayName, now);
+  const filename = buildBudgetPlanningFilename(
+    data.teamDisplayName,
+    now,
+    resolvedLocale
+  );
   doc.save(filename);
 
-  return { filename, pageCount };
+  return { filename, pageCount, translationFallback };
 }

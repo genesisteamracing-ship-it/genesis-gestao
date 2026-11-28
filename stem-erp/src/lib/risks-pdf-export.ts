@@ -1,4 +1,9 @@
 import type { jsPDF } from "jspdf";
+import { getStoredLocale, type AppLocale } from "@/lib/i18n/locale-types";
+import {
+  resolveTranslatedPdfText,
+  translatePdfTexts,
+} from "@/lib/i18n/pdf-translate-client";
 import type { RiskItemDTO } from "@/types/risks";
 import {
   buildRisksPdfData,
@@ -14,6 +19,7 @@ export interface ExportRisksPdfParams {
   items: RiskItemDTO[];
   teamName?: string;
   seasonLabel?: string;
+  locale?: AppLocale;
 }
 
 const PAGE_WIDTH = 297; // A4 Paisagem (mm) — ideal para tabela de 6 colunas
@@ -74,11 +80,25 @@ const COL_BY_KEY = Object.fromEntries(
   TABLE_COLUMNS.map((col) => [col.key, col])
 ) as Record<TableColumnSpec["key"], TableColumnSpec>;
 
+const TABLE_COLUMN_LABELS_EN: Record<TableColumnSpec["key"], string> = {
+  sector: "SECTOR",
+  probability: "PROBABILITY",
+  consequence: "CONSEQUENCE",
+  name: "NAME",
+  priority: "RISK",
+  observations: "NOTES",
+};
+
 /**
  * Desenha o cabeçalho bicolor Azul + Amarelo (padrão Gênesis),
  * barra de metadados e o cabeçalho azul da tabela com grade completa.
  */
-function drawPageHeader(doc: jsPDF, data: RisksPdfData): number {
+function drawPageHeader(
+  doc: jsPDF,
+  data: RisksPdfData,
+  locale: AppLocale
+): number {
+  const isEn = locale === "en-US";
   const bannerY = MARGIN_TOP;
   const bannerH = 15.5;
   const splitTopX = MARGIN_X + CONTENT_WIDTH * 0.78;
@@ -102,16 +122,23 @@ function drawPageHeader(doc: jsPDF, data: RisksPdfData): number {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13.5);
   doc.setTextColor(...RISKS_PDF_COLORS.brandYellow);
-  doc.text("Matriz de Riscos & Oportunidades", MARGIN_X + 4, bannerY + 6.8, {
-    align: "left",
-  });
+  doc.text(
+    isEn
+      ? "Risk & Opportunity Matrix"
+      : "Matriz de Riscos & Oportunidades",
+    MARGIN_X + 4,
+    bannerY + 6.8,
+    {
+      align: "left",
+    }
+  );
 
   // Nome da Equipe em Branco sobre o Azul (esquerda)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(...RISKS_PDF_COLORS.white);
   doc.text(
-    `Equipe: ${data.teamDisplayName.toUpperCase()}`,
+    `${isEn ? "Team" : "Equipe"}: ${data.teamDisplayName.toUpperCase()}`,
     MARGIN_X + 4,
     bannerY + 12.6,
     { align: "left" }
@@ -127,9 +154,14 @@ function drawPageHeader(doc: jsPDF, data: RisksPdfData): number {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6.5);
-  doc.text("GESTÃO DE RISCOS", yellowCenterX, bannerY + 12.4, {
-    align: "center",
-  });
+  doc.text(
+    isEn ? "RISK MANAGEMENT" : "GESTÃO DE RISCOS",
+    yellowCenterX,
+    bannerY + 12.4,
+    {
+      align: "center",
+    }
+  );
 
   // Linha de metadados (Temporada e contadores por severidade)
   const metaY = bannerY + bannerH + 4.8;
@@ -137,33 +169,41 @@ function drawPageHeader(doc: jsPDF, data: RisksPdfData): number {
   doc.setTextColor(...RISKS_PDF_COLORS.textPrimary);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Temporada:", MARGIN_X, metaY);
+  doc.text(isEn ? "Season:" : "Temporada:", MARGIN_X, metaY);
   doc.setFont("helvetica", "normal");
-  doc.text(data.seasonLabel, MARGIN_X + 18, metaY);
+  doc.text(data.seasonLabel, MARGIN_X + (isEn ? 14 : 18), metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Críticos:", MARGIN_X + 68, metaY);
+  doc.text(isEn ? "Critical:" : "Críticos:", MARGIN_X + 68, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.criticalCount), MARGIN_X + 81.5, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Altos:", MARGIN_X + 98, metaY);
+  doc.text(isEn ? "High:" : "Altos:", MARGIN_X + 98, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.highCount), MARGIN_X + 108, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Médios:", MARGIN_X + 124, metaY);
+  doc.text(isEn ? "Medium:" : "Médios:", MARGIN_X + 124, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.mediumCount), MARGIN_X + 137, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Baixos:", MARGIN_X + 154, metaY);
+  doc.text(isEn ? "Low:" : "Baixos:", MARGIN_X + 154, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.lowCount), MARGIN_X + 166.5, metaY);
 
   doc.setFont("helvetica", "bold");
   doc.text(
-    `${data.totalCount} ${data.totalCount === 1 ? "registro" : "registros"}`,
+    `${data.totalCount} ${
+      isEn
+        ? data.totalCount === 1
+          ? "record"
+          : "records"
+        : data.totalCount === 1
+          ? "registro"
+          : "registros"
+    }`,
     MARGIN_X + CONTENT_WIDTH,
     metaY,
     { align: "right" }
@@ -199,10 +239,11 @@ function drawPageHeader(doc: jsPDF, data: RisksPdfData): number {
   const labelY = headerY + headerH / 2 + 1.1;
 
   for (const col of TABLE_COLUMNS) {
+    const colLabel = isEn ? TABLE_COLUMN_LABELS_EN[col.key] : col.label;
     if (col.align === "center") {
-      doc.text(col.label, col.x + col.width / 2, labelY, { align: "center" });
+      doc.text(colLabel, col.x + col.width / 2, labelY, { align: "center" });
     } else {
-      doc.text(col.label, col.x + 2.5, labelY, { align: "left" });
+      doc.text(colLabel, col.x + 2.5, labelY, { align: "left" });
     }
   }
 
@@ -375,7 +416,13 @@ function drawRow(
   });
 }
 
-function drawSummaryRow(doc: jsPDF, data: RisksPdfData, y: number): number {
+function drawSummaryRow(
+  doc: jsPDF,
+  data: RisksPdfData,
+  y: number,
+  locale: AppLocale
+): number {
+  const isEn = locale === "en-US";
   const height = 7.6;
 
   doc.setFillColor(...RISKS_PDF_COLORS.finalBalanceBg);
@@ -387,14 +434,23 @@ function drawSummaryRow(doc: jsPDF, data: RisksPdfData, y: number): number {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.8);
   doc.setTextColor(...RISKS_PDF_COLORS.brandNavy);
-  doc.text("T O T A L   D E   R E G I S T R O S", MARGIN_X + 2.5, baselineY, {
-    align: "left",
-  });
+  doc.text(
+    isEn ? "T O T A L   R E C O R D S" : "T O T A L   D E   R E G I S T R O S",
+    MARGIN_X + 2.5,
+    baselineY,
+    {
+      align: "left",
+    }
+  );
 
   doc.text(
-    `${data.totalCount} ${
-      data.totalCount === 1 ? "registro" : "registros"
-    }  •  Críticos: ${data.criticalCount}  •  Altos: ${data.highCount}  •  Médios: ${data.mediumCount}  •  Baixos: ${data.lowCount}`,
+    isEn
+      ? `${data.totalCount} ${
+          data.totalCount === 1 ? "record" : "records"
+        }  •  Critical: ${data.criticalCount}  •  High: ${data.highCount}  •  Medium: ${data.mediumCount}  •  Low: ${data.lowCount}`
+      : `${data.totalCount} ${
+          data.totalCount === 1 ? "registro" : "registros"
+        }  •  Críticos: ${data.criticalCount}  •  Altos: ${data.highCount}  •  Médios: ${data.mediumCount}  •  Baixos: ${data.lowCount}`,
     MARGIN_X + CONTENT_WIDTH - 2.5,
     baselineY,
     { align: "right" }
@@ -408,8 +464,10 @@ function drawPageFooter(
   pageNumber: number,
   pageCount: number,
   teamName: string,
-  formattedDate: string
+  formattedDate: string,
+  locale: AppLocale
 ): void {
+  const isEn = locale === "en-US";
   const lineY = PAGE_HEIGHT - 11;
   const textY = PAGE_HEIGHT - 7;
 
@@ -421,13 +479,17 @@ function drawPageFooter(
   doc.setFontSize(7.2);
   doc.setTextColor(...RISKS_PDF_COLORS.brandNavy);
   doc.text(
-    `${teamName} • Matriz de Riscos & Oportunidades • Emitido em ${formattedDate}`,
+    isEn
+      ? `${teamName} • Risk & Opportunity Matrix • Issued on ${formattedDate}`
+      : `${teamName} • Matriz de Riscos & Oportunidades • Emitido em ${formattedDate}`,
     MARGIN_X,
     textY,
     { align: "left" }
   );
   doc.text(
-    `Página ${pageNumber} de ${pageCount}`,
+    isEn
+      ? `Page ${pageNumber} of ${pageCount}`
+      : `Página ${pageNumber} de ${pageCount}`,
     MARGIN_X + CONTENT_WIDTH,
     textY,
     { align: "right" }
@@ -442,15 +504,84 @@ export async function exportRisksToPdf({
   items,
   teamName,
   seasonLabel,
+  locale,
 }: ExportRisksPdfParams): Promise<{
   filename: string;
   pageCount: number;
+  translationFallback?: boolean;
 }> {
+  const resolvedLocale = locale ?? getStoredLocale();
+  const isEn = resolvedLocale === "en-US";
+
   if (items.length === 0) {
-    throw new Error("Não há riscos cadastrados para exportar.");
+    throw new Error(
+      isEn
+        ? "There are no registered risks to export."
+        : "Não há riscos cadastrados para exportar."
+    );
   }
 
-  const data = buildRisksPdfData({ items, teamName, seasonLabel });
+  let localizedItems = items;
+  let translationFallback = false;
+
+  if (isEn) {
+    const dynamicTexts = items.flatMap((item) => [
+      item.title,
+      item.observations,
+      item.proactiveStrategy,
+      item.contingencyPlan,
+      item.evidenceNotes,
+    ]);
+    const translated = await translatePdfTexts(dynamicTexts, {
+      locale: resolvedLocale,
+      context: "Risk & Opportunity Matrix PDF (risk titles, mitigation plans, and notes)",
+    });
+    translationFallback = translated.usedFallback;
+
+    localizedItems = items.map((item) => ({
+      ...item,
+      title: resolveTranslatedPdfText(
+        item.title,
+        translated.translations,
+        resolvedLocale
+      ),
+      observations: item.observations
+        ? resolveTranslatedPdfText(
+            item.observations,
+            translated.translations,
+            resolvedLocale
+          )
+        : item.observations,
+      proactiveStrategy: item.proactiveStrategy
+        ? resolveTranslatedPdfText(
+            item.proactiveStrategy,
+            translated.translations,
+            resolvedLocale
+          )
+        : item.proactiveStrategy,
+      contingencyPlan: item.contingencyPlan
+        ? resolveTranslatedPdfText(
+            item.contingencyPlan,
+            translated.translations,
+            resolvedLocale
+          )
+        : item.contingencyPlan,
+      evidenceNotes: item.evidenceNotes
+        ? resolveTranslatedPdfText(
+            item.evidenceNotes,
+            translated.translations,
+            resolvedLocale
+          )
+        : item.evidenceNotes,
+    }));
+  }
+
+  const data = buildRisksPdfData({
+    items: localizedItems,
+    teamName,
+    seasonLabel,
+    locale: resolvedLocale,
+  });
   const { jsPDF: JsPdfCtor } = await import("jspdf");
 
   const doc = new JsPdfCtor({
@@ -461,9 +592,9 @@ export async function exportRisksToPdf({
   });
 
   const now = new Date();
-  const formattedDate = now.toLocaleDateString("pt-BR");
+  const formattedDate = now.toLocaleDateString(resolvedLocale);
 
-  let cursorY = drawPageHeader(doc, data);
+  let cursorY = drawPageHeader(doc, data, resolvedLocale);
   let visualIndex = 0;
 
   for (const row of data.rows) {
@@ -471,7 +602,7 @@ export async function exportRisksToPdf({
 
     if (cursorY + measured.height > CONTENT_BOTTOM) {
       doc.addPage("a4", "landscape");
-      cursorY = drawPageHeader(doc, data);
+      cursorY = drawPageHeader(doc, data, resolvedLocale);
       visualIndex = 0;
     }
 
@@ -483,18 +614,29 @@ export async function exportRisksToPdf({
   // Linha de resumo consolidado no rodapé da tabela
   if (cursorY + 8 > CONTENT_BOTTOM) {
     doc.addPage("a4", "landscape");
-    cursorY = drawPageHeader(doc, data);
+    cursorY = drawPageHeader(doc, data, resolvedLocale);
   }
-  drawSummaryRow(doc, data, cursorY);
+  drawSummaryRow(doc, data, cursorY, resolvedLocale);
 
   const pageCount = doc.getNumberOfPages();
   for (let page = 1; page <= pageCount; page += 1) {
     doc.setPage(page);
-    drawPageFooter(doc, page, pageCount, data.teamDisplayName, formattedDate);
+    drawPageFooter(
+      doc,
+      page,
+      pageCount,
+      data.teamDisplayName,
+      formattedDate,
+      resolvedLocale
+    );
   }
 
-  const filename = buildRisksPdfFilename(data.teamDisplayName, now);
+  const filename = buildRisksPdfFilename(
+    data.teamDisplayName,
+    now,
+    resolvedLocale
+  );
   doc.save(filename);
 
-  return { filename, pageCount };
+  return { filename, pageCount, translationFallback };
 }

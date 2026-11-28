@@ -1,4 +1,9 @@
 import type { jsPDF } from "jspdf";
+import { getStoredLocale, type AppLocale } from "@/lib/i18n/locale-types";
+import {
+  resolveTranslatedPdfText,
+  translatePdfTexts,
+} from "@/lib/i18n/pdf-translate-client";
 import type {
   StakeholderGroup,
   StakeholderWithRelations,
@@ -17,7 +22,15 @@ export interface ExportStakeholdersPdfParams {
   stakeholders: StakeholderWithRelations[];
   teamName?: string;
   groupFilter?: StakeholderGroup | "ALL";
+  locale?: AppLocale;
 }
+
+const QUADRANT_TITLES_EN: Record<StakeholderQuadrantKey, string> = {
+  KEEP_SATISFIED: "Keep satisfied",
+  MANAGE_CLOSELY: "Manage closely & engage",
+  MONITOR: "Monitor",
+  KEEP_INFORMED: "Keep informed",
+};
 
 const PAGE_WIDTH = 297; // A4 Paisagem (mm)
 const PAGE_HEIGHT = 210;
@@ -81,7 +94,12 @@ function truncateToWidth(doc: jsPDF, text: string, maxWidth: number): string {
 /**
  * Cabeçalho bicolor Azul + Amarelo (padrão oficial Gênesis) + faixa compacta de contadores.
  */
-function drawPageHeader(doc: jsPDF, data: StakeholdersPdfData): void {
+function drawPageHeader(
+  doc: jsPDF,
+  data: StakeholdersPdfData,
+  locale: AppLocale
+): void {
+  const isEn = locale === "en-US";
   const bannerY = MARGIN_TOP;
   const bannerH = 14.5;
   const splitTopX = MARGIN_X + CONTENT_WIDTH * 0.78;
@@ -103,7 +121,9 @@ function drawPageHeader(doc: jsPDF, data: StakeholdersPdfData): void {
   doc.setFontSize(13);
   doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandYellow);
   doc.text(
-    "Matriz de Stakeholders (Poder × Interesse)",
+    isEn
+      ? "Stakeholders Matrix (Power × Interest)"
+      : "Matriz de Stakeholders (Poder × Interesse)",
     MARGIN_X + 4,
     bannerY + 6.4,
     { align: "left" }
@@ -113,7 +133,7 @@ function drawPageHeader(doc: jsPDF, data: StakeholdersPdfData): void {
   doc.setFontSize(8.2);
   doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.white);
   doc.text(
-    `Equipe: ${data.teamDisplayName.toUpperCase()}  •  Filtro: ${data.filterLabel}`,
+    `${isEn ? "Team" : "Equipe"}: ${data.teamDisplayName.toUpperCase()}  •  ${isEn ? "Filter" : "Filtro"}: ${data.filterLabel}`,
     MARGIN_X + 4,
     bannerY + 11.8,
     { align: "left" }
@@ -136,22 +156,30 @@ function drawPageHeader(doc: jsPDF, data: StakeholdersPdfData): void {
   doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Gerenciar de perto:", MARGIN_X, metaY);
+  doc.text(isEn ? "Manage closely:" : "Gerenciar de perto:", MARGIN_X, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.quadrants.MANAGE_CLOSELY.length), MARGIN_X + 28, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Manter satisfeito:", MARGIN_X + 44, metaY);
+  doc.text(
+    isEn ? "Keep satisfied:" : "Manter satisfeito:",
+    MARGIN_X + 44,
+    metaY
+  );
   doc.setFont("helvetica", "normal");
   doc.text(String(data.quadrants.KEEP_SATISFIED.length), MARGIN_X + 69.5, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Manter informado:", MARGIN_X + 86, metaY);
+  doc.text(
+    isEn ? "Keep informed:" : "Manter informado:",
+    MARGIN_X + 86,
+    metaY
+  );
   doc.setFont("helvetica", "normal");
   doc.text(String(data.quadrants.KEEP_INFORMED.length), MARGIN_X + 112.5, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Monitorar:", MARGIN_X + 129, metaY);
+  doc.text(isEn ? "Monitor:" : "Monitorar:", MARGIN_X + 129, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.quadrants.MONITOR.length), MARGIN_X + 144.5, metaY);
 
@@ -159,9 +187,13 @@ function drawPageHeader(doc: jsPDF, data: StakeholdersPdfData): void {
   doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandNavy);
   doc.text(
     `${data.totalStakeholders} ${
-      data.totalStakeholders === 1
-        ? "stakeholder mapeado"
-        : "stakeholders mapeados"
+      isEn
+        ? data.totalStakeholders === 1
+          ? "mapped stakeholder"
+          : "mapped stakeholders"
+        : data.totalStakeholders === 1
+          ? "stakeholder mapeado"
+          : "stakeholders mapeados"
     }`,
     MARGIN_X + CONTENT_WIDTH,
     metaY,
@@ -172,7 +204,8 @@ function drawPageHeader(doc: jsPDF, data: StakeholdersPdfData): void {
 /**
  * Desenha os eixos PODER (vertical) e INTERESSE (horizontal) com setas e divisória tracejada.
  */
-function drawMatrixAxes(doc: jsPDF): void {
+function drawMatrixAxes(doc: jsPDF, locale: AppLocale): void {
+  const isEn = locale === "en-US";
   doc.setDrawColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
   doc.setLineWidth(0.95);
 
@@ -229,14 +262,24 @@ function drawMatrixAxes(doc: jsPDF): void {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
-  doc.text("PODER", 17.5, (MATRIX.topRowY + MATRIX.axisBottomY) / 2 + 7.5, {
-    angle: 90,
-  });
+  doc.text(
+    isEn ? "POWER" : "PODER",
+    17.5,
+    (MATRIX.topRowY + MATRIX.axisBottomY) / 2 + 7.5,
+    {
+      angle: 90,
+    }
+  );
 
   // Rótulo horizontal INTERESSE
-  doc.text("INTERESSE", MATRIX.dividerX, MATRIX.axisBottomY + 6.0, {
-    align: "center",
-  });
+  doc.text(
+    isEn ? "INTEREST" : "INTERESSE",
+    MATRIX.dividerX,
+    MATRIX.axisBottomY + 6.0,
+    {
+      align: "center",
+    }
+  );
 }
 
 /**
@@ -244,8 +287,10 @@ function drawMatrixAxes(doc: jsPDF): void {
  */
 function drawQuadrantsPage(
   doc: jsPDF,
-  slices: Record<StakeholderQuadrantKey, StakeholderMatrixCard[]>
+  slices: Record<StakeholderQuadrantKey, StakeholderMatrixCard[]>,
+  locale: AppLocale
 ): void {
+  const isEn = locale === "en-US";
   const keys: StakeholderQuadrantKey[] = [
     "KEEP_SATISFIED",
     "MANAGE_CLOSELY",
@@ -256,6 +301,7 @@ function drawQuadrantsPage(
   for (const key of keys) {
     const rect = QUADRANT_RECTS[key];
     const config = STAKEHOLDER_QUADRANT_CONFIG[key];
+    const quadrantTitle = isEn ? QUADRANT_TITLES_EN[key] : config.title;
     const items = slices[key];
 
     // Fundo translúcido + borda sutil
@@ -270,13 +316,13 @@ function drawQuadrantsPage(
     doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.textPrimary);
 
     if (config.titlePosition === "top-left") {
-      doc.text(config.title, rect.x + 3.6, rect.y + 6.0, { align: "left" });
+      doc.text(quadrantTitle, rect.x + 3.6, rect.y + 6.0, { align: "left" });
     } else if (config.titlePosition === "bottom-left") {
-      doc.text(config.title, rect.x + 3.6, rect.y + rect.h - 3.0, {
+      doc.text(quadrantTitle, rect.x + 3.6, rect.y + rect.h - 3.0, {
         align: "left",
       });
     } else {
-      doc.text(config.title, rect.x + rect.w - 3.6, rect.y + rect.h - 3.0, {
+      doc.text(quadrantTitle, rect.x + rect.w - 3.6, rect.y + rect.h - 3.0, {
         align: "right",
       });
     }
@@ -286,7 +332,9 @@ function drawQuadrantsPage(
       doc.setFontSize(7.6);
       doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandNavy);
       doc.text(
-        "Nenhum stakeholder neste quadrante",
+        isEn
+          ? "No stakeholders in this quadrant"
+          : "Nenhum stakeholder neste quadrante",
         rect.x + rect.w / 2,
         rect.y + rect.h / 2,
         { align: "center" }
@@ -375,8 +423,10 @@ function drawPageFooter(
   pageNumber: number,
   pageCount: number,
   teamName: string,
-  formattedDate: string
+  formattedDate: string,
+  locale: AppLocale
 ): void {
+  const isEn = locale === "en-US";
   const lineY = PAGE_HEIGHT - 10;
   const textY = PAGE_HEIGHT - 6;
 
@@ -388,13 +438,17 @@ function drawPageFooter(
   doc.setFontSize(7.0);
   doc.setTextColor(...STAKEHOLDERS_PDF_COLORS.brandNavy);
   doc.text(
-    `${teamName} • Matriz de Stakeholders (Poder × Interesse) • Emitido em ${formattedDate}`,
+    isEn
+      ? `${teamName} • Stakeholders Matrix (Power × Interest) • Issued on ${formattedDate}`
+      : `${teamName} • Matriz de Stakeholders (Poder × Interesse) • Emitido em ${formattedDate}`,
     MARGIN_X,
     textY,
     { align: "left" }
   );
   doc.text(
-    `Página ${pageNumber} de ${pageCount}`,
+    isEn
+      ? `Page ${pageNumber} of ${pageCount}`
+      : `Página ${pageNumber} de ${pageCount}`,
     MARGIN_X + CONTENT_WIDTH,
     textY,
     { align: "right" }
@@ -409,18 +463,51 @@ export async function exportStakeholdersToPdf({
   stakeholders,
   teamName,
   groupFilter,
+  locale,
 }: ExportStakeholdersPdfParams): Promise<{
   filename: string;
   pageCount: number;
+  translationFallback?: boolean;
 }> {
+  const resolvedLocale = locale ?? getStoredLocale();
+  const isEn = resolvedLocale === "en-US";
+
   if (stakeholders.length === 0) {
-    throw new Error("Não há stakeholders cadastrados para exportar.");
+    throw new Error(
+      isEn
+        ? "There are no registered stakeholders to export."
+        : "Não há stakeholders cadastrados para exportar."
+    );
+  }
+
+  let localizedStakeholders = stakeholders;
+  let translationFallback = false;
+
+  if (isEn) {
+    const roles = stakeholders.map((item) => item.roleOrJobTitle);
+    const translated = await translatePdfTexts(roles, {
+      locale: resolvedLocale,
+      context: "Stakeholders Power x Interest Matrix PDF (job titles and roles)",
+    });
+    translationFallback = translated.usedFallback;
+
+    localizedStakeholders = stakeholders.map((item) => ({
+      ...item,
+      roleOrJobTitle: item.roleOrJobTitle
+        ? resolveTranslatedPdfText(
+            item.roleOrJobTitle,
+            translated.translations,
+            resolvedLocale
+          )
+        : item.roleOrJobTitle,
+    }));
   }
 
   const data = buildStakeholdersPdfData({
-    stakeholders,
+    stakeholders: localizedStakeholders,
     teamName,
     groupFilter,
+    locale: resolvedLocale,
   });
   const { jsPDF: JsPdfCtor } = await import("jspdf");
 
@@ -432,7 +519,7 @@ export async function exportStakeholdersToPdf({
   });
 
   const now = new Date();
-  const formattedDate = now.toLocaleDateString("pt-BR");
+  const formattedDate = now.toLocaleDateString(resolvedLocale);
 
   const MAX_PER_QUADRANT_PER_PAGE = 12;
   const maxItemsInAnyQuadrant = Math.max(
@@ -461,20 +548,25 @@ export async function exportStakeholdersToPdf({
       KEEP_INFORMED: data.quadrants.KEEP_INFORMED.slice(start, end),
     };
 
-    drawPageHeader(doc, data);
-    drawQuadrantsPage(doc, pageSlices);
-    drawMatrixAxes(doc);
+    drawPageHeader(doc, data, resolvedLocale);
+    drawQuadrantsPage(doc, pageSlices, resolvedLocale);
+    drawMatrixAxes(doc, resolvedLocale);
     drawPageFooter(
       doc,
       pageIdx + 1,
       totalPages,
       data.teamDisplayName,
-      formattedDate
+      formattedDate,
+      resolvedLocale
     );
   }
 
-  const filename = buildStakeholdersPdfFilename(data.teamDisplayName, now);
+  const filename = buildStakeholdersPdfFilename(
+    data.teamDisplayName,
+    now,
+    resolvedLocale
+  );
   doc.save(filename);
 
-  return { filename, pageCount: totalPages };
+  return { filename, pageCount: totalPages, translationFallback };
 }

@@ -1,5 +1,7 @@
 import { STAKEHOLDER_GROUP_LABELS } from "@/lib/communication-constants";
 import { resolveStakeholderMatrixQuadrant } from "@/lib/communication-hierarchy";
+import type { AppLocale } from "@/lib/i18n/locale-types";
+import { translateUiText } from "@/lib/i18n/translations";
 import type {
   CommunicationChannel,
   CommunicationFrequency,
@@ -141,29 +143,92 @@ export interface CommunicationMatrixPdfData {
   rows: CommunicationMatrixPdfRow[];
 }
 
+const SHORT_GROUP_LABELS_EN: Record<StakeholderGroup, string> = {
+  SPONSORS: "Sponsors",
+  SCHOOL_LEADERSHIP: "School Leadership",
+  PARENTS_GUARDIANS: "Parents & Guardians",
+  TECHNICAL_MENTORS: "Mentors / Coaches",
+  COMMUNITY_FANS: "Community",
+  COMPETITION_OFFICIALS: "STEM Committee",
+};
+
+const SHORT_CHANNEL_LABELS_EN: Record<CommunicationChannel, string> = {
+  EMAIL: "Formal Email",
+  WHATSAPP: "WhatsApp",
+  MEETING: "Meeting",
+  REPORT_PDF: "PDF Report",
+};
+
+const SHORT_FREQUENCY_LABELS_EN: Record<CommunicationFrequency, string> = {
+  WEEKLY: "Weekly",
+  BIWEEKLY: "Biweekly",
+  MONTHLY: "Monthly",
+  BIMONTHLY: "Bimonthly",
+  QUARTERLY: "Quarterly",
+  MILESTONE_EVENT: "Post-Milestone",
+};
+
+const SHORT_ENGAGEMENT_LABELS_EN: Record<EngagementLevel, string> = {
+  UNAWARE: "Unaware",
+  RESISTANT: "Resistant",
+  NEUTRAL: "Neutral",
+  SUPPORTIVE: "Supportive",
+  LEADING: "Leading Advocate",
+};
+
+const QUADRANT_STRATEGY_LABELS_EN: Record<StakeholderQuadrantKey, string> = {
+  MANAGE_CLOSELY: "Manage closely",
+  KEEP_SATISFIED: "Keep satisfied",
+  KEEP_INFORMED: "Keep informed",
+  MONITOR: "Monitor",
+};
+
 export function resolveDefaultCommunicationApproach(
   group: StakeholderGroup,
   power: StakeholderPower,
   interest: StakeholderInterest,
+  locale: AppLocale = "pt-BR",
 ): string {
+  const isEn = locale === "en-US";
   if (group === "SPONSORS") {
+    if (isEn) {
+      return power === "HIGH"
+        ? "ROI report, sponsorship deliverables, technical results, and brand visibility."
+        : "Periodic updates on deliverables, project progress, and event invitations.";
+    }
     return power === "HIGH"
       ? "Relatório de ROI, entregas de contrapartida, resultados técnicos e visibilidade da marca."
       : "Atualizações periódicas de entregas, avanços do projeto e convites para eventos.";
   }
   if (group === "SCHOOL_LEADERSHIP") {
+    if (isEn) {
+      return power === "HIGH"
+        ? "Institutional milestone summary, academic schedule, and infrastructure needs."
+        : "Team progress summary, event participation, and competition stage results.";
+    }
     return power === "HIGH"
       ? "Balanço institucional de marcos, cronograma acadêmico e demandas de infraestrutura."
       : "Resumo de progresso da equipe, participações e resultados das etapas.";
   }
   if (group === "TECHNICAL_MENTORS") {
-    return "Validações técnicas de engenharia, manufatura CNC, testes de pista e feedbacks de desempenho.";
+    return isEn
+      ? "Technical validations for engineering, CNC manufacturing, track testing, and performance feedback."
+      : "Validações técnicas de engenharia, manufatura CNC, testes de pista e feedbacks de desempenho.";
   }
   if (group === "COMPETITION_OFFICIALS") {
-    return "Conformidade com o regulamento técnico, prazos oficiais, portfólios e inspeções.";
+    return isEn
+      ? "Technical regulation compliance, official deadlines, portfolios, and inspections."
+      : "Conformidade com o regulamento técnico, prazos oficiais, portfólios e inspeções.";
   }
   if (group === "PARENTS_GUARDIANS") {
-    return "Agenda de treinos, cronograma de competições, logística e autorizações da equipe.";
+    return isEn
+      ? "Training schedule, competition calendar, logistics, and team authorizations."
+      : "Agenda de treinos, cronograma de competições, logística e autorizações da equipe.";
+  }
+  if (isEn) {
+    return interest === "HIGH"
+      ? "Updates on season milestones, engineering behind-the-scenes, and social initiatives."
+      : "Highlights of major season milestones and open team events.";
   }
   return interest === "HIGH"
     ? "Atualizações sobre marcos da temporada, bastidores técnicos e ações sociais."
@@ -180,16 +245,24 @@ export function buildCommunicationMatrixPdfData({
   stakeholders,
   teamName,
   groupFilter,
+  locale = "pt-BR",
 }: {
   stakeholders: StakeholderWithRelations[];
   teamName?: string;
   groupFilter?: StakeholderGroup | "ALL";
+  locale?: AppLocale;
 }): CommunicationMatrixPdfData {
+  const isEn = locale === "en-US";
   const teamDisplayName = teamName?.trim() || "Equipe Gênesis";
-  const filterLabel =
+  const rawFilterLabel =
     groupFilter && groupFilter !== "ALL"
       ? STAKEHOLDER_GROUP_LABELS[groupFilter]
-      : "Todos os Grupos";
+      : isEn
+        ? "All Groups"
+        : "Todos os Grupos";
+  const filterLabel = isEn
+    ? translateUiText(rawFilterLabel, locale)
+    : rawFilterLabel;
 
   const scoped =
     groupFilter && groupFilter !== "ALL"
@@ -237,27 +310,64 @@ export function buildCommunicationMatrixPdfData({
     quadrantCounts[quadrant] += 1;
 
     const strategyMeta = QUADRANT_STRATEGY_META[quadrant];
-    const groupLabel = SHORT_GROUP_LABELS[item.group] || STAKEHOLDER_GROUP_LABELS[item.group] || item.group;
+    const strategyLabel = isEn
+      ? QUADRANT_STRATEGY_LABELS_EN[quadrant]
+      : strategyMeta.label;
+    const groupLabel = isEn
+      ? SHORT_GROUP_LABELS_EN[item.group] ||
+        translateUiText(STAKEHOLDER_GROUP_LABELS[item.group] || item.group, locale)
+      : SHORT_GROUP_LABELS[item.group] ||
+        STAKEHOLDER_GROUP_LABELS[item.group] ||
+        item.group;
     const subtitleParts: string[] = [];
     if (item.organization?.trim()) subtitleParts.push(item.organization.trim());
     if (item.roleOrJobTitle?.trim()) subtitleParts.push(item.roleOrJobTitle.trim());
     const stakeholderSubtitle = subtitleParts.join(" • ") || groupLabel;
 
-    const powerText = item.power === "HIGH" ? "Alto" : "Baixo";
-    const interestText = item.interest === "HIGH" ? "Alto" : "Baixo";
-    const powerInterestMeta = `Poder ${powerText} • Inter. ${interestText}`;
+    const powerText =
+      item.power === "HIGH"
+        ? isEn
+          ? "High"
+          : "Alto"
+        : isEn
+          ? "Low"
+          : "Baixo";
+    const interestText =
+      item.interest === "HIGH"
+        ? isEn
+          ? "High"
+          : "Alto"
+        : isEn
+          ? "Low"
+          : "Baixo";
+    const powerInterestMeta = isEn
+      ? `Power ${powerText} • Int. ${interestText}`
+      : `Poder ${powerText} • Inter. ${interestText}`;
 
+    const engagementMap = isEn
+      ? SHORT_ENGAGEMENT_LABELS_EN
+      : SHORT_ENGAGEMENT_LABELS;
     const hasEngagementGap = item.currentEngagement !== item.targetEngagement;
     const engagementPrimary = hasEngagementGap
-      ? `Atual: ${SHORT_ENGAGEMENT_LABELS[item.currentEngagement]}`
-      : SHORT_ENGAGEMENT_LABELS[item.currentEngagement];
+      ? `${isEn ? "Current" : "Atual"}: ${engagementMap[item.currentEngagement]}`
+      : engagementMap[item.currentEngagement];
     const engagementSecondary = hasEngagementGap
-      ? `Meta: ${SHORT_ENGAGEMENT_LABELS[item.targetEngagement]}`
+      ? `${isEn ? "Target" : "Meta"}: ${engagementMap[item.targetEngagement]}`
       : null;
 
     const fallbackApproach =
       item.notes?.trim() ||
-      resolveDefaultCommunicationApproach(item.group, item.power, item.interest);
+      resolveDefaultCommunicationApproach(
+        item.group,
+        item.power,
+        item.interest,
+        locale,
+      );
+
+    const channelMap = isEn ? SHORT_CHANNEL_LABELS_EN : SHORT_CHANNEL_LABELS;
+    const frequencyMap = isEn
+      ? SHORT_FREQUENCY_LABELS_EN
+      : SHORT_FREQUENCY_LABELS;
 
     const activePlans = (item.plans ?? []).filter((plan) => plan.isActive);
 
@@ -274,13 +384,13 @@ export function buildCommunicationMatrixPdfData({
           stakeholderName: item.name,
           stakeholderSubtitle,
           groupLabel,
-          strategyLabel: strategyMeta.label,
+          strategyLabel,
           strategyTone: strategyMeta.tone,
           powerInterestMeta,
           channel: plan.channel,
-          channelLabel: SHORT_CHANNEL_LABELS[plan.channel],
+          channelLabel: channelMap[plan.channel],
           channelTone: CHANNEL_TONE_MAP[plan.channel],
-          frequencyLabel: SHORT_FREQUENCY_LABELS[plan.frequency],
+          frequencyLabel: frequencyMap[plan.frequency],
           engagementPrimary,
           engagementSecondary,
           contentApproach: planContentParts.join(" - ") || fallbackApproach,
@@ -293,13 +403,13 @@ export function buildCommunicationMatrixPdfData({
         stakeholderName: item.name,
         stakeholderSubtitle,
         groupLabel,
-        strategyLabel: strategyMeta.label,
+        strategyLabel,
         strategyTone: strategyMeta.tone,
         powerInterestMeta,
         channel: item.preferredChannel,
-        channelLabel: SHORT_CHANNEL_LABELS[item.preferredChannel],
+        channelLabel: channelMap[item.preferredChannel],
         channelTone: CHANNEL_TONE_MAP[item.preferredChannel],
-        frequencyLabel: SHORT_FREQUENCY_LABELS[item.preferredFrequency],
+        frequencyLabel: frequencyMap[item.preferredFrequency],
         engagementPrimary,
         engagementSecondary,
         contentApproach: fallbackApproach,
@@ -322,6 +432,7 @@ export function buildCommunicationMatrixPdfData({
 export function buildCommunicationMatrixPdfFilename(
   teamName?: string,
   date = new Date(),
+  locale: AppLocale = "pt-BR",
 ): string {
   const slug =
     (teamName || "equipe-genesis")
@@ -334,6 +445,8 @@ export function buildCommunicationMatrixPdfFilename(
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
+  const prefix =
+    locale === "en-US" ? "communication-matrix" : "matriz-comunicacao";
 
-  return `matriz-comunicacao-${slug}-${yyyy}-${mm}-${dd}.pdf`;
+  return `${prefix}-${slug}-${yyyy}-${mm}-${dd}.pdf`;
 }

@@ -1,3 +1,4 @@
+import type { AppLocale } from "@/lib/i18n/locale-types";
 import type { WbsTreeNode } from "@/types/wbs";
 
 export type RgbColor = readonly [number, number, number];
@@ -560,7 +561,11 @@ export function computeWbsPdfLayout({
 /**
  * Gera um nome de arquivo limpo e padronizado para o PDF da WBS.
  */
-export function buildWbsPdfFilename(teamName?: string, date = new Date()): string {
+export function buildWbsPdfFilename(
+  teamName?: string,
+  date = new Date(),
+  locale: AppLocale = "pt-BR"
+): string {
   const slug = (teamName || "equipe")
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
@@ -571,6 +576,7 @@ export function buildWbsPdfFilename(teamName?: string, date = new Date()): strin
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
+  const prefix = locale === "en-US" ? "wbs-scope" : "wbs";
 
-  return `wbs-${slug}-${yyyy}-${mm}-${dd}.pdf`;
+  return `${prefix}-${slug}-${yyyy}-${mm}-${dd}.pdf`;
 }

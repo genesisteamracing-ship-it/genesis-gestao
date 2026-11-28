@@ -2,6 +2,8 @@ import {
   ACQUISITION_STRATEGY_LABELS,
   DELIVERY_GROUP_LABELS,
 } from "@/lib/constants";
+import type { AppLocale } from "@/lib/i18n/locale-types";
+import { translateUiText } from "@/lib/i18n/translations";
 import type { BudgetResourceDTO } from "@/types/financial";
 import {
   formatCurrencyBRL,
@@ -52,11 +54,23 @@ const SHORT_STRATEGY_LABELS: Record<
   OWN_FUNDS_RAFFLE: "Rec. Próprios",
 };
 
+const SHORT_STRATEGY_LABELS_EN: Record<
+  BudgetResourceDTO["acquisitionStrategy"],
+  string
+> = {
+  DIRECT_PURCHASE: "Direct Purchase",
+  FINANCIAL_SPONSOR: "Sponsorship",
+  BARTER_PARTNERSHIP: "Barter",
+  OWN_FUNDS_RAFFLE: "Own Funds",
+};
+
 function resolveMonthLabel(
   month: number,
-  monthLabels?: Record<number, string>
+  monthLabels?: Record<number, string>,
+  locale: AppLocale = "pt-BR"
 ): string {
-  return monthLabels?.[month] ?? `Mês ${month}`;
+  const raw = monthLabels?.[month] ?? `Mês ${month}`;
+  return locale === "en-US" ? translateUiText(raw, locale) : raw;
 }
 
 /**
@@ -70,18 +84,23 @@ export function buildBudgetPlanningData({
   teamName,
   seasonLabel,
   monthLabels,
+  locale = "pt-BR",
 }: {
   resources: BudgetResourceDTO[];
   teamName?: string;
   seasonLabel?: string;
   monthLabels?: Record<number, string>;
+  locale?: AppLocale;
 }): BudgetPlanningData {
+  const isEn = locale === "en-US";
   const teamDisplayName = teamName?.trim() || "Equipe Gênesis";
 
   if (resources.length === 0) {
     return {
       teamDisplayName,
-      scopeLabel: seasonLabel?.trim() || "Sem recursos planejados",
+      scopeLabel:
+        seasonLabel?.trim() ||
+        (isEn ? "No planned resources" : "Sem recursos planejados"),
       totalPlannedCents: 0,
       resourceCount: 0,
       rows: [],
@@ -113,24 +132,33 @@ export function buildBudgetPlanningData({
     if (item.plannedMonth < minMonth) minMonth = item.plannedMonth;
     if (item.plannedMonth > maxMonth) maxMonth = item.plannedMonth;
 
-    const sectorLabel =
+    const rawSectorLabel =
       DELIVERY_GROUP_LABELS[item.deliveryGroup] || item.deliveryGroup;
-    const strategyLabel =
-      SHORT_STRATEGY_LABELS[item.acquisitionStrategy] ||
-      ACQUISITION_STRATEGY_LABELS[item.acquisitionStrategy] ||
-      item.acquisitionStrategy;
+    const sectorLabel = isEn
+      ? translateUiText(rawSectorLabel, locale)
+      : rawSectorLabel;
+    const strategyLabel = isEn
+      ? SHORT_STRATEGY_LABELS_EN[item.acquisitionStrategy] ||
+        translateUiText(
+          ACQUISITION_STRATEGY_LABELS[item.acquisitionStrategy] ||
+            item.acquisitionStrategy,
+          locale
+        )
+      : SHORT_STRATEGY_LABELS[item.acquisitionStrategy] ||
+        ACQUISITION_STRATEGY_LABELS[item.acquisitionStrategy] ||
+        item.acquisitionStrategy;
 
     const secondaryParts = [
       sectorLabel,
       item.categoryName,
-      `Resp.: ${item.allocatedTo}`,
-      `${item.utilizationForecast}% uso`,
+      `${isEn ? "Owner" : "Resp."}: ${item.allocatedTo}`,
+      `${item.utilizationForecast}% ${isEn ? "usage" : "uso"}`,
     ];
 
     rows.push({
       kind: "RESOURCE",
       code: item.code,
-      monthLabel: resolveMonthLabel(item.plannedMonth, monthLabels),
+      monthLabel: resolveMonthLabel(item.plannedMonth, monthLabels, locale),
       strategyLabel,
       resourcePrimary: item.resourceName,
       resourceSecondary: secondaryParts.join(" • "),
@@ -158,17 +186,23 @@ export function buildBudgetPlanningData({
     code: "",
     monthLabel: "",
     strategyLabel: "",
-    resourcePrimary: "T O T A L   O R Ç A D O",
+    resourcePrimary: isEn
+      ? "T O T A L   B U D G E T"
+      : "T O T A L   O R Ç A D O",
     resourceSecondary: "",
     plannedFormatted: formatCurrencyBRL(totalPlannedCents),
   });
 
   const derivedPeriod =
     minMonth === maxMonth
-      ? resolveMonthLabel(minMonth, monthLabels)
-      : `${resolveMonthLabel(minMonth, monthLabels)} a ${resolveMonthLabel(maxMonth, monthLabels)}`;
+      ? resolveMonthLabel(minMonth, monthLabels, locale)
+      : `${resolveMonthLabel(minMonth, monthLabels, locale)} ${isEn ? "to" : "a"} ${resolveMonthLabel(maxMonth, monthLabels, locale)}`;
 
-  const scopeLabel = seasonLabel?.trim() || derivedPeriod;
+  const scopeLabel = seasonLabel?.trim()
+    ? isEn
+      ? translateUiText(seasonLabel.trim(), locale)
+      : seasonLabel.trim()
+    : derivedPeriod;
 
   return {
     teamDisplayName,
@@ -181,7 +215,8 @@ export function buildBudgetPlanningData({
 
 export function buildBudgetPlanningFilename(
   teamName?: string,
-  date = new Date()
+  date = new Date(),
+  locale: AppLocale = "pt-BR"
 ): string {
   const slug =
     (teamName || "equipe-genesis")
@@ -194,6 +229,8 @@ export function buildBudgetPlanningFilename(
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
+  const prefix =
+    locale === "en-US" ? "budget-planning" : "orcamento-planejamento";
 
-  return `orcamento-planejamento-${slug}-${yyyy}-${mm}-${dd}.pdf`;
+  return `${prefix}-${slug}-${yyyy}-${mm}-${dd}.pdf`;
 }

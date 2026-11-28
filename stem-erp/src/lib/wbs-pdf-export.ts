@@ -1,4 +1,9 @@
 import type { jsPDF } from "jspdf";
+import { getStoredLocale, type AppLocale } from "@/lib/i18n/locale-types";
+import {
+  resolveTranslatedPdfText,
+  translatePdfTexts,
+} from "@/lib/i18n/pdf-translate-client";
 import type { WbsTreeNode } from "@/types/wbs";
 import {
   buildWbsPdfFilename,
@@ -13,6 +18,33 @@ import {
 export interface ExportWbsPdfParams {
   tree: WbsTreeNode[];
   teamName?: string;
+  locale?: AppLocale;
+}
+
+function collectWbsNodeTitles(nodes: WbsTreeNode[]): string[] {
+  const titles: string[] = [];
+  for (const node of nodes) {
+    titles.push(node.title);
+    if (node.children.length > 0) {
+      titles.push(...collectWbsNodeTitles(node.children));
+    }
+  }
+  return titles;
+}
+
+function mapWbsTreeTitles(
+  nodes: WbsTreeNode[],
+  translations: ReadonlyMap<string, string>,
+  locale: AppLocale
+): WbsTreeNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    title: resolveTranslatedPdfText(node.title, translations, locale),
+    children:
+      node.children.length > 0
+        ? mapWbsTreeTitles(node.children, translations, locale)
+        : [],
+  }));
 }
 
 /**
@@ -63,8 +95,10 @@ function drawPageFooter(
   pageWidth: number,
   pageHeight: number,
   teamName: string | undefined,
-  formattedDate: string
+  formattedDate: string,
+  locale: AppLocale
 ): void {
+  const isEn = locale === "en-US";
   const footerLineY = pageHeight - 11.5;
   const footerTextY = pageHeight - 7.5;
 
@@ -85,10 +119,12 @@ function drawPageFooter(
     WBS_PDF_MUTED_TEXT_COLOR[2]
   );
 
-  const leftLabel = `${teamName?.trim() || "WBS"} • Estrutura Analítica do Projeto • ${formattedDate}`;
+  const leftLabel = isEn
+    ? `${teamName?.trim() || "WBS"} • Work Breakdown Structure • ${formattedDate}`
+    : `${teamName?.trim() || "WBS"} • Estrutura Analítica do Projeto • ${formattedDate}`;
   doc.text(leftLabel, WBS_PDF_PAGE.marginX, footerTextY, { align: "left" });
   doc.text(
-    "Página 1 de 1",
+    isEn ? "Page 1 of 1" : "Página 1 de 1",
     pageWidth - WBS_PDF_PAGE.marginX,
     footerTextY,
     { align: "right" }
@@ -103,9 +139,38 @@ function drawPageFooter(
 export async function exportWbsToPdf({
   tree,
   teamName,
-}: ExportWbsPdfParams): Promise<{ filename: string; pageCount: number }> {
+  locale,
+}: ExportWbsPdfParams): Promise<{
+  filename: string;
+  pageCount: number;
+  translationFallback?: boolean;
+}> {
+  const resolvedLocale = locale ?? getStoredLocale();
+  const isEn = resolvedLocale === "en-US";
+
   if (tree.length === 0) {
-    throw new Error("Não há entregáveis na WBS para exportar.");
+    throw new Error(
+      isEn
+        ? "There are no WBS deliverables to export."
+        : "Não há entregáveis na WBS para exportar."
+    );
+  }
+
+  let localizedTree = tree;
+  let translationFallback = false;
+
+  if (isEn) {
+    const titles = collectWbsNodeTitles(tree);
+    const translated = await translatePdfTexts(titles, {
+      locale: resolvedLocale,
+      context: "Work Breakdown Structure (WBS) deliverables and work packages",
+    });
+    translationFallback = translated.usedFallback;
+    localizedTree = mapWbsTreeTitles(
+      tree,
+      translated.translations,
+      resolvedLocale
+    );
   }
 
   // Importação dinâmica evita carregar jsPDF no bundle inicial SSR
@@ -115,7 +180,7 @@ export async function exportWbsToPdf({
   const measureDoc = new JsPdfCtor({ unit: "mm" });
 
   const layout = computeWbsPdfLayout({
-    tree,
+    tree: localizedTree,
     teamName,
     wrapText: (text, maxWidthMm, fontSizePt) => {
       measureDoc.setFont("helvetica", "bold");
@@ -136,7 +201,7 @@ export async function exportWbsToPdf({
   });
 
   const now = new Date();
-  const formattedDate = now.toLocaleDateString("pt-BR");
+  const formattedDate = now.toLocaleDateString(resolvedLocale);
 
   // 1. Conectores ortogonais na camada de fundo
   doc.setDrawColor(
@@ -156,10 +221,17 @@ export async function exportWbsToPdf({
   }
 
   // 3. Rodapé discreto
-  drawPageFooter(doc, layout.pageWidth, layout.pageHeight, teamName, formattedDate);
+  drawPageFooter(
+    doc,
+    layout.pageWidth,
+    layout.pageHeight,
+    teamName,
+    formattedDate,
+    resolvedLocale
+  );
 
-  const filename = buildWbsPdfFilename(teamName, now);
+  const filename = buildWbsPdfFilename(teamName, now, resolvedLocale);
   doc.save(filename);
 
-  return { filename, pageCount: layout.pageCount };
+  return { filename, pageCount: layout.pageCount, translationFallback };
 }

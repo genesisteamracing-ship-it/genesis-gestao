@@ -1,5 +1,7 @@
 import type { TaskStatus } from "@prisma/client";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
+import type { AppLocale } from "@/lib/i18n/locale-types";
+import { translateUiText } from "@/lib/i18n/translations";
 import {
   dayLabel,
   edgeKey,
@@ -156,6 +158,7 @@ export interface ComputeGanttPdfLayoutParams {
   edges?: TaskEdge[];
   highlightedPath?: TaskRisk;
   teamName?: string;
+  locale?: AppLocale;
 }
 
 const MONTH_ABBR_PT = [
@@ -173,6 +176,21 @@ const MONTH_ABBR_PT = [
   "DEZ",
 ] as const;
 
+const MONTH_ABBR_EN = [
+  "JAN",
+  "FEB",
+  "MAR",
+  "APR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AUG",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DEC",
+] as const;
+
 function resolveTimelineScale(spanDays: number): { dayWidth: number; tickStep: number } {
   if (spanDays <= 35) return { dayWidth: 8.5, tickStep: 1 };
   if (spanDays <= 75) return { dayWidth: 5.8, tickStep: 2 };
@@ -184,8 +202,10 @@ function buildMonthSpans(
   fromDay: number,
   spanDays: number,
   timelineX: number,
-  dayWidth: number
+  dayWidth: number,
+  locale: AppLocale = "pt-BR"
 ): GanttPdfMonthSpan[] {
+  const monthAbbr = locale === "en-US" ? MONTH_ABBR_EN : MONTH_ABBR_PT;
   const spans: GanttPdfMonthSpan[] = [];
   let currentKey = "";
   let currentStartOffset = 0;
@@ -200,7 +220,7 @@ function buildMonthSpans(
         const [prevYear, prevMonth] = currentKey.split("-");
         const monthIdx = Math.max(0, Math.min(11, Number.parseInt(prevMonth, 10) - 1));
         spans.push({
-          label: `${MONTH_ABBR_PT[monthIdx]} ${prevYear}`,
+          label: `${monthAbbr[monthIdx]} ${prevYear}`,
           x: timelineX + currentStartOffset * dayWidth,
           width: (offset - currentStartOffset) * dayWidth,
         });
@@ -214,7 +234,7 @@ function buildMonthSpans(
     const [lastYear, lastMonth] = currentKey.split("-");
     const monthIdx = Math.max(0, Math.min(11, Number.parseInt(lastMonth, 10) - 1));
     spans.push({
-      label: `${MONTH_ABBR_PT[monthIdx]} ${lastYear}`,
+      label: `${monthAbbr[monthIdx]} ${lastYear}`,
       x: timelineX + currentStartOffset * dayWidth,
       width: (spanDays - currentStartOffset) * dayWidth,
     });
@@ -266,7 +286,9 @@ export function computeGanttPdfLayout({
   edges = [],
   highlightedPath,
   teamName,
+  locale = "pt-BR",
 }: ComputeGanttPdfLayoutParams): GanttPdfLayoutResult {
+  const isEn = locale === "en-US";
   if (tasks.length === 0) {
     return {
       pageCount: 0,
@@ -317,9 +339,10 @@ export function computeGanttPdfLayout({
   const timelineX = tableX + GANTT_PDF_PAGE.labelColWidth;
 
   // Banner superior no estilo WBS
+  const scheduleTitle = isEn ? "Gantt Schedule" : "Cronograma de Gantt";
   const title = teamName?.trim()
-    ? `${teamName.trim()} — Cronograma de Gantt`
-    : "Cronograma de Gantt";
+    ? `${teamName.trim()} — ${scheduleTitle}`
+    : scheduleTitle;
   const bannerWidth = Math.min(Math.max(130, tableWidth * 0.45), 220);
   const banner = {
     x: (pageWidth - bannerWidth) / 2,
@@ -364,11 +387,12 @@ export function computeGanttPdfLayout({
       (rowY + (GANTT_PDF_PAGE.rowHeight - GANTT_PDF_PAGE.barHeight) / 2).toFixed(2)
     );
 
+    const rawSector = DELIVERY_GROUP_LABELS[task.deliveryGroup] || task.deliveryGroup;
     return {
       id: task.id,
       index,
       title: task.title,
-      sectorLabel: DELIVERY_GROUP_LABELS[task.deliveryGroup] || task.deliveryGroup,
+      sectorLabel: isEn ? translateUiText(rawSector, locale) : rawSector,
       status: task.status,
       startDate: task.startDate,
       endDate: task.endDate,
@@ -400,7 +424,7 @@ export function computeGanttPdfLayout({
     });
   }
 
-  const months = buildMonthSpans(fromDay, spanDays, timelineX, dayWidth);
+  const months = buildMonthSpans(fromDay, spanDays, timelineX, dayWidth, locale);
   const ticks: GanttPdfTick[] = [];
   for (let offset = 0; offset < spanDays; offset += tickStep) {
     const day = fromDay + offset;
@@ -419,7 +443,14 @@ export function computeGanttPdfLayout({
     ).toFixed(2)
   );
 
-  const periodLabel = `${formatTaskDate(dayLabel(fromDay))} — ${formatTaskDate(dayLabel(toDay))} • ${tasks.length} ${tasks.length === 1 ? "tarefa" : "tarefas"}`;
+  const taskUnit = isEn
+    ? tasks.length === 1
+      ? "task"
+      : "tasks"
+    : tasks.length === 1
+      ? "tarefa"
+      : "tarefas";
+  const periodLabel = `${formatTaskDate(dayLabel(fromDay))} — ${formatTaskDate(dayLabel(toDay))} • ${tasks.length} ${taskUnit}`;
 
   return {
     pageCount: 1,
@@ -445,7 +476,11 @@ export function computeGanttPdfLayout({
 /**
  * Gera um nome de arquivo sanitizado e padronizado para o PDF do Gantt.
  */
-export function buildGanttPdfFilename(teamName?: string, date = new Date()): string {
+export function buildGanttPdfFilename(
+  teamName?: string,
+  date = new Date(),
+  locale: AppLocale = "pt-BR"
+): string {
   const slug =
     (teamName || "equipe")
       .normalize("NFD")
@@ -457,6 +492,7 @@ export function buildGanttPdfFilename(teamName?: string, date = new Date()): str
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
+  const prefix = locale === "en-US" ? "gantt-schedule" : "gantt";
 
-  return `gantt-${slug}-${yyyy}-${mm}-${dd}.pdf`;
+  return `${prefix}-${slug}-${yyyy}-${mm}-${dd}.pdf`;
 }

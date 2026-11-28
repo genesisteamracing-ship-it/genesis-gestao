@@ -1,4 +1,6 @@
 import { DELIVERY_GROUP_SHORT_LABELS } from "@/lib/constants";
+import type { AppLocale } from "@/lib/i18n/locale-types";
+import { translateUiText } from "@/lib/i18n/translations";
 import {
   RISK_CONSEQUENCE_LABELS,
   RISK_ENTRY_TYPE_LABELS,
@@ -100,6 +102,45 @@ const PRIORITY_TONE_MAP: Record<RiskItemDTO["priorityLevel"], RiskBadgeTone> = {
   UNASSESSED: "neutral",
 };
 
+const RISK_PROBABILITY_LABELS_EN: Record<RiskItemDTO["probability"], string> = {
+  QUASE_CERTO: "Almost Certain",
+  PROVAVEL: "Likely",
+  POSSIVEL: "Possible",
+  IMPROVAVEL: "Unlikely",
+  RARA: "Rare",
+  NONE: "None",
+};
+
+const RISK_CONSEQUENCE_LABELS_EN: Record<RiskItemDTO["consequence"], string> = {
+  CATASTROFICA: "Catastrophic",
+  GRANDE: "Major",
+  MODERADA: "Moderate",
+  PEQUENA: "Minor",
+  DESPREZIVEL: "Negligible",
+  NONE: "None",
+};
+
+const RISK_PRIORITY_LABELS_EN: Record<RiskItemDTO["priorityLevel"], string> = {
+  CRITICAL: "Critical",
+  HIGH: "High",
+  MEDIUM: "Medium",
+  LOW: "Low",
+  UNASSESSED: "Unassessed",
+};
+
+const RISK_ENTRY_TYPE_LABELS_EN: Record<RiskItemDTO["entryType"], string> = {
+  RISK: "Risk",
+  OPPORTUNITY: "Opportunity",
+};
+
+const RISK_STATUS_LABELS_EN: Record<RiskItemDTO["status"], string> = {
+  IDENTIFIED: "Identified",
+  MONITORING: "Monitoring",
+  MITIGATED: "Mitigated",
+  OCCURRED: "Occurred",
+  CLOSED: "Closed",
+};
+
 function resolveObservations(item: RiskItemDTO): string {
   return (
     item.observations?.trim() ||
@@ -120,13 +161,20 @@ export function buildRisksPdfData({
   items,
   teamName,
   seasonLabel,
+  locale = "pt-BR",
 }: {
   items: RiskItemDTO[];
   teamName?: string;
   seasonLabel?: string;
+  locale?: AppLocale;
 }): RisksPdfData {
+  const isEn = locale === "en-US";
   const teamDisplayName = teamName?.trim() || "Equipe Gênesis";
-  const resolvedSeason = seasonLabel?.trim() || items[0]?.season || "Temporada Atual";
+  const rawSeason =
+    seasonLabel?.trim() ||
+    items[0]?.season ||
+    (isEn ? "Current Season" : "Temporada Atual");
+  const resolvedSeason = isEn ? translateUiText(rawSeason, locale) : rawSeason;
 
   if (items.length === 0) {
     return {
@@ -164,22 +212,38 @@ export function buildRisksPdfData({
     else if (item.priorityLevel === "LOW") lowCount += 1;
 
     const subtitleParts = [
-      RISK_ENTRY_TYPE_LABELS[item.entryType],
-      RISK_STATUS_LABELS[item.status],
+      isEn
+        ? RISK_ENTRY_TYPE_LABELS_EN[item.entryType]
+        : RISK_ENTRY_TYPE_LABELS[item.entryType],
+      isEn
+        ? RISK_STATUS_LABELS_EN[item.status]
+        : RISK_STATUS_LABELS[item.status],
     ];
     if (item.reviewsCount > 0) {
-      subtitleParts.push(`${item.reviewsCount} revisão(ões)`);
+      subtitleParts.push(
+        isEn
+          ? `${item.reviewsCount} ${item.reviewsCount === 1 ? "review" : "reviews"}`
+          : `${item.reviewsCount} revisão(ões)`
+      );
     }
 
+    const rawSector = DELIVERY_GROUP_SHORT_LABELS[item.sector] || item.sector;
+
     return {
-      sectorLabel: DELIVERY_GROUP_SHORT_LABELS[item.sector] || item.sector,
-      probabilityLabel: RISK_PROBABILITY_LABELS[item.probability],
+      sectorLabel: isEn ? translateUiText(rawSector, locale) : rawSector,
+      probabilityLabel: isEn
+        ? RISK_PROBABILITY_LABELS_EN[item.probability]
+        : RISK_PROBABILITY_LABELS[item.probability],
       probabilityTone: PROBABILITY_TONE_MAP[item.probability],
-      consequenceLabel: RISK_CONSEQUENCE_LABELS[item.consequence],
+      consequenceLabel: isEn
+        ? RISK_CONSEQUENCE_LABELS_EN[item.consequence]
+        : RISK_CONSEQUENCE_LABELS[item.consequence],
       consequenceTone: CONSEQUENCE_TONE_MAP[item.consequence],
       title: item.title,
       subtitle: subtitleParts.join(" · "),
-      priorityLabel: RISK_PRIORITY_LABELS[item.priorityLevel],
+      priorityLabel: isEn
+        ? RISK_PRIORITY_LABELS_EN[item.priorityLevel]
+        : RISK_PRIORITY_LABELS[item.priorityLevel],
       priorityTone: PRIORITY_TONE_MAP[item.priorityLevel],
       observations: resolveObservations(item),
     };
@@ -199,7 +263,8 @@ export function buildRisksPdfData({
 
 export function buildRisksPdfFilename(
   teamName?: string,
-  date = new Date()
+  date = new Date(),
+  locale: AppLocale = "pt-BR"
 ): string {
   const slug =
     (teamName || "equipe-genesis")
@@ -212,6 +277,7 @@ export function buildRisksPdfFilename(
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
+  const prefix = locale === "en-US" ? "risk-matrix" : "matriz-riscos";
 
-  return `matriz-riscos-${slug}-${yyyy}-${mm}-${dd}.pdf`;
+  return `${prefix}-${slug}-${yyyy}-${mm}-${dd}.pdf`;
 }
