@@ -2,6 +2,8 @@ import {
   ENGAGEMENT_LEVEL_LABELS,
   STAKEHOLDER_GROUP_LABELS,
 } from "@/lib/communication-constants";
+import type { AppLocale } from "@/lib/i18n/locale-types";
+import { translateUiText } from "@/lib/i18n/translations";
 import type {
   StakeholderGroup,
   StakeholderWithRelations,
@@ -108,16 +110,24 @@ export function buildStakeholdersPdfData({
   stakeholders,
   teamName,
   groupFilter,
+  locale = "pt-BR",
 }: {
   stakeholders: StakeholderWithRelations[];
   teamName?: string;
   groupFilter?: StakeholderGroup | "ALL";
+  locale?: AppLocale;
 }): StakeholdersPdfData {
+  const isEn = locale === "en-US";
   const teamDisplayName = teamName?.trim() || "Equipe Gênesis";
-  const filterLabel =
+  const rawFilterLabel =
     groupFilter && groupFilter !== "ALL"
       ? STAKEHOLDER_GROUP_LABELS[groupFilter]
-      : "Todos os Grupos";
+      : isEn
+        ? "All Groups"
+        : "Todos os Grupos";
+  const filterLabel = isEn
+    ? translateUiText(rawFilterLabel, locale)
+    : rawFilterLabel;
 
   const quadrants: Record<StakeholderQuadrantKey, StakeholderMatrixCard[]> = {
     KEEP_SATISFIED: [],
@@ -141,7 +151,8 @@ export function buildStakeholdersPdfData({
 
   for (const item of sorted) {
     const quadrant = resolveStakeholderQuadrant(item.power, item.interest);
-    const groupLabel = STAKEHOLDER_GROUP_LABELS[item.group] || item.group;
+    const rawGroup = STAKEHOLDER_GROUP_LABELS[item.group] || item.group;
+    const groupLabel = isEn ? translateUiText(rawGroup, locale) : rawGroup;
 
     const subtitleParts: string[] = [];
     if (item.organization?.trim()) subtitleParts.push(item.organization.trim());
@@ -149,12 +160,16 @@ export function buildStakeholdersPdfData({
       subtitleParts.push(item.roleOrJobTitle.trim());
     }
 
+    const rawEngagement = ENGAGEMENT_LEVEL_LABELS[item.currentEngagement];
+
     quadrants[quadrant].push({
       id: item.id,
       name: item.name,
       subtitle: subtitleParts.join(" • ") || groupLabel,
       groupLabel,
-      engagementLabel: ENGAGEMENT_LEVEL_LABELS[item.currentEngagement],
+      engagementLabel: isEn
+        ? translateUiText(rawEngagement, locale)
+        : rawEngagement,
       quadrant,
     });
   }
@@ -169,7 +184,8 @@ export function buildStakeholdersPdfData({
 
 export function buildStakeholdersPdfFilename(
   teamName?: string,
-  date = new Date()
+  date = new Date(),
+  locale: AppLocale = "pt-BR"
 ): string {
   const slug =
     (teamName || "equipe-genesis")
@@ -182,6 +198,8 @@ export function buildStakeholdersPdfFilename(
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
+  const prefix =
+    locale === "en-US" ? "stakeholders-matrix" : "matriz-stakeholders";
 
-  return `matriz-stakeholders-${slug}-${yyyy}-${mm}-${dd}.pdf`;
+  return `${prefix}-${slug}-${yyyy}-${mm}-${dd}.pdf`;
 }

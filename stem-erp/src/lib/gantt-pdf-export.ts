@@ -1,5 +1,10 @@
 import type { jsPDF } from "jspdf";
 import type { TaskStatus } from "@prisma/client";
+import { getStoredLocale, type AppLocale } from "@/lib/i18n/locale-types";
+import {
+  resolveTranslatedPdfText,
+  translatePdfTexts,
+} from "@/lib/i18n/pdf-translate-client";
 import { TASK_STATUS_LABELS, type TaskEdge, type TaskRecord, type TaskRisk } from "@/types/tasks";
 import {
   buildGanttPdfFilename,
@@ -16,7 +21,15 @@ export interface ExportGanttPdfParams {
   edges?: TaskEdge[];
   highlightedPath?: TaskRisk;
   teamName?: string;
+  locale?: AppLocale;
 }
+
+const TASK_STATUS_LABELS_EN: Record<TaskStatus, string> = {
+  TODO: "To Do",
+  IN_PROGRESS: "In Progress",
+  DONE: "Completed",
+  CANCELLED: "Cancelled",
+};
 
 function truncateTextToWidth(doc: jsPDF, text: string, maxWidthMm: number): string {
   if (maxWidthMm <= 2) return "";
@@ -56,7 +69,12 @@ function drawChamferedBanner(doc: jsPDF, layout: GanttPdfLayoutResult): void {
   doc.text(layout.title, x + width / 2, y + height / 2 + 1.3, { align: "center" });
 }
 
-function drawLegendRow(doc: jsPDF, layout: GanttPdfLayoutResult): void {
+function drawLegendRow(
+  doc: jsPDF,
+  layout: GanttPdfLayoutResult,
+  locale: AppLocale
+): void {
+  const isEn = locale === "en-US";
   const statuses: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE", "CANCELLED"];
   let cursorX = layout.tableX;
   const y = layout.legendY;
@@ -66,7 +84,7 @@ function drawLegendRow(doc: jsPDF, layout: GanttPdfLayoutResult): void {
 
   for (const status of statuses) {
     const style = GANTT_PDF_STATUS_STYLES[status];
-    const label = TASK_STATUS_LABELS[status];
+    const label = isEn ? TASK_STATUS_LABELS_EN[status] : TASK_STATUS_LABELS[status];
 
     // Pílula arredondada de amostra de cor
     doc.setFillColor(...style.fill);
@@ -122,8 +140,10 @@ function drawPageFooter(
   doc: jsPDF,
   layout: GanttPdfLayoutResult,
   teamName: string | undefined,
-  formattedDate: string
+  formattedDate: string,
+  locale: AppLocale
 ): void {
+  const isEn = locale === "en-US";
   const footerLineY = layout.pageHeight - 11.5;
   const footerTextY = layout.pageHeight - 7.5;
 
@@ -140,11 +160,18 @@ function drawPageFooter(
   doc.setFontSize(7.5);
   doc.setTextColor(...GANTT_PDF_PALETTE.mutedText);
 
-  const leftLabel = `${teamName?.trim() || "Cronograma"} • Diagrama de Gantt • ${formattedDate}`;
+  const leftLabel = isEn
+    ? `${teamName?.trim() || "Schedule"} • Gantt Chart • ${formattedDate}`
+    : `${teamName?.trim() || "Cronograma"} • Diagrama de Gantt • ${formattedDate}`;
   doc.text(leftLabel, GANTT_PDF_PAGE.marginX, footerTextY, { align: "left" });
-  doc.text("Página 1 de 1", layout.pageWidth - GANTT_PDF_PAGE.marginX, footerTextY, {
-    align: "right",
-  });
+  doc.text(
+    isEn ? "Page 1 of 1" : "Página 1 de 1",
+    layout.pageWidth - GANTT_PDF_PAGE.marginX,
+    footerTextY,
+    {
+      align: "right",
+    }
+  );
 }
 
 /**
@@ -156,16 +183,51 @@ export async function exportGanttToPdf({
   edges = [],
   highlightedPath,
   teamName,
-}: ExportGanttPdfParams): Promise<{ filename: string; pageCount: number }> {
+  locale,
+}: ExportGanttPdfParams): Promise<{
+  filename: string;
+  pageCount: number;
+  translationFallback?: boolean;
+}> {
+  const resolvedLocale = locale ?? getStoredLocale();
+  const isEn = resolvedLocale === "en-US";
+
   if (tasks.length === 0) {
-    throw new Error("Não há tarefas no cronograma para exportar.");
+    throw new Error(
+      isEn
+        ? "There are no schedule tasks to export."
+        : "Não há tarefas no cronograma para exportar."
+    );
+  }
+
+  let localizedTasks = tasks;
+  let translationFallback = false;
+
+  if (isEn) {
+    const translated = await translatePdfTexts(
+      tasks.map((task) => task.title),
+      {
+        locale: resolvedLocale,
+        context: "Gantt Schedule PDF (engineering and project management tasks)",
+      }
+    );
+    translationFallback = translated.usedFallback;
+    localizedTasks = tasks.map((task) => ({
+      ...task,
+      title: resolveTranslatedPdfText(
+        task.title,
+        translated.translations,
+        resolvedLocale
+      ),
+    }));
   }
 
   const layout = computeGanttPdfLayout({
-    tasks,
+    tasks: localizedTasks,
     edges,
     highlightedPath,
     teamName,
+    locale: resolvedLocale,
   });
 
   const { jsPDF: JsPdfCtor } = await import("jspdf");
@@ -181,11 +243,11 @@ export async function exportGanttToPdf({
   });
 
   const now = new Date();
-  const formattedDate = now.toLocaleDateString("pt-BR");
+  const formattedDate = now.toLocaleDateString(resolvedLocale);
 
   // 1. Banner superior e legenda de status
   drawChamferedBanner(doc, layout);
-  drawLegendRow(doc, layout);
+  drawLegendRow(doc, layout, resolvedLocale);
 
   const headerTotalHeight =
     GANTT_PDF_PAGE.monthHeaderHeight + GANTT_PDF_PAGE.tickHeaderHeight;
@@ -204,7 +266,7 @@ export async function exportGanttToPdf({
   doc.setFontSize(8.2);
   doc.setTextColor(...GANTT_PDF_PALETTE.timelineHeaderText);
   doc.text(
-    "Tarefa / Setor",
+    isEn ? "Task / Sector" : "Tarefa / Setor",
     layout.tableX + 3,
     layout.tableY + headerTotalHeight / 2 + 1,
     { align: "left" }
@@ -406,12 +468,12 @@ export async function exportGanttToPdf({
   doc.rect(layout.tableX, layout.tableY, layout.tableWidth, layout.tableHeight, "S");
 
   // 10. Rodapé
-  drawPageFooter(doc, layout, teamName, formattedDate);
+  drawPageFooter(doc, layout, teamName, formattedDate, resolvedLocale);
 
-  const filename = buildGanttPdfFilename(teamName, now);
+  const filename = buildGanttPdfFilename(teamName, now, resolvedLocale);
   doc.save(filename);
 
-  return { filename, pageCount: layout.pageCount };
+  return { filename, pageCount: layout.pageCount, translationFallback };
 }
 
 function formatTaskDateShort(isoDate: string): string {

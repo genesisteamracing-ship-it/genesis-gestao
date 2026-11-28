@@ -1,4 +1,9 @@
 import type { jsPDF } from "jspdf";
+import { getStoredLocale, type AppLocale } from "@/lib/i18n/locale-types";
+import {
+  resolveTranslatedPdfText,
+  translatePdfTexts,
+} from "@/lib/i18n/pdf-translate-client";
 import type { TransactionDTO } from "@/types/financial";
 import {
   buildFinancialStatementData,
@@ -12,6 +17,7 @@ import {
 export interface ExportFinancialStatementPdfParams {
   transactions: TransactionDTO[];
   teamName?: string;
+  locale?: AppLocale;
 }
 
 const PAGE_WIDTH = 210; // A4 Retrato (mm)
@@ -39,7 +45,12 @@ const COL_WIDTH = {
  * com o nome e identidade da Equipe Gênesis, seguido de metadados e barra "Lançamentos".
  * Retorna a coordenada Y inicial onde as linhas de dados começam.
  */
-function drawPageHeader(doc: jsPDF, data: FinancialStatementData): number {
+function drawPageHeader(
+  doc: jsPDF,
+  data: FinancialStatementData,
+  locale: AppLocale
+): number {
+  const isEn = locale === "en-US";
   const bannerY = MARGIN_TOP;
   const bannerH = 16.5;
   const splitTopX = MARGIN_X + CONTENT_WIDTH * 0.72;
@@ -63,14 +74,19 @@ function drawPageHeader(doc: jsPDF, data: FinancialStatementData): number {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13.5);
   doc.setTextColor(...STATEMENT_PDF_COLORS.brandYellow);
-  doc.text("Extrato Financeiro", MARGIN_X + 3.5, bannerY + 7.2, { align: "left" });
+  doc.text(
+    isEn ? "Financial Statement" : "Extrato Financeiro",
+    MARGIN_X + 3.5,
+    bannerY + 7.2,
+    { align: "left" }
+  );
 
   // Nome da Equipe em Branco sobre o Azul (esquerda)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(...STATEMENT_PDF_COLORS.white);
   doc.text(
-    `Equipe: ${data.teamDisplayName.toUpperCase()}`,
+    `${isEn ? "Team" : "Equipe"}: ${data.teamDisplayName.toUpperCase()}`,
     MARGIN_X + 3.5,
     bannerY + 13.4,
     { align: "left" }
@@ -86,7 +102,12 @@ function drawPageHeader(doc: jsPDF, data: FinancialStatementData): number {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6.5);
-  doc.text("GESTÃO FINANCEIRA", yellowCenterX, bannerY + 13, { align: "center" });
+  doc.text(
+    isEn ? "FINANCIAL MANAGEMENT" : "GESTÃO FINANCEIRA",
+    yellowCenterX,
+    bannerY + 13,
+    { align: "center" }
+  );
 
   // Linha de metadados (Período, Entradas, Saídas, Total de lançamentos)
   const metaY = bannerY + bannerH + 4.8;
@@ -95,23 +116,35 @@ function drawPageHeader(doc: jsPDF, data: FinancialStatementData): number {
   doc.setTextColor(...STATEMENT_PDF_COLORS.textPrimary);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Período:", MARGIN_X, metaY);
+  doc.text(isEn ? "Period:" : "Período:", MARGIN_X, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(data.periodLabel, MARGIN_X + 13.5, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Entradas:", MARGIN_X + 66, metaY);
+  doc.text(isEn ? "Inflows:" : "Entradas:", MARGIN_X + 66, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(formatCurrencyBRL(data.totalEntriesCents), MARGIN_X + 81, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Saídas:", MARGIN_X + 114, metaY);
+  doc.text(isEn ? "Outflows:" : "Saídas:", MARGIN_X + 114, metaY);
   doc.setFont("helvetica", "normal");
-  doc.text(formatCurrencyBRL(data.totalExitsCents), MARGIN_X + 126, metaY);
+  doc.text(
+    formatCurrencyBRL(data.totalExitsCents),
+    MARGIN_X + (isEn ? 129 : 126),
+    metaY
+  );
 
   doc.setFont("helvetica", "bold");
   doc.text(
-    `${data.transactionCount} ${data.transactionCount === 1 ? "lançamento" : "lançamentos"}`,
+    `${data.transactionCount} ${
+      isEn
+        ? data.transactionCount === 1
+          ? "transaction"
+          : "transactions"
+        : data.transactionCount === 1
+          ? "lançamento"
+          : "lançamentos"
+    }`,
     MARGIN_X + CONTENT_WIDTH,
     metaY,
     { align: "right" }
@@ -126,7 +159,12 @@ function drawPageHeader(doc: jsPDF, data: FinancialStatementData): number {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(...STATEMENT_PDF_COLORS.brandBlue);
-  doc.text("Lançamentos", MARGIN_X + 2, sectionY + 4.4, { align: "left" });
+  doc.text(
+    isEn ? "Transactions" : "Lançamentos",
+    MARGIN_X + 2,
+    sectionY + 4.4,
+    { align: "left" }
+  );
 
   // Cabeçalho das colunas
   const colHeaderY = sectionY + sectionH + 4.4;
@@ -134,11 +172,19 @@ function drawPageHeader(doc: jsPDF, data: FinancialStatementData): number {
   doc.setFontSize(7.8);
   doc.setTextColor(...STATEMENT_PDF_COLORS.textPrimary);
 
-  doc.text("Dia", COL_X.date, colHeaderY, { align: "left" });
-  doc.text("Comprovante", COL_X.method, colHeaderY, { align: "left" });
-  doc.text("Código NF-e", COL_X.nfe, colHeaderY, { align: "left" });
-  doc.text("Histórico", COL_X.history, colHeaderY, { align: "left" });
-  doc.text("Valor", COL_X.valueRight, colHeaderY, { align: "right" });
+  doc.text(isEn ? "Date" : "Dia", COL_X.date, colHeaderY, { align: "left" });
+  doc.text(isEn ? "Proof" : "Comprovante", COL_X.method, colHeaderY, {
+    align: "left",
+  });
+  doc.text(isEn ? "NF-e Code" : "Código NF-e", COL_X.nfe, colHeaderY, {
+    align: "left",
+  });
+  doc.text(isEn ? "Description" : "Histórico", COL_X.history, colHeaderY, {
+    align: "left",
+  });
+  doc.text(isEn ? "Amount" : "Valor", COL_X.valueRight, colHeaderY, {
+    align: "right",
+  });
 
   // Linha divisória abaixo do cabeçalho das colunas
   const headerBottomY = colHeaderY + 1.8;
@@ -302,8 +348,10 @@ function drawPageFooter(
   pageNumber: number,
   pageCount: number,
   teamName: string,
-  formattedDate: string
+  formattedDate: string,
+  locale: AppLocale
 ): void {
+  const isEn = locale === "en-US";
   const lineY = PAGE_HEIGHT - 11;
   const textY = PAGE_HEIGHT - 7;
 
@@ -315,13 +363,17 @@ function drawPageFooter(
   doc.setFontSize(7.2);
   doc.setTextColor(...STATEMENT_PDF_COLORS.brandNavy);
   doc.text(
-    `${teamName} • Extrato Financeiro • Emitido em ${formattedDate}`,
+    isEn
+      ? `${teamName} • Financial Statement • Issued on ${formattedDate}`
+      : `${teamName} • Extrato Financeiro • Emitido em ${formattedDate}`,
     MARGIN_X,
     textY,
     { align: "left" }
   );
   doc.text(
-    `Página ${pageNumber} de ${pageCount}`,
+    isEn
+      ? `Page ${pageNumber} of ${pageCount}`
+      : `Página ${pageNumber} de ${pageCount}`,
     MARGIN_X + CONTENT_WIDTH,
     textY,
     { align: "right" }
@@ -336,15 +388,56 @@ function drawPageFooter(
 export async function exportFinancialStatementToPdf({
   transactions,
   teamName,
+  locale,
 }: ExportFinancialStatementPdfParams): Promise<{
   filename: string;
   pageCount: number;
+  translationFallback?: boolean;
 }> {
+  const resolvedLocale = locale ?? getStoredLocale();
+  const isEn = resolvedLocale === "en-US";
+
   if (transactions.length === 0) {
-    throw new Error("Não há lançamentos financeiros para exportar.");
+    throw new Error(
+      isEn
+        ? "There are no financial transactions to export."
+        : "Não há lançamentos financeiros para exportar."
+    );
   }
 
-  const data = buildFinancialStatementData({ transactions, teamName });
+  let localizedTransactions = transactions;
+  let translationFallback = false;
+
+  if (isEn) {
+    const dynamicTexts = transactions.flatMap((tx) => [
+      tx.description,
+      tx.categoryName,
+    ]);
+    const translated = await translatePdfTexts(dynamicTexts, {
+      locale: resolvedLocale,
+      context: "Financial Statement PDF (cash ledger transactions and categories)",
+    });
+    translationFallback = translated.usedFallback;
+    localizedTransactions = transactions.map((tx) => ({
+      ...tx,
+      description: resolveTranslatedPdfText(
+        tx.description,
+        translated.translations,
+        resolvedLocale
+      ),
+      categoryName: resolveTranslatedPdfText(
+        tx.categoryName,
+        translated.translations,
+        resolvedLocale
+      ),
+    }));
+  }
+
+  const data = buildFinancialStatementData({
+    transactions: localizedTransactions,
+    teamName,
+    locale: resolvedLocale,
+  });
   const { jsPDF: JsPdfCtor } = await import("jspdf");
 
   const doc = new JsPdfCtor({
@@ -355,9 +448,9 @@ export async function exportFinancialStatementToPdf({
   });
 
   const now = new Date();
-  const formattedDate = now.toLocaleDateString("pt-BR");
+  const formattedDate = now.toLocaleDateString(resolvedLocale);
 
-  let cursorY = drawPageHeader(doc, data);
+  let cursorY = drawPageHeader(doc, data, resolvedLocale);
   let visualIndex = 0;
 
   for (const row of data.rows) {
@@ -365,7 +458,7 @@ export async function exportFinancialStatementToPdf({
 
     if (cursorY + measured.height > CONTENT_BOTTOM) {
       doc.addPage("a4", "portrait");
-      cursorY = drawPageHeader(doc, data);
+      cursorY = drawPageHeader(doc, data, resolvedLocale);
       visualIndex = 0;
     }
 
@@ -379,11 +472,22 @@ export async function exportFinancialStatementToPdf({
   const pageCount = doc.getNumberOfPages();
   for (let page = 1; page <= pageCount; page += 1) {
     doc.setPage(page);
-    drawPageFooter(doc, page, pageCount, data.teamDisplayName, formattedDate);
+    drawPageFooter(
+      doc,
+      page,
+      pageCount,
+      data.teamDisplayName,
+      formattedDate,
+      resolvedLocale
+    );
   }
 
-  const filename = buildFinancialStatementFilename(data.teamDisplayName, now);
+  const filename = buildFinancialStatementFilename(
+    data.teamDisplayName,
+    now,
+    resolvedLocale
+  );
   doc.save(filename);
 
-  return { filename, pageCount };
+  return { filename, pageCount, translationFallback };
 }

@@ -2,6 +2,8 @@ import {
   DELIVERY_GROUP_LABELS,
   TRACKING_METHOD_LABELS,
 } from "@/lib/constants";
+import type { AppLocale } from "@/lib/i18n/locale-types";
+import { translateUiText } from "@/lib/i18n/translations";
 import type { TransactionDTO } from "@/types/financial";
 
 export type RgbColor = readonly [number, number, number];
@@ -56,16 +58,23 @@ const SHORT_METHOD_LABELS: Record<TransactionDTO["trackingMethod"], string> = {
   BANK_PIX_STATEMENT: "PIX / Extrato",
 };
 
+const SHORT_METHOD_LABELS_EN: Record<TransactionDTO["trackingMethod"], string> = {
+  NFE: "NF-e",
+  RECEIPT: "Receipt",
+  SPONSOR_CONTRACT: "Contract",
+  BANK_PIX_STATEMENT: "PIX / Statement",
+};
+
 function toDayKey(rawDate: string | Date): string {
   const date = new Date(rawDate);
   if (Number.isNaN(date.getTime())) return "0000-00-00";
   return date.toISOString().slice(0, 10);
 }
 
-function formatDayBR(dayKey: string): string {
+function formatDayForLocale(dayKey: string, locale: AppLocale = "pt-BR"): string {
   const [year, month, day] = dayKey.split("-");
   if (!year || !month || !day) return dayKey;
-  return `${day}/${month}/${year}`;
+  return locale === "en-US" ? `${month}/${day}/${year}` : `${day}/${month}/${year}`;
 }
 
 /**
@@ -101,16 +110,19 @@ export function formatCurrencyBRL(cents: number): string {
 export function buildFinancialStatementData({
   transactions,
   teamName,
+  locale = "pt-BR",
 }: {
   transactions: TransactionDTO[];
   teamName?: string;
+  locale?: AppLocale;
 }): FinancialStatementData {
+  const isEn = locale === "en-US";
   const teamDisplayName = teamName?.trim() || "Equipe Gênesis";
 
   if (transactions.length === 0) {
     return {
       teamDisplayName,
-      periodLabel: "Sem lançamentos no período",
+      periodLabel: isEn ? "No transactions in period" : "Sem lançamentos no período",
       totalEntriesCents: 0,
       totalExitsCents: 0,
       finalBalanceCents: 0,
@@ -135,7 +147,7 @@ export function buildFinancialStatementData({
   for (let i = 0; i < sorted.length; i += 1) {
     const tx = sorted[i];
     const dayKey = toDayKey(tx.date);
-    const dateLabel = formatDayBR(dayKey);
+    const dateLabel = formatDayForLocale(dayKey, locale);
     const isOrigin = tx.type === "ORIGIN";
 
     if (isOrigin) {
@@ -146,11 +158,19 @@ export function buildFinancialStatementData({
       totalExitsCents += tx.amountCents;
     }
 
-    const sectorLabel = DELIVERY_GROUP_LABELS[tx.deliveryGroup] || tx.deliveryGroup;
-    const methodLabel =
-      SHORT_METHOD_LABELS[tx.trackingMethod] ||
-      TRACKING_METHOD_LABELS[tx.trackingMethod] ||
-      tx.trackingMethod;
+    const rawSectorLabel = DELIVERY_GROUP_LABELS[tx.deliveryGroup] || tx.deliveryGroup;
+    const sectorLabel = isEn
+      ? translateUiText(rawSectorLabel, locale)
+      : rawSectorLabel;
+    const methodLabel = isEn
+      ? SHORT_METHOD_LABELS_EN[tx.trackingMethod] ||
+        translateUiText(
+          TRACKING_METHOD_LABELS[tx.trackingMethod] || tx.trackingMethod,
+          locale
+        )
+      : SHORT_METHOD_LABELS[tx.trackingMethod] ||
+        TRACKING_METHOD_LABELS[tx.trackingMethod] ||
+        tx.trackingMethod;
 
     const cleanNfeCode = tx.documentRef?.trim() ? tx.documentRef.trim() : "—";
 
@@ -181,7 +201,7 @@ export function buildFinancialStatementData({
         dateLabel,
         methodLabel: "",
         nfeCode: "",
-        historyPrimary: "Saldo do dia",
+        historyPrimary: isEn ? "Daily balance" : "Saldo do dia",
         historySecondary: "",
         amountFormatted: formatStatementAmount(
           runningBalanceCents,
@@ -198,10 +218,10 @@ export function buildFinancialStatementData({
   // Linha final consolidada "S A L D O"
   rows.push({
     kind: "FINAL_BALANCE",
-    dateLabel: formatDayBR(lastDay),
+    dateLabel: formatDayForLocale(lastDay, locale),
     methodLabel: "",
     nfeCode: "",
-    historyPrimary: "S A L D O",
+    historyPrimary: isEn ? "B A L A N C E" : "S A L D O",
     historySecondary: "",
     amountFormatted: formatStatementAmount(
       runningBalanceCents,
@@ -212,8 +232,8 @@ export function buildFinancialStatementData({
 
   const periodLabel =
     firstDay === lastDay
-      ? formatDayBR(firstDay)
-      : `${formatDayBR(firstDay)} a ${formatDayBR(lastDay)}`;
+      ? formatDayForLocale(firstDay, locale)
+      : `${formatDayForLocale(firstDay, locale)} ${isEn ? "to" : "a"} ${formatDayForLocale(lastDay, locale)}`;
 
   return {
     teamDisplayName,
@@ -228,7 +248,8 @@ export function buildFinancialStatementData({
 
 export function buildFinancialStatementFilename(
   teamName?: string,
-  date = new Date()
+  date = new Date(),
+  locale: AppLocale = "pt-BR"
 ): string {
   const slug =
     (teamName || "equipe-genesis")
@@ -241,6 +262,7 @@ export function buildFinancialStatementFilename(
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
+  const prefix = locale === "en-US" ? "financial-statement" : "extrato-financeiro";
 
-  return `extrato-financeiro-${slug}-${yyyy}-${mm}-${dd}.pdf`;
+  return `${prefix}-${slug}-${yyyy}-${mm}-${dd}.pdf`;
 }

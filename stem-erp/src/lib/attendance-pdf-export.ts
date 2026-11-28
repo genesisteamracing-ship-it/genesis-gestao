@@ -1,4 +1,9 @@
 import type { jsPDF } from "jspdf";
+import { getStoredLocale, type AppLocale } from "@/lib/i18n/locale-types";
+import {
+  resolveTranslatedPdfText,
+  translatePdfTexts,
+} from "@/lib/i18n/pdf-translate-client";
 import type {
   AttendanceAnalyticsDTO,
   AttendancePeriodFilter,
@@ -24,6 +29,7 @@ export interface ExportIndividualAttendancePdfParams {
   teamName?: string;
   seasonLabel?: string;
   period?: AttendancePeriodFilter;
+  locale?: AppLocale;
 }
 
 export interface ExportTeamAttendancePdfParams {
@@ -31,6 +37,7 @@ export interface ExportTeamAttendancePdfParams {
   teamName?: string;
   seasonLabel?: string;
   period?: AttendancePeriodFilter;
+  locale?: AppLocale;
 }
 
 const PAGE_WIDTH = 210; // A4 Retrato (mm)
@@ -43,8 +50,10 @@ const CONTENT_BOTTOM = PAGE_HEIGHT - 16; // 281mm
 function drawBicolorBanner(
   doc: jsPDF,
   title: string,
-  teamDisplayName: string
+  teamDisplayName: string,
+  locale: AppLocale
 ): number {
+  const isEn = locale === "en-US";
   const bannerY = MARGIN_TOP;
   const bannerH = 16.5;
   const splitTopX = MARGIN_X + CONTENT_WIDTH * 0.72;
@@ -75,7 +84,7 @@ function drawBicolorBanner(
   doc.setFontSize(8.5);
   doc.setTextColor(...ATTENDANCE_PDF_COLORS.white);
   doc.text(
-    `Equipe: ${teamDisplayName.toUpperCase()}`,
+    `${isEn ? "Team" : "Equipe"}: ${teamDisplayName.toUpperCase()}`,
     MARGIN_X + 3.5,
     bannerY + 13.4,
     { align: "left" }
@@ -91,9 +100,14 @@ function drawBicolorBanner(
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6.2);
-  doc.text("PRESENÇA NOS TREINOS", yellowCenterX, bannerY + 13, {
-    align: "center",
-  });
+  doc.text(
+    isEn ? "TRAINING ATTENDANCE" : "PRESENÇA NOS TREINOS",
+    yellowCenterX,
+    bannerY + 13,
+    {
+      align: "center",
+    }
+  );
 
   return bannerY + bannerH;
 }
@@ -129,8 +143,10 @@ function drawPageFooter(
   pageCount: number,
   teamName: string,
   reportTitle: string,
-  formattedDate: string
+  formattedDate: string,
+  locale: AppLocale
 ): void {
+  const isEn = locale === "en-US";
   const lineY = PAGE_HEIGHT - 11;
   const textY = PAGE_HEIGHT - 7;
 
@@ -142,13 +158,17 @@ function drawPageFooter(
   doc.setFontSize(7.2);
   doc.setTextColor(...ATTENDANCE_PDF_COLORS.textSecondary);
   doc.text(
-    `${teamName} • ${reportTitle} • Emitido em ${formattedDate}`,
+    isEn
+      ? `${teamName} • ${reportTitle} • Issued on ${formattedDate}`
+      : `${teamName} • ${reportTitle} • Emitido em ${formattedDate}`,
     MARGIN_X,
     textY,
     { align: "left" }
   );
   doc.text(
-    `Página ${pageNumber} de ${pageCount}`,
+    isEn
+      ? `Page ${pageNumber} of ${pageCount}`
+      : `Página ${pageNumber} de ${pageCount}`,
     MARGIN_X + CONTENT_WIDTH,
     textY,
     { align: "right" }
@@ -160,22 +180,27 @@ function drawPageFooter(
 // ============================================================================
 
 const IND_COLS = [
-  { key: "date", label: "DATA", x: MARGIN_X, width: 26, align: "left" as const },
-  { key: "day", label: "DIA", x: MARGIN_X + 26, width: 18, align: "center" as const },
-  { key: "time", label: "HORÁRIO", x: MARGIN_X + 44, width: 24, align: "center" as const },
-  { key: "status", label: "STATUS", x: MARGIN_X + 68, width: 32, align: "center" as const },
-  { key: "notes", label: "OBSERVAÇÃO", x: MARGIN_X + 100, width: 86, align: "left" as const },
+  { key: "date", label: "DATA", labelEn: "DATE", x: MARGIN_X, width: 26, align: "left" as const },
+  { key: "day", label: "DIA", labelEn: "DAY", x: MARGIN_X + 26, width: 18, align: "center" as const },
+  { key: "time", label: "HORÁRIO", labelEn: "TIME", x: MARGIN_X + 44, width: 24, align: "center" as const },
+  { key: "status", label: "STATUS", labelEn: "STATUS", x: MARGIN_X + 68, width: 32, align: "center" as const },
+  { key: "notes", label: "OBSERVAÇÃO", labelEn: "NOTES", x: MARGIN_X + 100, width: 86, align: "left" as const },
 ];
 
 function drawIndividualHeader(
   doc: jsPDF,
   data: IndividualAttendancePdfData,
-  includeProfileBlock: boolean
+  includeProfileBlock: boolean,
+  locale: AppLocale
 ): number {
+  const isEn = locale === "en-US";
   let cursorY = drawBicolorBanner(
     doc,
-    "Relatório Individual de Presença",
-    data.teamDisplayName
+    isEn
+      ? "Individual Attendance Report"
+      : "Relatório Individual de Presença",
+    data.teamDisplayName,
+    locale
   );
 
   // Linha de metadados
@@ -184,19 +209,24 @@ function drawIndividualHeader(
   doc.setTextColor(...ATTENDANCE_PDF_COLORS.textPrimary);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Integrante:", MARGIN_X, cursorY);
+  doc.text(isEn ? "Member:" : "Integrante:", MARGIN_X, cursorY);
   doc.setFont("helvetica", "normal");
   doc.text(data.memberName, MARGIN_X + 16.5, cursorY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Período:", MARGIN_X + 92, cursorY);
+  doc.text(isEn ? "Period:" : "Período:", MARGIN_X + 92, cursorY);
   doc.setFont("helvetica", "normal");
   doc.text(data.periodLabel, MARGIN_X + 106, cursorY);
 
   doc.setFont("helvetica", "bold");
-  doc.text(`Temporada: ${data.seasonLabel}`, MARGIN_X + CONTENT_WIDTH, cursorY, {
-    align: "right",
-  });
+  doc.text(
+    `${isEn ? "Season" : "Temporada"}: ${data.seasonLabel}`,
+    MARGIN_X + CONTENT_WIDTH,
+    cursorY,
+    {
+      align: "right",
+    }
+  );
 
   if (includeProfileBlock) {
     // Cartão de identificação e 4 caixas KPI
@@ -219,7 +249,11 @@ function drawIndividualHeader(
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.2);
     doc.setTextColor(...ATTENDANCE_PDF_COLORS.textSecondary);
-    doc.text(`E-mail: ${data.memberEmail}`, MARGIN_X + 3, cursorY + 9.2);
+    doc.text(
+      `${isEn ? "Email" : "E-mail"}: ${data.memberEmail}`,
+      MARGIN_X + 3,
+      cursorY + 9.2
+    );
 
     cursorY += infoBoxH + 3.0;
 
@@ -229,22 +263,22 @@ function drawIndividualHeader(
     const kpiH = 13.5;
     const kpis = [
       {
-        label: "TREINOS NO PERÍODO",
+        label: isEn ? "TRAININGS IN PERIOD" : "TREINOS NO PERÍODO",
         value: String(data.totalTrainings),
         color: ATTENDANCE_PDF_COLORS.textPrimary,
       },
       {
-        label: "PRESENÇAS",
+        label: isEn ? "ATTENDANCES" : "PRESENÇAS",
         value: String(data.presencesCount),
         color: [4, 120, 87] as const,
       },
       {
-        label: "FALTAS",
+        label: isEn ? "ABSENCES" : "FALTAS",
         value: String(data.absencesCount),
         color: ATTENDANCE_PDF_COLORS.negativeValue,
       },
       {
-        label: "FREQUÊNCIA",
+        label: isEn ? "ATTENDANCE RATE" : "FREQUÊNCIA",
         value: data.attendanceRateLabel,
         color: ATTENDANCE_PDF_COLORS.brandBlue,
       },
@@ -295,10 +329,11 @@ function drawIndividualHeader(
   const labelY = cursorY + headerH / 2 + 1.0;
 
   for (const col of IND_COLS) {
+    const label = isEn ? col.labelEn : col.label;
     if (col.align === "center") {
-      doc.text(col.label, col.x + col.width / 2, labelY, { align: "center" });
+      doc.text(label, col.x + col.width / 2, labelY, { align: "center" });
     } else {
-      doc.text(col.label, col.x + 2.5, labelY, { align: "left" });
+      doc.text(label, col.x + 2.5, labelY, { align: "left" });
     }
   }
 
@@ -407,21 +442,65 @@ export async function exportIndividualAttendanceToPdf({
   teamName,
   seasonLabel,
   period = "ALL",
+  locale,
 }: ExportIndividualAttendancePdfParams): Promise<{
   filename: string;
   pageCount: number;
+  translationFallback?: boolean;
 }> {
+  const resolvedLocale = locale ?? getStoredLocale();
+  const isEn = resolvedLocale === "en-US";
+
   if (memberSummary.totalTrainings === 0) {
     throw new Error(
-      "Não há registros de treino para gerar o relatório deste integrante."
+      isEn
+        ? "There are no training records to generate this member's report."
+        : "Não há registros de treino para gerar o relatório deste integrante."
     );
   }
 
+  let localizedSummary = memberSummary;
+  let translationFallback = false;
+
+  if (isEn) {
+    const dynamicTexts: Array<string | null | undefined> = [
+      memberSummary.jobTitle,
+      ...memberSummary.records.map((r) => r.notes),
+    ];
+    const translated = await translatePdfTexts(dynamicTexts, {
+      locale: resolvedLocale,
+      context: "Individual Training Attendance PDF (member job title and attendance notes)",
+    });
+    translationFallback = translated.usedFallback;
+
+    localizedSummary = {
+      ...memberSummary,
+      jobTitle: memberSummary.jobTitle
+        ? resolveTranslatedPdfText(
+            memberSummary.jobTitle,
+            translated.translations,
+            resolvedLocale
+          )
+        : memberSummary.jobTitle,
+      records: memberSummary.records.map((record) => ({
+        ...record,
+        notes: record.notes
+          ? resolveTranslatedPdfText(
+              record.notes,
+              translated.translations,
+              resolvedLocale
+            )
+          : record.notes,
+      })),
+    };
+  }
+
   const data = buildIndividualAttendancePdfData({
-    memberSummary,
+    memberSummary: localizedSummary,
     teamName,
     seasonLabel,
     period,
+    locale: resolvedLocale,
   });
   const { jsPDF: JsPdfCtor } = await import("jspdf");
 
@@ -433,16 +512,16 @@ export async function exportIndividualAttendanceToPdf({
   });
 
   const now = new Date();
-  const formattedDate = now.toLocaleDateString("pt-BR");
+  const formattedDate = now.toLocaleDateString(resolvedLocale);
 
-  let cursorY = drawIndividualHeader(doc, data, true);
+  let cursorY = drawIndividualHeader(doc, data, true, resolvedLocale);
   let visualIndex = 0;
 
   for (const row of data.rows) {
     const measured = measureIndividualRow(doc, row);
     if (cursorY + measured.height > CONTENT_BOTTOM) {
       doc.addPage("a4", "portrait");
-      cursorY = drawIndividualHeader(doc, data, false);
+      cursorY = drawIndividualHeader(doc, data, false, resolvedLocale);
       visualIndex = 0;
     }
     drawIndividualRow(doc, row, cursorY, visualIndex, measured);
@@ -453,7 +532,7 @@ export async function exportIndividualAttendanceToPdf({
   // Barra consolidada final
   if (cursorY + 8 > CONTENT_BOTTOM) {
     doc.addPage("a4", "portrait");
-    cursorY = drawIndividualHeader(doc, data, false);
+    cursorY = drawIndividualHeader(doc, data, false, resolvedLocale);
   }
   const summaryH = 7.6;
   doc.setFillColor(...ATTENDANCE_PDF_COLORS.finalBalanceBg);
@@ -464,11 +543,18 @@ export async function exportIndividualAttendanceToPdf({
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.6);
   doc.setTextColor(...ATTENDANCE_PDF_COLORS.brandNavy);
-  doc.text("C O N S O L I D A D O", MARGIN_X + 2.5, baselineY, {
-    align: "left",
-  });
   doc.text(
-    `Treinos: ${data.totalTrainings}  •  Presenças: ${data.presencesCount}  •  Faltas: ${data.absencesCount}  •  Frequência: ${data.attendanceRateLabel}`,
+    isEn ? "S U M M A R Y" : "C O N S O L I D A D O",
+    MARGIN_X + 2.5,
+    baselineY,
+    {
+      align: "left",
+    }
+  );
+  doc.text(
+    isEn
+      ? `Trainings: ${data.totalTrainings}  •  Present: ${data.presencesCount}  •  Absent: ${data.absencesCount}  •  Rate: ${data.attendanceRateLabel}`
+      : `Treinos: ${data.totalTrainings}  •  Presenças: ${data.presencesCount}  •  Faltas: ${data.absencesCount}  •  Frequência: ${data.attendanceRateLabel}`,
     MARGIN_X + CONTENT_WIDTH - 2.5,
     baselineY,
     { align: "right" }
@@ -482,19 +568,23 @@ export async function exportIndividualAttendanceToPdf({
       page,
       pageCount,
       data.teamDisplayName,
-      `Relatório Individual — ${data.memberName}`,
-      formattedDate
+      isEn
+        ? `Individual Report — ${data.memberName}`
+        : `Relatório Individual — ${data.memberName}`,
+      formattedDate,
+      resolvedLocale
     );
   }
 
   const filename = buildIndividualAttendancePdfFilename(
     data.memberName,
     data.teamDisplayName,
-    now
+    now,
+    resolvedLocale
   );
   doc.save(filename);
 
-  return { filename, pageCount };
+  return { filename, pageCount, translationFallback };
 }
 
 // ============================================================================
@@ -510,6 +600,15 @@ const TEAM_MEMBER_COLS = [
   { key: "rate", label: "FREQUÊNCIA", x: MARGIN_X + 160, width: 26, align: "center" as const },
 ];
 
+const TEAM_MEMBER_COLS_EN = [
+  { key: "name", label: "MEMBER", x: MARGIN_X, width: 64, align: "left" as const },
+  { key: "sector", label: "SECTOR", x: MARGIN_X + 64, width: 34, align: "left" as const },
+  { key: "total", label: "TRAININGS", x: MARGIN_X + 98, width: 20, align: "center" as const },
+  { key: "presences", label: "PRESENT", x: MARGIN_X + 118, width: 22, align: "center" as const },
+  { key: "absences", label: "ABSENT", x: MARGIN_X + 140, width: 20, align: "center" as const },
+  { key: "rate", label: "RATE", x: MARGIN_X + 160, width: 26, align: "center" as const },
+];
+
 const TEAM_DAILY_COLS = [
   { key: "date", label: "DATA", x: MARGIN_X, width: 34, align: "left" as const },
   { key: "presences", label: "PRESENTES", x: MARGIN_X + 34, width: 22, align: "center" as const },
@@ -518,11 +617,27 @@ const TEAM_DAILY_COLS = [
   { key: "absentNames", label: "AUSENTES NO DIA", x: MARGIN_X + 94, width: 92, align: "left" as const },
 ];
 
-function drawTeamTopHeader(doc: jsPDF, data: TeamAttendancePdfData): number {
+const TEAM_DAILY_COLS_EN = [
+  { key: "date", label: "DATE", x: MARGIN_X, width: 34, align: "left" as const },
+  { key: "presences", label: "PRESENT", x: MARGIN_X + 34, width: 22, align: "center" as const },
+  { key: "absences", label: "ABSENT", x: MARGIN_X + 56, width: 18, align: "center" as const },
+  { key: "rate", label: "RATE", x: MARGIN_X + 74, width: 20, align: "center" as const },
+  { key: "absentNames", label: "ABSENT MEMBERS", x: MARGIN_X + 94, width: 92, align: "left" as const },
+];
+
+function drawTeamTopHeader(
+  doc: jsPDF,
+  data: TeamAttendancePdfData,
+  locale: AppLocale
+): number {
+  const isEn = locale === "en-US";
   let cursorY = drawBicolorBanner(
     doc,
-    "Relatório Geral de Presença nos Treinos",
-    data.teamDisplayName
+    isEn
+      ? "General Training Attendance Report"
+      : "Relatório Geral de Presença nos Treinos",
+    data.teamDisplayName,
+    locale
   );
 
   cursorY += 4.6;
@@ -530,28 +645,32 @@ function drawTeamTopHeader(doc: jsPDF, data: TeamAttendancePdfData): number {
   doc.setTextColor(...ATTENDANCE_PDF_COLORS.textPrimary);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Período:", MARGIN_X, cursorY);
+  doc.text(isEn ? "Period:" : "Período:", MARGIN_X, cursorY);
   doc.setFont("helvetica", "normal");
   doc.text(data.periodLabel, MARGIN_X + 13.5, cursorY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Treinos:", MARGIN_X + 58, cursorY);
+  doc.text(isEn ? "Trainings:" : "Treinos:", MARGIN_X + 58, cursorY);
   doc.setFont("helvetica", "normal");
-  doc.text(String(data.totalTrainingDays), MARGIN_X + 71, cursorY);
+  doc.text(
+    String(data.totalTrainingDays),
+    MARGIN_X + (isEn ? 73 : 71),
+    cursorY
+  );
 
   doc.setFont("helvetica", "bold");
-  doc.text("Presenças:", MARGIN_X + 86, cursorY);
+  doc.text(isEn ? "Present:" : "Presenças:", MARGIN_X + 86, cursorY);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.totalPresences), MARGIN_X + 104, cursorY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Faltas:", MARGIN_X + 120, cursorY);
+  doc.text(isEn ? "Absent:" : "Faltas:", MARGIN_X + 120, cursorY);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.totalAbsences), MARGIN_X + 131, cursorY);
 
   doc.setFont("helvetica", "bold");
   doc.text(
-    `Frequência: ${data.overallAttendanceRateLabel}`,
+    `${isEn ? "Rate" : "Frequência"}: ${data.overallAttendanceRateLabel}`,
     MARGIN_X + CONTENT_WIDTH,
     cursorY,
     { align: "right" }
@@ -796,13 +915,20 @@ export async function exportTeamAttendanceToPdf({
   teamName,
   seasonLabel,
   period = "ALL",
+  locale,
 }: ExportTeamAttendancePdfParams): Promise<{
   filename: string;
   pageCount: number;
+  translationFallback?: boolean;
 }> {
+  const resolvedLocale = locale ?? getStoredLocale();
+  const isEn = resolvedLocale === "en-US";
+
   if (analytics.totalTrainingDays === 0) {
     throw new Error(
-      "Não há treinos registrados para exportar o relatório geral."
+      isEn
+        ? "There are no recorded trainings to export the team report."
+        : "Não há treinos registrados para exportar o relatório geral."
     );
   }
 
@@ -811,6 +937,7 @@ export async function exportTeamAttendanceToPdf({
     teamName,
     seasonLabel,
     period,
+    locale: resolvedLocale,
   });
   const { jsPDF: JsPdfCtor } = await import("jspdf");
 
@@ -822,26 +949,34 @@ export async function exportTeamAttendanceToPdf({
   });
 
   const now = new Date();
-  const formattedDate = now.toLocaleDateString("pt-BR");
+  const formattedDate = now.toLocaleDateString(resolvedLocale);
+  const memberCols = isEn ? TEAM_MEMBER_COLS_EN : TEAM_MEMBER_COLS;
+  const dailyCols = isEn ? TEAM_DAILY_COLS_EN : TEAM_DAILY_COLS;
+  const memberSectionTitle = isEn
+    ? "Summary by Member"
+    : "Resumo por Integrante";
+  const dailySectionTitle = isEn
+    ? "Training Day History"
+    : "Histórico por Dia de Treino";
 
-  let cursorY = drawTeamTopHeader(doc, data);
+  let cursorY = drawTeamTopHeader(doc, data, resolvedLocale);
   cursorY = drawSectionTableHeader(
     doc,
     cursorY,
-    "Resumo por Integrante",
-    TEAM_MEMBER_COLS
+    memberSectionTitle,
+    memberCols
   );
 
   let visualIndex = 0;
   for (const memberRow of data.memberRows) {
     if (cursorY + 7.8 > CONTENT_BOTTOM) {
       doc.addPage("a4", "portrait");
-      cursorY = drawTeamTopHeader(doc, data);
+      cursorY = drawTeamTopHeader(doc, data, resolvedLocale);
       cursorY = drawSectionTableHeader(
         doc,
         cursorY,
-        "Resumo por Integrante",
-        TEAM_MEMBER_COLS
+        memberSectionTitle,
+        memberCols
       );
       visualIndex = 0;
     }
@@ -853,27 +988,22 @@ export async function exportTeamAttendanceToPdf({
   cursorY += 5.5;
   if (cursorY + 24 > CONTENT_BOTTOM) {
     doc.addPage("a4", "portrait");
-    cursorY = drawTeamTopHeader(doc, data);
+    cursorY = drawTeamTopHeader(doc, data, resolvedLocale);
   }
 
-  cursorY = drawSectionTableHeader(
-    doc,
-    cursorY,
-    "Histórico por Dia de Treino",
-    TEAM_DAILY_COLS
-  );
+  cursorY = drawSectionTableHeader(doc, cursorY, dailySectionTitle, dailyCols);
 
   visualIndex = 0;
   for (const dailyRow of data.dailyRows) {
     const measured = measureDailyRow(doc, dailyRow);
     if (cursorY + measured.height > CONTENT_BOTTOM) {
       doc.addPage("a4", "portrait");
-      cursorY = drawTeamTopHeader(doc, data);
+      cursorY = drawTeamTopHeader(doc, data, resolvedLocale);
       cursorY = drawSectionTableHeader(
         doc,
         cursorY,
-        "Histórico por Dia de Treino",
-        TEAM_DAILY_COLS
+        dailySectionTitle,
+        dailyCols
       );
       visualIndex = 0;
     }
@@ -889,13 +1019,20 @@ export async function exportTeamAttendanceToPdf({
       page,
       pageCount,
       data.teamDisplayName,
-      "Relatório Geral de Presença nos Treinos",
-      formattedDate
+      isEn
+        ? "General Training Attendance Report"
+        : "Relatório Geral de Presença nos Treinos",
+      formattedDate,
+      resolvedLocale
     );
   }
 
-  const filename = buildTeamAttendancePdfFilename(data.teamDisplayName, now);
+  const filename = buildTeamAttendancePdfFilename(
+    data.teamDisplayName,
+    now,
+    resolvedLocale
+  );
   doc.save(filename);
 
-  return { filename, pageCount };
+  return { filename, pageCount, translationFallback: false };
 }

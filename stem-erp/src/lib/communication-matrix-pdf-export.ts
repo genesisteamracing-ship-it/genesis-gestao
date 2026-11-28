@@ -1,4 +1,9 @@
 import type { jsPDF } from "jspdf";
+import { getStoredLocale, type AppLocale } from "@/lib/i18n/locale-types";
+import {
+  resolveTranslatedPdfText,
+  translatePdfTexts,
+} from "@/lib/i18n/pdf-translate-client";
 import type {
   StakeholderGroup,
   StakeholderWithRelations,
@@ -17,6 +22,7 @@ export interface ExportCommunicationMatrixPdfParams {
   stakeholders: StakeholderWithRelations[];
   teamName?: string;
   groupFilter?: StakeholderGroup | "ALL";
+  locale?: AppLocale;
 }
 
 const PAGE_WIDTH = 297; // A4 Paisagem (mm)
@@ -106,11 +112,26 @@ interface MeasuredMatrixRow {
   responsibleLines: string[];
 }
 
+const TABLE_COLUMN_LABELS_EN: Record<TableColumnSpec["key"], string> = {
+  stakeholder: "STAKEHOLDER / AUDIENCE",
+  group: "GROUP",
+  strategy: "STRATEGY",
+  channel: "CHANNEL",
+  frequency: "FREQUENCY",
+  engagement: "ENGAGEMENT",
+  content: "CONTENT / APPROACH",
+};
+
 /**
  * Desenha o cabeçalho bicolor Azul + Amarelo (padrão Gênesis),
  * barra de metadados por quadrante e cabeçalho azul da tabela com grade.
  */
-function drawPageHeader(doc: jsPDF, data: CommunicationMatrixPdfData): number {
+function drawPageHeader(
+  doc: jsPDF,
+  data: CommunicationMatrixPdfData,
+  locale: AppLocale,
+): number {
+  const isEn = locale === "en-US";
   const bannerY = MARGIN_TOP;
   const bannerH = 15.5;
   const splitTopX = MARGIN_X + CONTENT_WIDTH * 0.78;
@@ -134,16 +155,21 @@ function drawPageHeader(doc: jsPDF, data: CommunicationMatrixPdfData): number {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13.5);
   doc.setTextColor(...COMMUNICATION_MATRIX_PDF_COLORS.brandYellow);
-  doc.text("Matriz de Comunicação", MARGIN_X + 4, bannerY + 6.8, {
-    align: "left",
-  });
+  doc.text(
+    isEn ? "Communication Matrix" : "Matriz de Comunicação",
+    MARGIN_X + 4,
+    bannerY + 6.8,
+    {
+      align: "left",
+    },
+  );
 
   // Equipe e Filtro em Branco sobre o Azul (esquerda)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.4);
   doc.setTextColor(...COMMUNICATION_MATRIX_PDF_COLORS.white);
   doc.text(
-    `Equipe: ${data.teamDisplayName.toUpperCase()}  •  Filtro: ${data.filterLabel}`,
+    `${isEn ? "Team" : "Equipe"}: ${data.teamDisplayName.toUpperCase()}  •  ${isEn ? "Filter" : "Filtro"}: ${data.filterLabel}`,
     MARGIN_X + 4,
     bannerY + 12.6,
     { align: "left" },
@@ -159,9 +185,14 @@ function drawPageHeader(doc: jsPDF, data: CommunicationMatrixPdfData): number {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6.5);
-  doc.text("COMUNICAÇÃO", yellowCenterX, bannerY + 12.4, {
-    align: "center",
-  });
+  doc.text(
+    isEn ? "COMMUNICATION" : "COMUNICAÇÃO",
+    yellowCenterX,
+    bannerY + 12.4,
+    {
+      align: "center",
+    },
+  );
 
   // Linha de metadados com contadores estratégicos
   const metaY = bannerY + bannerH + 4.8;
@@ -169,22 +200,30 @@ function drawPageHeader(doc: jsPDF, data: CommunicationMatrixPdfData): number {
   doc.setTextColor(...COMMUNICATION_MATRIX_PDF_COLORS.textPrimary);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Gerenciar de perto:", MARGIN_X, metaY);
+  doc.text(isEn ? "Manage closely:" : "Gerenciar de perto:", MARGIN_X, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.quadrantCounts.MANAGE_CLOSELY), MARGIN_X + 27.5, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Manter satisfeito:", MARGIN_X + 43, metaY);
+  doc.text(
+    isEn ? "Keep satisfied:" : "Manter satisfeito:",
+    MARGIN_X + 43,
+    metaY,
+  );
   doc.setFont("helvetica", "normal");
   doc.text(String(data.quadrantCounts.KEEP_SATISFIED), MARGIN_X + 68.5, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Manter informado:", MARGIN_X + 84, metaY);
+  doc.text(
+    isEn ? "Keep informed:" : "Manter informado:",
+    MARGIN_X + 84,
+    metaY,
+  );
   doc.setFont("helvetica", "normal");
   doc.text(String(data.quadrantCounts.KEEP_INFORMED), MARGIN_X + 110.5, metaY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("Monitorar:", MARGIN_X + 126, metaY);
+  doc.text(isEn ? "Monitor:" : "Monitorar:", MARGIN_X + 126, metaY);
   doc.setFont("helvetica", "normal");
   doc.text(String(data.quadrantCounts.MONITOR), MARGIN_X + 141.5, metaY);
 
@@ -193,7 +232,15 @@ function drawPageHeader(doc: jsPDF, data: CommunicationMatrixPdfData): number {
   doc.text(
     `${data.totalStakeholders} ${
       data.totalStakeholders === 1 ? "stakeholder" : "stakeholders"
-    }  •  ${data.totalRows} ${data.totalRows === 1 ? "registro" : "registros"}`,
+    }  •  ${data.totalRows} ${
+      isEn
+        ? data.totalRows === 1
+          ? "record"
+          : "records"
+        : data.totalRows === 1
+          ? "registro"
+          : "registros"
+    }`,
     MARGIN_X + CONTENT_WIDTH,
     metaY,
     { align: "right" },
@@ -224,17 +271,23 @@ function drawPageHeader(doc: jsPDF, data: CommunicationMatrixPdfData): number {
   const labelY = headerY + headerH / 2 + 1.1;
 
   for (const col of TABLE_COLUMNS) {
+    const label = isEn ? TABLE_COLUMN_LABELS_EN[col.key] : col.label;
     if (col.align === "center") {
-      doc.text(col.label, col.x + col.width / 2, labelY, { align: "center" });
+      doc.text(label, col.x + col.width / 2, labelY, { align: "center" });
     } else {
-      doc.text(col.label, col.x + 2.5, labelY, { align: "left" });
+      doc.text(label, col.x + 2.5, labelY, { align: "left" });
     }
   }
 
   return headerY + headerH + accentH;
 }
 
-function measureRow(doc: jsPDF, row: CommunicationMatrixPdfRow): MeasuredMatrixRow {
+function measureRow(
+  doc: jsPDF,
+  row: CommunicationMatrixPdfRow,
+  locale: AppLocale,
+): MeasuredMatrixRow {
+  const isEn = locale === "en-US";
   const stakeholderTextW = COL_BY_KEY.stakeholder.width - 5;
   const groupTextW = COL_BY_KEY.group.width - 4.5;
   const contentTextW = COL_BY_KEY.content.width - 5;
@@ -269,7 +322,7 @@ function measureRow(doc: jsPDF, row: CommunicationMatrixPdfRow): MeasuredMatrixR
     doc.setFont("helvetica", "bold");
     doc.setFontSize(6.4);
     responsibleLines = doc.splitTextToSize(
-      `Resp.: ${row.responsibleLabel}`,
+      `${isEn ? "Owner" : "Resp."}: ${row.responsibleLabel}`,
       contentTextW,
     ) as string[];
   }
@@ -491,7 +544,9 @@ function drawSummaryRow(
   doc: jsPDF,
   data: CommunicationMatrixPdfData,
   y: number,
+  locale: AppLocale,
 ): number {
+  const isEn = locale === "en-US";
   const height = 7.6;
 
   doc.setFillColor(...COMMUNICATION_MATRIX_PDF_COLORS.finalBalanceBg);
@@ -503,12 +558,19 @@ function drawSummaryRow(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.6);
   doc.setTextColor(...COMMUNICATION_MATRIX_PDF_COLORS.brandNavy);
-  doc.text("T O T A L   D A   M A T R I Z", MARGIN_X + 2.5, baselineY, {
-    align: "left",
-  });
+  doc.text(
+    isEn ? "M A T R I X   T O T A L" : "T O T A L   D A   M A T R I Z",
+    MARGIN_X + 2.5,
+    baselineY,
+    {
+      align: "left",
+    },
+  );
 
   doc.text(
-    `E-mail: ${data.channelCounts.EMAIL}  •  WhatsApp: ${data.channelCounts.WHATSAPP}  •  Reunião: ${data.channelCounts.MEETING}  •  Relatório PDF: ${data.channelCounts.REPORT_PDF}`,
+    isEn
+      ? `Email: ${data.channelCounts.EMAIL}  •  WhatsApp: ${data.channelCounts.WHATSAPP}  •  Meeting: ${data.channelCounts.MEETING}  •  PDF Report: ${data.channelCounts.REPORT_PDF}`
+      : `E-mail: ${data.channelCounts.EMAIL}  •  WhatsApp: ${data.channelCounts.WHATSAPP}  •  Reunião: ${data.channelCounts.MEETING}  •  Relatório PDF: ${data.channelCounts.REPORT_PDF}`,
     MARGIN_X + CONTENT_WIDTH - 2.5,
     baselineY,
     { align: "right" },
@@ -523,7 +585,9 @@ function drawPageFooter(
   pageCount: number,
   teamName: string,
   formattedDate: string,
+  locale: AppLocale,
 ): void {
+  const isEn = locale === "en-US";
   const lineY = PAGE_HEIGHT - 11;
   const textY = PAGE_HEIGHT - 7;
 
@@ -535,13 +599,17 @@ function drawPageFooter(
   doc.setFontSize(7.2);
   doc.setTextColor(...COMMUNICATION_MATRIX_PDF_COLORS.brandNavy);
   doc.text(
-    `${teamName} • Matriz de Comunicação • Emitido em ${formattedDate}`,
+    isEn
+      ? `${teamName} • Communication Matrix • Issued on ${formattedDate}`
+      : `${teamName} • Matriz de Comunicação • Emitido em ${formattedDate}`,
     MARGIN_X,
     textY,
     { align: "left" },
   );
   doc.text(
-    `Página ${pageNumber} de ${pageCount}`,
+    isEn
+      ? `Page ${pageNumber} of ${pageCount}`
+      : `Página ${pageNumber} de ${pageCount}`,
     MARGIN_X + CONTENT_WIDTH,
     textY,
     { align: "right" },
@@ -556,23 +624,104 @@ export async function exportCommunicationMatrixToPdf({
   stakeholders,
   teamName,
   groupFilter,
+  locale,
 }: ExportCommunicationMatrixPdfParams): Promise<{
   filename: string;
   pageCount: number;
   rowCount: number;
+  translationFallback?: boolean;
 }> {
+  const resolvedLocale = locale ?? getStoredLocale();
+  const isEn = resolvedLocale === "en-US";
+
   if (stakeholders.length === 0) {
-    throw new Error("Não há stakeholders cadastrados para gerar a matriz.");
+    throw new Error(
+      isEn
+        ? "There are no registered stakeholders to generate the matrix."
+        : "Não há stakeholders cadastrados para gerar a matriz.",
+    );
+  }
+
+  let localizedStakeholders = stakeholders;
+  let translationFallback = false;
+
+  if (isEn) {
+    const dynamicTexts: Array<string | null | undefined> = [];
+    for (const item of stakeholders) {
+      dynamicTexts.push(item.roleOrJobTitle, item.notes);
+      for (const plan of item.plans ?? []) {
+        if (plan.isActive) {
+          dynamicTexts.push(plan.title, plan.keyInformation, plan.customApproach);
+        }
+      }
+    }
+
+    const translated = await translatePdfTexts(dynamicTexts, {
+      locale: resolvedLocale,
+      context: "Communication Matrix PDF (stakeholder roles, notes, and communication plan approaches)",
+    });
+    translationFallback = translated.usedFallback;
+
+    localizedStakeholders = stakeholders.map((item) => ({
+      ...item,
+      roleOrJobTitle: item.roleOrJobTitle
+        ? resolveTranslatedPdfText(
+            item.roleOrJobTitle,
+            translated.translations,
+            resolvedLocale,
+          )
+        : item.roleOrJobTitle,
+      notes: item.notes
+        ? resolveTranslatedPdfText(
+            item.notes,
+            translated.translations,
+            resolvedLocale,
+          )
+        : item.notes,
+      plans: (item.plans ?? []).map((plan) =>
+        plan.isActive
+          ? {
+              ...plan,
+              title: plan.title
+                ? resolveTranslatedPdfText(
+                    plan.title,
+                    translated.translations,
+                    resolvedLocale,
+                  )
+                : plan.title,
+              keyInformation: plan.keyInformation
+                ? resolveTranslatedPdfText(
+                    plan.keyInformation,
+                    translated.translations,
+                    resolvedLocale,
+                  )
+                : plan.keyInformation,
+              customApproach: plan.customApproach
+                ? resolveTranslatedPdfText(
+                    plan.customApproach,
+                    translated.translations,
+                    resolvedLocale,
+                  )
+                : plan.customApproach,
+            }
+          : plan,
+      ),
+    }));
   }
 
   const data = buildCommunicationMatrixPdfData({
-    stakeholders,
+    stakeholders: localizedStakeholders,
     teamName,
     groupFilter,
+    locale: resolvedLocale,
   });
 
   if (data.rows.length === 0) {
-    throw new Error("Não há registros para o filtro selecionado.");
+    throw new Error(
+      isEn
+        ? "There are no records for the selected filter."
+        : "Não há registros para o filtro selecionado.",
+    );
   }
 
   const { jsPDF: JsPdfCtor } = await import("jspdf");
@@ -585,17 +734,17 @@ export async function exportCommunicationMatrixToPdf({
   });
 
   const now = new Date();
-  const formattedDate = now.toLocaleDateString("pt-BR");
+  const formattedDate = now.toLocaleDateString(resolvedLocale);
 
-  let cursorY = drawPageHeader(doc, data);
+  let cursorY = drawPageHeader(doc, data, resolvedLocale);
   let visualIndex = 0;
 
   for (const row of data.rows) {
-    const measured = measureRow(doc, row);
+    const measured = measureRow(doc, row, resolvedLocale);
 
     if (cursorY + measured.height > CONTENT_BOTTOM) {
       doc.addPage("a4", "landscape");
-      cursorY = drawPageHeader(doc, data);
+      cursorY = drawPageHeader(doc, data, resolvedLocale);
       visualIndex = 0;
     }
 
@@ -606,18 +755,34 @@ export async function exportCommunicationMatrixToPdf({
 
   if (cursorY + 8 > CONTENT_BOTTOM) {
     doc.addPage("a4", "landscape");
-    cursorY = drawPageHeader(doc, data);
+    cursorY = drawPageHeader(doc, data, resolvedLocale);
   }
-  drawSummaryRow(doc, data, cursorY);
+  drawSummaryRow(doc, data, cursorY, resolvedLocale);
 
   const pageCount = doc.getNumberOfPages();
   for (let page = 1; page <= pageCount; page += 1) {
     doc.setPage(page);
-    drawPageFooter(doc, page, pageCount, data.teamDisplayName, formattedDate);
+    drawPageFooter(
+      doc,
+      page,
+      pageCount,
+      data.teamDisplayName,
+      formattedDate,
+      resolvedLocale,
+    );
   }
 
-  const filename = buildCommunicationMatrixPdfFilename(data.teamDisplayName, now);
+  const filename = buildCommunicationMatrixPdfFilename(
+    data.teamDisplayName,
+    now,
+    resolvedLocale,
+  );
   doc.save(filename);
 
-  return { filename, pageCount, rowCount: data.rows.length };
+  return {
+    filename,
+    pageCount,
+    rowCount: data.rows.length,
+    translationFallback,
+  };
 }

@@ -1,3 +1,5 @@
+import type { AppLocale } from "@/lib/i18n/locale-types";
+import { translateUiText } from "@/lib/i18n/translations";
 import {
   formatIsoDateBR,
   formatTimeBR,
@@ -39,7 +41,7 @@ export interface IndividualAttendancePdfRow {
   weekdayLabel: string;
   timeLabel: string;
   status: AttendanceStatus;
-  statusLabel: "Presente" | "Falta";
+  statusLabel: "Presente" | "Falta" | "Present" | "Absent";
   notes: string;
 }
 
@@ -106,34 +108,75 @@ function formatDateStamp(date: Date): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+const ATTENDANCE_PERIOD_LABELS_EN: Record<AttendancePeriodFilter, string> = {
+  ALL: "All history",
+  LAST_7_DAYS: "Last 7 days",
+  LAST_30_DAYS: "Last 30 days",
+  CURRENT_MONTH: "Current month",
+};
+
+const WEEKDAY_PT_TO_EN: Readonly<Record<string, string>> = {
+  Dom: "Sun",
+  Seg: "Mon",
+  Ter: "Tue",
+  Qua: "Wed",
+  Qui: "Thu",
+  Sex: "Fri",
+  "Sáb": "Sat",
+};
+
+function formatWeekdayForLocale(isoDate: string, locale: AppLocale): string {
+  const pt = formatWeekdayShortBR(isoDate);
+  if (locale === "pt-BR") return pt;
+  return WEEKDAY_PT_TO_EN[pt] ?? pt;
+}
+
 export function buildIndividualAttendancePdfData({
   memberSummary,
   teamName,
   seasonLabel,
   period = "ALL",
+  locale = "pt-BR",
 }: {
   memberSummary: MemberAttendanceSummaryDTO;
   teamName?: string;
   seasonLabel?: string;
   period?: AttendancePeriodFilter;
+  locale?: AppLocale;
 }): IndividualAttendancePdfData {
+  const isEn = locale === "en-US";
   const teamDisplayName = teamName?.trim() || "Equipe Gênesis";
-  const resolvedSeason = seasonLabel?.trim() || "Temporada Atual";
-  const periodLabel = ATTENDANCE_PERIOD_LABELS[period] ?? "Todo o histórico";
+  const rawSeason =
+    seasonLabel?.trim() || (isEn ? "Current Season" : "Temporada Atual");
+  const resolvedSeason = isEn ? translateUiText(rawSeason, locale) : rawSeason;
+  const periodLabel = isEn
+    ? ATTENDANCE_PERIOD_LABELS_EN[period] ?? "All history"
+    : ATTENDANCE_PERIOD_LABELS[period] ?? "Todo o histórico";
 
   const rows: IndividualAttendancePdfRow[] = [...memberSummary.records]
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((record) => ({
       dateLabel: formatIsoDateBR(record.date),
-      weekdayLabel: formatWeekdayShortBR(record.date),
+      weekdayLabel: formatWeekdayForLocale(record.date, locale),
       timeLabel: formatTimeBR(record.checkedAt),
       status: record.status,
-      statusLabel: record.status === "PRESENT" ? "Presente" : "Falta",
+      statusLabel:
+        record.status === "PRESENT"
+          ? isEn
+            ? "Present"
+            : "Presente"
+          : isEn
+            ? "Absent"
+            : "Falta",
       notes:
         record.status === "ABSENT"
-          ? "Sem registro de presença"
+          ? isEn
+            ? "No check-in recorded"
+            : "Sem registro de presença"
           : record.notes?.trim() || "—",
     }));
+
+  const rawSector = getAttendanceSectorLabel(memberSummary.deliveryGroup);
 
   return {
     teamDisplayName,
@@ -141,8 +184,9 @@ export function buildIndividualAttendancePdfData({
     periodLabel,
     memberName: memberSummary.userName,
     memberEmail: memberSummary.email || "—",
-    sectorLabel: getAttendanceSectorLabel(memberSummary.deliveryGroup),
-    jobTitleLabel: memberSummary.jobTitle?.trim() || "Integrante",
+    sectorLabel: isEn ? translateUiText(rawSector, locale) : rawSector,
+    jobTitleLabel:
+      memberSummary.jobTitle?.trim() || (isEn ? "Member" : "Integrante"),
     totalTrainings: memberSummary.totalTrainings,
     presencesCount: memberSummary.presencesCount,
     absencesCount: memberSummary.absencesCount,
@@ -156,25 +200,35 @@ export function buildTeamAttendancePdfData({
   teamName,
   seasonLabel,
   period = "ALL",
+  locale = "pt-BR",
 }: {
   analytics: AttendanceAnalyticsDTO;
   teamName?: string;
   seasonLabel?: string;
   period?: AttendancePeriodFilter;
+  locale?: AppLocale;
 }): TeamAttendancePdfData {
+  const isEn = locale === "en-US";
   const teamDisplayName = teamName?.trim() || "Equipe Gênesis";
-  const resolvedSeason = seasonLabel?.trim() || "Temporada Atual";
-  const periodLabel = ATTENDANCE_PERIOD_LABELS[period] ?? "Todo o histórico";
+  const rawSeason =
+    seasonLabel?.trim() || (isEn ? "Current Season" : "Temporada Atual");
+  const resolvedSeason = isEn ? translateUiText(rawSeason, locale) : rawSeason;
+  const periodLabel = isEn
+    ? ATTENDANCE_PERIOD_LABELS_EN[period] ?? "All history"
+    : ATTENDANCE_PERIOD_LABELS[period] ?? "Todo o histórico";
 
   const memberRows: TeamAttendanceMemberPdfRow[] = analytics.memberSummaries.map(
-    (member) => ({
-      userName: member.userName,
-      sectorLabel: getAttendanceSectorLabel(member.deliveryGroup),
-      totalTrainings: member.totalTrainings,
-      presencesCount: member.presencesCount,
-      absencesCount: member.absencesCount,
-      attendanceRateLabel: `${member.attendanceRate.toFixed(1)}%`,
-    })
+    (member) => {
+      const rawSector = getAttendanceSectorLabel(member.deliveryGroup);
+      return {
+        userName: member.userName,
+        sectorLabel: isEn ? translateUiText(rawSector, locale) : rawSector,
+        totalTrainings: member.totalTrainings,
+        presencesCount: member.presencesCount,
+        absencesCount: member.absencesCount,
+        attendanceRateLabel: `${member.attendanceRate.toFixed(1)}%`,
+      };
+    }
   );
 
   const absentByDate = new Map<string, string[]>();
@@ -193,12 +247,16 @@ export function buildTeamAttendancePdfData({
       );
       return {
         dateLabel: day.fullDateLabel,
-        weekdayLabel: formatWeekdayShortBR(day.date),
+        weekdayLabel: formatWeekdayForLocale(day.date, locale),
         presencesCount: day.presences,
         absencesCount: day.absences,
         attendanceRateLabel: `${day.attendanceRate.toFixed(1)}%`,
         absentNames:
-          absentList.length > 0 ? absentList.join(", ") : "Todos presentes",
+          absentList.length > 0
+            ? absentList.join(", ")
+            : isEn
+              ? "All present"
+              : "Todos presentes",
       };
     });
 
@@ -219,19 +277,25 @@ export function buildTeamAttendancePdfData({
 export function buildIndividualAttendancePdfFilename(
   memberName: string,
   teamName?: string,
-  date = new Date()
+  date = new Date(),
+  locale: AppLocale = "pt-BR"
 ): string {
   const memberSlug = slugifyText(memberName, "integrante");
   const teamSlug = slugifyText(teamName, "equipe-genesis");
-  return `relatorio-presenca-${memberSlug}-${teamSlug}-${formatDateStamp(date)}.pdf`;
+  const prefix =
+    locale === "en-US" ? "attendance-report" : "relatorio-presenca";
+  return `${prefix}-${memberSlug}-${teamSlug}-${formatDateStamp(date)}.pdf`;
 }
 
 export function buildTeamAttendancePdfFilename(
   teamName?: string,
-  date = new Date()
+  date = new Date(),
+  locale: AppLocale = "pt-BR"
 ): string {
   const teamSlug = slugifyText(teamName, "equipe-genesis");
-  return `relatorio-presenca-geral-${teamSlug}-${formatDateStamp(date)}.pdf`;
+  const prefix =
+    locale === "en-US" ? "team-attendance-report" : "relatorio-presenca-geral";
+  return `${prefix}-${teamSlug}-${formatDateStamp(date)}.pdf`;
 }
 
 export function buildIndividualAttendanceCsvData(
