@@ -38,6 +38,13 @@
   --chart-3: #f93c65;
   --chart-4: #8280ff;
   --chart-5: #ffa756;
+  --flag-br-green: #009c3b;
+  --flag-br-yellow: #ffdf00;
+  --flag-br-blue: #002776;
+  --flag-br-white: #ffffff;
+  --flag-us-red: #b22234;
+  --flag-us-blue: #3c3b6e;
+  --flag-us-white: #ffffff;
 }
 
 .dark {
@@ -75,6 +82,13 @@
   --chart-3: #f93c65;
   --chart-4: #8280ff;
   --chart-5: #ffa756;
+  --flag-br-green: #009c3b;
+  --flag-br-yellow: #ffdf00;
+  --flag-br-blue: #002776;
+  --flag-br-white: #ffffff;
+  --flag-us-red: #b22234;
+  --flag-us-blue: #3c3b6e;
+  --flag-us-white: #ffffff;
 }
 
 @theme inline {
