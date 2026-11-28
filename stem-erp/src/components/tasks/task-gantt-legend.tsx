@@ -11,7 +11,8 @@ const legendStyles = tv({
     list: "flex flex-wrap items-center gap-x-3.5 gap-y-1.5",
     item: "flex items-center gap-1.5 text-xs leading-tight text-foreground",
     swatch: "h-2.5 w-4 shrink-0 rounded-sm",
-    diamond: "h-2.5 w-2.5 shrink-0 rotate-45 border-2 border-destructive bg-card",
+    criticalSwatch: "h-2.5 w-4 shrink-0 rounded-sm border border-destructive bg-destructive ring-1 ring-destructive/40",
+    diamond: "h-2.5 w-2.5 shrink-0 rotate-45 border-2 border-primary bg-card",
     itemTitle: "block whitespace-nowrap text-[11px] font-semibold leading-tight text-foreground",
     itemDetail: "block whitespace-nowrap text-[10px] leading-tight text-muted-foreground",
   },
@@ -59,12 +60,19 @@ export function TaskGanttLegend({ className }: TaskGanttLegendProps) {
             </div>
           </li>
           <li className={styles.item()}>
+            <span className={styles.criticalSwatch()} aria-hidden="true" />
+            <div>
+              <span className={styles.itemTitle()}>Caminho crítico</span>
+              <span className={styles.itemDetail()}>(destaque em vermelho)</span>
+            </div>
+          </li>
+          <li className={styles.item()}>
             <span className="flex h-2.5 w-4 shrink-0 items-center justify-center" aria-hidden="true">
               <span className={styles.diamond()} />
             </span>
             <div>
-              <span className={styles.itemTitle()}>Caminho crítico</span>
-              <span className={styles.itemDetail()}>(define o prazo final)</span>
+              <span className={styles.itemTitle()}>Marco</span>
+              <span className={styles.itemDetail()}>(critérios de aceitação)</span>
             </div>
           </li>
         </ul>

@@ -24,6 +24,30 @@ export type TaskRecord = {
   roles: { person: TaskPerson; role: TaskRole }[];
 };
 export type TaskEdge = { predecessorId: string; successorId: string };
+export type MilestoneCheckStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type MilestoneCriterionRecord = {
+  id: string;
+  title: string;
+  sortOrder: number;
+};
+export type MilestoneCriterionCheckRecord = {
+  criterionId: string;
+  taskId: string;
+  status: MilestoneCheckStatus;
+  notes: string | null;
+  checkedByName: string | null;
+  checkedAt: string | null;
+};
+export type TaskMilestoneRecord = {
+  id: string;
+  title: string;
+  description: string | null;
+  targetDate: string;
+  revision: number;
+  criteria: MilestoneCriterionRecord[];
+  taskIds: string[];
+  checks: MilestoneCriterionCheckRecord[];
+};
 export type TaskRisk = {
   id: string;
   name: string;
@@ -40,6 +64,7 @@ export type TaskWorkspace = {
   tasks: TaskRecord[];
   edges: TaskEdge[];
   paths: TaskRisk[];
+  milestones: TaskMilestoneRecord[];
 };
 export type TaskActionResult = { ok: true } | { ok: false; message: string };
 

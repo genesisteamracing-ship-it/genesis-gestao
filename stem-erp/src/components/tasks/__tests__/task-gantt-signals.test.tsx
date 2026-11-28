@@ -5,7 +5,7 @@ import { createElement } from "react";
 import { cleanup, render } from "@testing-library/react";
 import { TaskGanttKpis } from "../task-gantt-kpis";
 import { TaskGanttLegend } from "../task-gantt-legend";
-import { dependencyConnectorStyles } from "../task-gantt";
+import { bar, dependencyConnectorStyles } from "../task-gantt";
 import type { GanttSummary } from "@/lib/task-gantt-metrics";
 
 function withDom(fn: () => Promise<void> | void) {
@@ -85,7 +85,7 @@ test(
 );
 
 test(
-  "TaskGanttLegend exibe todos os 5 sinais da legenda de status",
+  "TaskGanttLegend exibe todos os 6 sinais da legenda com caminho crítico em destaque vermelho e marco em losango",
   withDom(() => {
     const view = render(createElement(TaskGanttLegend));
 
@@ -99,9 +99,28 @@ test(
     assert.ok(view.getByText("Cinza: linha de base"));
     assert.ok(view.getByText("(planejado)"));
     assert.ok(view.getByText("Caminho crítico"));
-    assert.ok(view.getByText("(define o prazo final)"));
+    assert.ok(view.getByText("(destaque em vermelho)"));
+    assert.ok(view.getByText("Marco"));
+    assert.ok(view.getByText("(critérios de aceitação)"));
+
+    const criticalItem = view.getByText("Caminho crítico").closest("li");
+    assert.ok(criticalItem);
+    assert.equal(criticalItem.querySelector(".rotate-45"), null);
+
+    const milestoneItem = view.getByText("Marco").closest("li");
+    assert.ok(milestoneItem);
+    assert.ok(milestoneItem.querySelector(".rotate-45"));
   }),
 );
+
+test("bar aplica destaque vermelho sólido para atividades do caminho crítico não canceladas", () => {
+  const criticalBar = bar({ signal: "ON_TRACK", critical: true });
+  assert.ok(criticalBar.includes("bg-destructive"));
+  assert.ok(criticalBar.includes("border-destructive"));
+
+  const cancelledCriticalBar = bar({ signal: "CANCELLED", critical: true });
+  assert.ok(cancelledCriticalBar.includes("bg-muted"));
+});
 
 test(
   "TaskGanttLegend renderiza em barra horizontal compacta (flex-wrap) sem coluna vertical fixa",
