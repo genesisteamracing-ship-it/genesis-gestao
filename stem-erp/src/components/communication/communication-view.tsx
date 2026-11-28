@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FileText, Loader2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { CommunicationKpis } from "./communication-kpis";
+import { CommunicationPdfExportMenu } from "./communication-pdf-export-menu";
 import { StakeholderOrgMap } from "./org-map/stakeholder-org-map";
 import { StakeholderMatrix } from "./stakeholder-matrix";
 import { ReportGeneratorTab } from "./report-generator-tab";
@@ -15,6 +16,7 @@ import { CommunicationScheduleTab } from "./communication-schedule-tab";
 import { CreateStakeholderDialog } from "./create-stakeholder-dialog";
 import { LogCommunicationDialog } from "./log-communication-dialog";
 import { AddFeedbackDialog } from "./add-feedback-dialog";
+import { useCommunicationMatrixPdfExport } from "@/hooks/use-communication-matrix-pdf-export";
 import { useStakeholdersPdfExport } from "@/hooks/use-stakeholders-pdf-export";
 import type { QuickAddStakeholderPrefill } from "@/hooks/use-stakeholder-org-map";
 import type { DashboardMetricsDTO } from "@/types/financial";
@@ -119,6 +121,12 @@ export function CommunicationView({
     teamName: dashboardMetrics.activeTeam.name,
   });
 
+  const { isExportingMatrixPdf, handleExportMatrixPdf } =
+    useCommunicationMatrixPdfExport({
+      stakeholders,
+      teamName: dashboardMetrics.activeTeam.name,
+    });
+
   return (
     <DashboardShell
       title={currentHeader.title}
@@ -132,20 +140,12 @@ export function CommunicationView({
       headerAction={
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           {activeTab !== "stakeholders" && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleExportPdf}
-              disabled={isExportingPdf || stakeholders.length === 0}
-              className="w-full sm:w-auto gap-2 font-semibold border-border bg-card text-foreground hover:bg-muted"
-            >
-              {isExportingPdf ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <FileText className="h-4 w-4" />
-              )}
-              <span>{isExportingPdf ? "Exportando..." : "Relatório PDF"}</span>
-            </Button>
+            <CommunicationPdfExportMenu
+              disabled={stakeholders.length === 0}
+              isExporting={isExportingPdf || isExportingMatrixPdf}
+              onExportCommunicationMatrix={handleExportMatrixPdf}
+              onExportStakeholdersMatrix={handleExportPdf}
+            />
           )}
           <Button
             type="button"
