@@ -43,10 +43,10 @@ const LABEL_WIDTH = 216;
 const ID_COLUMN_WIDTH = 44;
 
 const bar = tv({
-  base: "group absolute top-5 z-10 flex h-7 items-center justify-between overflow-visible rounded-md border text-left text-xs font-semibold outline-offset-2 transition-all focus-visible:outline-2 shadow-2xs",
+  base: "relative z-10 flex h-full w-full items-center justify-between overflow-visible rounded-md border text-left text-xs font-semibold outline-offset-2 transition-all focus-visible:outline-2 shadow-2xs",
   variants: {
     signal: {
-      ON_TRACK: "border-success/70 bg-success/90 text-success-foreground",
+      ON_TRACK: "border-success/80 bg-success text-success-foreground",
       AT_RISK: "border-warning/80 bg-warning text-foreground",
       DELAYED: "border-destructive/80 bg-destructive text-destructive-foreground",
       COMPLETED: "border-success bg-success text-success-foreground",
@@ -59,6 +59,35 @@ const bar = tv({
   },
   defaultVariants: {
     signal: "ON_TRACK",
+  },
+});
+
+export const dependencyConnectorStyles = tv({
+  slots: {
+    stem: "pointer-events-none absolute left-full top-1/2 z-[5] h-px w-2 -translate-y-1/2 origin-left bg-primary/60 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+    handle:
+      "absolute left-[calc(100%+8px)] top-1/2 z-[5] flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full border-2 border-primary bg-card shadow-xs cursor-crosshair transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+  },
+  variants: {
+    state: {
+      idle: {
+        stem: "scale-x-0 opacity-0 group-hover/task:scale-x-100 group-hover/task:opacity-100 group-focus-within/task:scale-x-100 group-focus-within/task:opacity-100",
+        handle:
+          "pointer-events-none -translate-x-5 scale-75 opacity-0 group-hover/task:pointer-events-auto group-hover/task:translate-x-0 group-hover/task:scale-100 group-hover/task:opacity-100 group-focus-within/task:pointer-events-auto group-focus-within/task:translate-x-0 group-focus-within/task:scale-100 group-focus-within/task:opacity-100 hover:scale-125 focus-visible:scale-125",
+      },
+      active: {
+        stem: "scale-x-100 opacity-100",
+        handle:
+          "pointer-events-auto translate-x-0 scale-125 opacity-100 ring-2 ring-primary/60",
+      },
+      suppressed: {
+        stem: "scale-x-0 opacity-0",
+        handle: "pointer-events-none -translate-x-5 scale-75 opacity-0",
+      },
+    },
+  },
+  defaultVariants: {
+    state: "idle",
   },
 });
 
@@ -632,8 +661,8 @@ export function TaskGantt({
     <section aria-label="Cronograma de Gantt" className="min-w-0 space-y-4">
       <TaskGanttKpis summary={summary} />
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Button
             size="sm"
             variant={week ? "outline" : "default"}
@@ -651,6 +680,10 @@ export function TaskGantt({
             Semanas
           </Button>
           {path && <span className="text-sm font-medium text-primary">Caminho em destaque · {path.name}</span>}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <TaskGanttLegend className="w-full" />
         </div>
       </div>
 
@@ -691,12 +724,11 @@ export function TaskGantt({
         </div>
       )}
 
-      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_224px]">
-        <div
-          className="max-h-[65vh] min-w-0 overflow-auto rounded-xl border border-border bg-card shadow-2xs"
-          tabIndex={0}
-          aria-label="Linha do tempo rolável"
-        >
+      <div
+        className="w-full max-h-[65vh] min-w-0 overflow-auto rounded-xl border border-border bg-card shadow-2xs"
+        tabIndex={0}
+        aria-label="Linha do tempo rolável"
+      >
           <div style={{ width: LABEL_WIDTH + width + 168 }}>
             <div className="sticky top-0 z-30 flex h-10 border-b border-border bg-card text-xs font-semibold">
               <div
@@ -742,6 +774,8 @@ export function TaskGantt({
                 const tagLeft = Math.max(left + barWidth, baseLeft + baselineBarWidth) + (canEdit ? 34 : 18) + (isCritical ? 14 : 0);
                 const displayTagText = isCritical ? "Crítica" : (metrics?.signalLabel ?? TASK_STATUS_LABELS[task.status]);
                 const displayTagTone = isCritical ? "CRITICAL" : signal;
+                const connectorState = isSource ? "active" : connecting ? "suppressed" : "idle";
+                const connectorStyles = dependencyConnectorStyles({ state: connectorState });
 
                 return (
                   <div
@@ -794,17 +828,28 @@ export function TaskGantt({
                         style={{ left: baseLeft, width: baselineBarWidth }}
                       />
 
-                      {/* Barra Colorida: Execução / Status de Prazo */}
+                      {/* Wrapper da Barra + Conector de Dependência (z-10; bolinha em z-[5] atrás da barra) */}
                       <div
-                        className={bar({
-                          signal,
-                          highlighted: highlightedTasks.has(task.id),
-                          isConnectingSource: isSource,
-                          isDropTargetValid: Boolean(isTargetCandidate && isValidTarget),
-                          isDropTargetInvalid: Boolean(isTargetCandidate && !isValidTarget),
-                        })}
+                        className="group/task absolute top-5 z-10 h-7"
                         style={{ left, width: barWidth }}
                       >
+                        {canEdit && (
+                          <div
+                            aria-hidden="true"
+                            className="absolute -inset-y-2 -left-2 -right-9 z-0"
+                          />
+                        )}
+
+                        {/* Barra Colorida: Execução / Status de Prazo */}
+                        <div
+                          className={bar({
+                            signal,
+                            highlighted: highlightedTasks.has(task.id),
+                            isConnectingSource: isSource,
+                            isDropTargetValid: Boolean(isTargetCandidate && isValidTarget),
+                            isDropTargetInvalid: Boolean(isTargetCandidate && !isValidTarget),
+                          })}
+                        >
                       {/* Left Edge Resize Handle (startDate) */}
                       {canManageBar && (
                         <div
@@ -942,49 +987,22 @@ export function TaskGantt({
                           className="absolute inset-y-0 right-0 z-20 w-2 cursor-ew-resize rounded-r-md transition-colors hover:bg-primary/35"
                         />
                       )}
+                        </div>
 
-                      {/* Source Drag Connector Handle (Outside Box on the Right) */}
-                      {canEdit && (
-                        <>
-                          <span
-                            aria-hidden="true"
-                            className="pointer-events-none absolute left-full top-1/2 h-px w-2 -translate-y-1/2 bg-primary/50"
-                          />
-                          <div
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`Conectar dependência a partir de ${task.title}`}
-                            title="Puxe esta bolinha para conectar uma dependência"
-                            onPointerDown={(e) => {
-                              if (e.button !== 0) return;
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setConnecting({
-                                sourceId: task.id,
-                                startX: left + barWidth + 18,
-                                startY: y,
-                                currentX: left + barWidth + 18,
-                                currentY: y,
-                                isDragging: false,
-                              });
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (connecting?.sourceId === task.id) {
-                                setConnecting(null);
-                              } else {
-                                setConnecting({
-                                  sourceId: task.id,
-                                  startX: left + barWidth + 18,
-                                  startY: y,
-                                  currentX: left + barWidth + 18,
-                                  currentY: y,
-                                  isDragging: false,
-                                });
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
+                        {/* Source Drag Connector Handle (Atrás da barra -> desliza para fora no hover/foco) */}
+                        {canEdit && (
+                          <>
+                            <span
+                              aria-hidden="true"
+                              className={connectorStyles.stem()}
+                            />
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Conectar dependência a partir de ${task.title}`}
+                              title="Puxe esta bolinha para conectar uma dependência"
+                              onPointerDown={(e) => {
+                                if (e.button !== 0) return;
                                 e.preventDefault();
                                 e.stopPropagation();
                                 setConnecting({
@@ -995,18 +1013,42 @@ export function TaskGantt({
                                   currentY: y,
                                   isDragging: false,
                                 });
-                              }
-                            }}
-                            className={`absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 z-20 flex h-5 w-5 items-center justify-center rounded-full border-2 border-primary bg-card shadow-xs transition-transform hover:scale-125 focus:scale-125 cursor-crosshair ${
-                              isSource
-                                ? "scale-125 opacity-100 ring-2 ring-primary/60"
-                                : "opacity-90 hover:opacity-100 focus:opacity-100"
-                            }`}
-                          >
-                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                          </div>
-                        </>
-                      )}
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (connecting?.sourceId === task.id) {
+                                  setConnecting(null);
+                                } else {
+                                  setConnecting({
+                                    sourceId: task.id,
+                                    startX: left + barWidth + 18,
+                                    startY: y,
+                                    currentX: left + barWidth + 18,
+                                    currentY: y,
+                                    isDragging: false,
+                                  });
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setConnecting({
+                                    sourceId: task.id,
+                                    startX: left + barWidth + 18,
+                                    startY: y,
+                                    currentX: left + barWidth + 18,
+                                    currentY: y,
+                                    isDragging: false,
+                                  });
+                                }
+                              }}
+                              className={connectorStyles.handle()}
+                            >
+                              <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       {/* Rótulo textual de status / criticidade ao lado da barra */}
@@ -1108,9 +1150,6 @@ export function TaskGantt({
             </svg>
           </div>
         </div>
-        </div>
-
-        <TaskGanttLegend />
       </div>
 
       {/* Dependencies List with Quick Remove Action */}
