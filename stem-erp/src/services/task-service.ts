@@ -1,7 +1,12 @@
 import { Prisma, TaskStatus, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canManageTask } from "@/lib/task-permissions";
-import { createsCycle, missingLinks, parseTaskDate } from "@/lib/task-schedule";
+import {
+  calculateEndDateFromPertSum,
+  createsCycle,
+  missingLinks,
+  parseTaskDate,
+} from "@/lib/task-schedule";
 import type {
   CreateTaskInput,
   DeleteTaskInput,
@@ -153,8 +158,20 @@ export async function saveTask(scope: Scope, input: CreateTaskInput | EditTaskIn
   return serializable(async (tx) => {
     const actor = await requireActiveEditor(tx, scope);
     const startDate = parseTaskDate(input.startDate);
-    const endDate = parseTaskDate(input.endDate);
-    if (!startDate || !endDate || endDate < startDate) throw new TaskError("Informe um intervalo de datas válido.");
+    const derivedPertEnd = calculateEndDateFromPertSum(
+      input.startDate,
+      input.optimisticDays,
+      input.mostLikelyDays,
+      input.pessimisticDays,
+    );
+    if (!("id" in input) && !derivedPertEnd) {
+      throw new TaskError("Preencha as estimativas PERT (O, M e P) para calcular a data de término.");
+    }
+    const effectiveEndIso = derivedPertEnd ?? input.endDate;
+    const endDate = parseTaskDate(effectiveEndIso);
+    if (!startDate || !endDate || endDate < startDate) {
+      throw new TaskError("Informe um intervalo de datas válido.");
+    }
     const fields = {
       title: input.title,
       description: input.description || null,

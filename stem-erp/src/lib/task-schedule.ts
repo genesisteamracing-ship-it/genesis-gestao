@@ -18,6 +18,39 @@ export function dayLabel(day: number): string {
   return new Date(day * DAY_MS).toISOString().slice(0, 10);
 }
 
+export function computePertTotalDays(
+  optimisticDays?: number | null,
+  mostLikelyDays?: number | null,
+  pessimisticDays?: number | null,
+): number | null {
+  if (
+    typeof optimisticDays !== "number" ||
+    typeof mostLikelyDays !== "number" ||
+    typeof pessimisticDays !== "number" ||
+    !Number.isInteger(optimisticDays) ||
+    !Number.isInteger(mostLikelyDays) ||
+    !Number.isInteger(pessimisticDays) ||
+    optimisticDays < 1 ||
+    mostLikelyDays < 1 ||
+    pessimisticDays < 1
+  ) {
+    return null;
+  }
+  return optimisticDays + mostLikelyDays + pessimisticDays;
+}
+
+export function calculateEndDateFromPertSum(
+  startDate: string,
+  optimisticDays?: number | null,
+  mostLikelyDays?: number | null,
+  pessimisticDays?: number | null,
+): string | null {
+  if (!parseTaskDate(startDate)) return null;
+  const totalDays = computePertTotalDays(optimisticDays, mostLikelyDays, pessimisticDays);
+  if (totalDays === null) return null;
+  return dayLabel(taskDay(startDate) + totalDays);
+}
+
 export function formatTaskDate(date: string): string {
   const [year, month, day] = date.split("-");
   return [day, month, year].join("/");

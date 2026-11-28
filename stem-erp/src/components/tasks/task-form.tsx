@@ -3,9 +3,14 @@ import type { TaskStatus } from "@prisma/client";
 import { createTaskAction, editTaskAction } from "@/actions/tasks.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DELIVERY_GROUP_LABELS } from "@/lib/constants";
 import { formatPertDays } from "@/lib/pert-engine";
-import { Label } from "@/components/ui/label";
+import { getTodayIsoLocal } from "@/lib/task-gantt-metrics";
+import {
+  calculateEndDateFromPertSum,
+  computePertTotalDays,
+} from "@/lib/task-schedule";
 import { TASK_STATUS_LABELS, type TaskPerson, type TaskRecord } from "@/types/tasks";
 import { TaskDatePicker } from "./task-date-picker";
 import { TaskField, TaskSelect, TaskMultiSelect } from "./task-fields";
@@ -13,12 +18,20 @@ import { TaskField, TaskSelect, TaskMultiSelect } from "./task-fields";
 export const sectorOptions = Object.entries(DELIVERY_GROUP_LABELS).map(([value, label]) => ({ value, label }));
 const statuses = Object.entries(TASK_STATUS_LABELS).map(([value, label]) => ({ value, label }));
 
+function parsePositiveInt(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const num = Number(trimmed);
+  return Number.isInteger(num) && num >= 1 ? num : null;
+}
+
 export function TaskForm({
   task,
   teamId,
   members,
   currentUserId,
   currentUserName,
+  defaultStartDate,
   onDone,
 }: {
   task?: TaskRecord;
@@ -26,12 +39,14 @@ export function TaskForm({
   members: TaskPerson[];
   currentUserId?: string;
   currentUserName?: string;
+  defaultStartDate?: string;
   onDone: () => void;
 }) {
   const [sector, setSector] = useState<string>(task?.deliveryGroup ?? "");
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? "TODO");
-  const [startDate, setStartDate] = useState<string>(task?.startDate ?? "");
-  const [endDate, setEndDate] = useState<string>(task?.endDate ?? "");
+  const [startDate, setStartDate] = useState<string>(
+    () => task?.startDate ?? defaultStartDate ?? getTodayIsoLocal(),
+  );
   const [baselineStartDate, setBaselineStartDate] = useState<string>(
     task?.baselineStartDate ?? task?.startDate ?? "",
   );
@@ -49,6 +64,13 @@ export function TaskForm({
   const [pessimisticDays, setPessimisticDays] = useState<string>(
     task?.pessimisticDays != null ? String(task.pessimisticDays) : "",
   );
+
+  const parsedO = parsePositiveInt(optimisticDays);
+  const parsedM = parsePositiveInt(mostLikelyDays);
+  const parsedP = parsePositiveInt(pessimisticDays);
+  const totalPertDays = computePertTotalDays(parsedO, parsedM, parsedP);
+  const calculatedEndDate = calculateEndDateFromPertSum(startDate, parsedO, parsedM, parsedP);
+  const effectiveEndDate = calculatedEndDate ?? (task?.endDate ?? "");
 
   const people = new Map(members.map((person) => [person.key, person]));
   for (const item of task?.roles ?? []) people.set(item.person.key, item.person);
@@ -113,6 +135,11 @@ export function TaskForm({
     event.preventDefault();
     const data = new FormData(event.currentTarget);
 
+    if (!task && !effectiveEndDate) {
+      setMessage("Preencha as estimativas PERT (O, M e P) para gerar a data de término.");
+      return;
+    }
+
     const assignments = [
       ...selectedResponsibleKeys.map((memberKey) => ({ role: "R" as const, memberKey })),
       ...selectedConsultedKeys.map((memberKey) => ({ role: "C" as const, memberKey })),
@@ -133,7 +160,7 @@ export function TaskForm({
       title: data.get("title"),
       description: task?.description ?? undefined,
       startDate,
-      endDate,
+      endDate: effectiveEndDate,
       isAtRisk,
       isCritical,
       optimisticDays: parsePertInput(optimisticDays),
@@ -197,30 +224,34 @@ export function TaskForm({
       {/* Início e Término: um do lado do outro */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col justify-between space-y-1.5">
-          <TaskField label={task ? "Início atual / previsto" : "Início (Linha de base)"}>
-            {(id) => (
-              <TaskDatePicker
-                id={id}
-                name="startDate"
-                value={startDate}
-                onChange={setStartDate}
-                placeholder="Selecione o início"
-              />
-            )}
-          </TaskField>
+          <Label htmlFor="task-start-date" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+            {task ? "Início atual / previsto" : "Início (Linha de base)"}
+          </Label>
+          <div className="mt-auto">
+            <TaskDatePicker
+              id="task-start-date"
+              name="startDate"
+              value={startDate}
+              onChange={setStartDate}
+              placeholder="Selecione o início"
+            />
+          </div>
         </div>
+
         <div className="flex flex-col justify-between space-y-1.5">
-          <TaskField label={task ? "Término atual / previsto" : "Término (Linha de base)"}>
-            {(id) => (
-              <TaskDatePicker
-                id={id}
-                name="endDate"
-                value={endDate}
-                onChange={setEndDate}
-                placeholder="Selecione o término"
-              />
-            )}
-          </TaskField>
+          <Label htmlFor="task-end-date" className="text-xs font-semibold leading-tight min-h-[2rem] flex items-end">
+            {task ? "Término atual / previsto" : "Término (Linha de base)"}
+          </Label>
+          <div className="mt-auto">
+            <TaskDatePicker
+              id="task-end-date"
+              name="endDate"
+              value={effectiveEndDate}
+              onChange={() => {}}
+              disabled
+              placeholder="Automático (O + M + P)"
+            />
+          </div>
         </div>
       </div>
 
@@ -283,24 +314,22 @@ export function TaskForm({
         </label>
       </div>
 
-      {/* Estimativa PERT em 3 pontos (opcional) */}
+      {/* Estimativa PERT em 3 pontos */}
       <div className="space-y-2 rounded-lg border border-border/80 bg-muted/20 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-foreground">Estimativa PERT (dias, opcional)</span>
-          {(() => {
-            const o = Number(optimisticDays);
-            const m = Number(mostLikelyDays);
-            const p = Number(pessimisticDays);
-            if (optimisticDays && mostLikelyDays && pessimisticDays && o > 0 && o <= m && m <= p) {
-              const te = (o + 4 * m + p) / 6;
-              return (
-                <span className="text-xs font-medium text-primary">
-                  Te: {formatPertDays(te)} d
-                </span>
-              );
-            }
-            return null;
-          })()}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-foreground">Estimativa PERT (dias)</span>
+          {totalPertDays !== null && (
+            <span className="text-xs font-medium text-primary">
+              Total: {totalPertDays} d
+              {parsedO !== null &&
+                parsedM !== null &&
+                parsedP !== null &&
+                parsedO <= parsedM &&
+                parsedM <= parsedP && (
+                  <> · Te: {formatPertDays((parsedO + 4 * parsedM + parsedP) / 6)} d</>
+                )}
+            </span>
+          )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex flex-col justify-between space-y-1.5">
@@ -315,6 +344,7 @@ export function TaskForm({
                 step={1}
                 inputMode="numeric"
                 placeholder="Ex: 2"
+                required={!task}
                 value={optimisticDays}
                 onChange={(e) => setOptimisticDays(e.target.value)}
               />
@@ -333,6 +363,7 @@ export function TaskForm({
                 step={1}
                 inputMode="numeric"
                 placeholder="Ex: 4"
+                required={!task}
                 value={mostLikelyDays}
                 onChange={(e) => setMostLikelyDays(e.target.value)}
               />
@@ -351,6 +382,7 @@ export function TaskForm({
                 step={1}
                 inputMode="numeric"
                 placeholder="Ex: 9"
+                required={!task}
                 value={pessimisticDays}
                 onChange={(e) => setPessimisticDays(e.target.value)}
               />
