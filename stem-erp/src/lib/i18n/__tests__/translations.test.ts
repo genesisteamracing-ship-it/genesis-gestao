@@ -123,6 +123,41 @@ describe("translateUiText", () => {
     assert.equal(translateUiText("Excluir Tarefa", "en-US"), "Delete Task");
   });
 
+  test("traduz titulos, descricoes, meses e indicadores dos dashboards em en-US", () => {
+    assert.equal(
+      translateUiText("Fluxo de Caixa na Linha do Tempo", "en-US"),
+      "Cash Flow Timeline"
+    );
+    assert.equal(
+      translateUiText(
+        "Origens (Verde) vs. Aplicações (Vermelho) e evolução do Saldo Acumulado\n              (Linha Azul DashStack)",
+        "en-US"
+      ),
+      "Revenues (Green) vs. Expenses (Red) and Cumulative Balance trend (Blue Line)"
+    );
+    assert.equal(
+      translateUiText("Cronograma Físico-Financeiro (Previsto vs. Realizado)", "en-US"),
+      "Physical-Financial Schedule (Planned vs. Actual)"
+    );
+    assert.equal(translateUiText("Dentro do Orçamento", "en-US"), "Within Budget");
+    assert.equal(translateUiText("Variação:", "en-US"), "Variance:");
+    assert.equal(translateUiText("Ago/2025", "en-US"), "Aug/2025");
+    assert.equal(translateUiText("Fev/2026", "en-US"), "Feb/2026");
+    assert.equal(
+      translateUiText("Investimento vs. Retorno por Patrocinador", "en-US"),
+      "Investment vs. Return by Sponsor"
+    );
+    assert.equal(
+      translateUiText("Presenças e Faltas por Treino", "en-US"),
+      "Attendances and Absences per Training"
+    );
+    assert.equal(translateUiText("5 treinos no período", "en-US"), "5 trainings in period");
+    assert.equal(
+      translateUiText("14/05/2026 · 2 faltas", "en-US"),
+      "14/05/2026 · 2 absences"
+    );
+  });
+
   test("preserva nomes proprios, valores monetarios, e-mails e codigos WBS intactos", () => {
     assert.equal(translateUiText("Equipe Gênesis", "en-US"), "Equipe Gênesis");
     assert.equal(translateUiText("R$ 1.500,00", "en-US"), "R$ 1.500,00");

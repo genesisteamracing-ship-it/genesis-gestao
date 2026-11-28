@@ -869,6 +869,231 @@ export const PT_TO_EN_DICTIONARY: Readonly<Record<string, string>> = {
   dia: "day",
   horas: "hours",
   hora: "hour",
+
+  // Dashboard Financeiro, Fluxo de Caixa e Cronograma Físico-Financeiro
+  "Fluxo de Caixa na Linha do Tempo": "Cash Flow Timeline",
+  "Origens (Verde) vs. Aplicações (Vermelho) e evolução do Saldo Acumulado (Linha Azul DashStack)":
+    "Revenues (Green) vs. Expenses (Red) and Cumulative Balance trend (Blue Line)",
+  "Estrutura do Fluxo": "Cash Flow Structure",
+  "Total / Final": "Total / Final",
+  "(=) Saldo Mensal": "(=) Monthly Balance",
+  "Cronograma Físico-Financeiro (Previsto vs. Realizado)":
+    "Physical-Financial Schedule (Planned vs. Actual)",
+  "Comparativo mensal por Grupo de Entrega com variação orçamentária e status de auditoria.":
+    "Monthly comparison by Delivery Group with budget variance and audit status.",
+  Visão: "View",
+  Previsto: "Planned",
+  Realizado: "Actual",
+  "Execução & Status": "Execution & Status",
+  Variação: "Variance",
+  "Dentro do Orçamento": "Within Budget",
+  "Orçamento Estourado": "Over Budget",
+  "Limite Próximo": "Near Limit",
+  "Temporada atual": "Current season",
+
+  // Dashboard de Presença nos Treinos
+  "Frequência por Integrante": "Attendance Rate by Member",
+  "Presenças e Faltas por Treino": "Attendances and Absences per Training",
+  "Taxa de Presença por Setor (%)": "Attendance Rate by Sector (%)",
+  "Presenças e Faltas nos Treinos": "Training Attendances and Absences",
+  "Registros por Treino": "Records by Training",
+  "Resumo por Integrante": "Summary by Member",
+  "Formato de Exportação": "Export Format",
+  "Período do Relatório": "Report Period",
+  Frequência: "Attendance Rate",
+  "Sem treinos no período": "No trainings in period",
+  "treino no período": "training in period",
+  "treinos no período": "trainings in period",
+  "Não foi possível carregar os registros de presença":
+    "Could not load attendance records",
+  "Nenhuma presença registrada ainda": "No attendance recorded yet",
+  "Quando integrantes marcarem presença nos treinos, os indicadores e faltas automáticas aparecerão aqui.":
+    "When members check in for training sessions, indicators and automatic absences will appear here.",
+  "Nenhum registro encontrado para os filtros selecionados.":
+    "No records found for the selected filters.",
+  "Nenhum integrante encontrado para o filtro aplicado.":
+    "No member found for the applied filter.",
+
+  // Dashboard de ROI & Patrocinadores e Ações de Retorno
+  "Investimento vs. Retorno por Patrocinador":
+    "Investment vs. Return by Sponsor",
+  "Comparativo entre o valor investido pela empresa (lançamentos) e o retorno entregue pela equipe (ações)":
+    "Comparison between company investment (transactions) and return delivered by the team (actions)",
+  "Distribuição por Cota de Patrocínio": "Distribution by Sponsorship Tier",
+  "Volume captado e retorno gerado entre as cotas Bronze, Prata, Ouro e Diamante":
+    "Funds raised and return generated across Bronze, Silver, Gold, and Diamond tiers",
+  "Investimento da Marca": "Brand Investment",
+  "Retorno Entregue": "Delivered Return",
+  "Retorno Entregue às Marcas": "Return Delivered to Brands",
+  "ROI Médio Entregue": "Average Delivered ROI",
+  "ROI Estimado à Marca": "Estimated Brand ROI",
+  "Empresas Patrocinadoras & Retorno Individual":
+    "Sponsor Companies & Individual Return",
+  "Empresas por Cota": "Companies by Tier",
+  "Múltiplo de valor gerado para cada R$ 1,00 aportado":
+    "Value multiple generated for every R$ 1.00 invested",
+  "Soma dos lançamentos com contratos de patrocínio conectados":
+    "Sum of transactions linked to sponsorship contracts",
+  "Valoração acumulada de ações, mídias e ativações da equipe":
+    "Accumulated valuation of team actions, media, and activations",
+  "Simulador de Apresentação Comercial de Patrocínio":
+    "Sponsorship Commercial Pitch Simulator",
+  "Projeção de valoração de mídia, impressões e ativações de marca para prospecção de novos patrocinadores":
+    "Media valuation, impressions, and brand activation forecast for prospective sponsors",
+  "Cota de Patrocínio Proposta (R$)": "Proposed Sponsorship Tier (R$)",
+  "Alcance Estimado (Impressões / Público)":
+    "Estimated Reach (Impressions / Audience)",
+  "CPM Equivalente de Mídia (R$)": "Equivalent Media CPM (R$)",
+  "Valor de Ativações Físicas (R$)": "Physical Activations Value (R$)",
+  "Retorno Total Estimado": "Estimated Total Return",
+  "O investimento é apurado automaticamente a partir dos lançamentos de transações conectados a cada empresa":
+    "Investment is automatically calculated from financial transactions linked to each company",
+  "Alcance Total Estimado": "Estimated Total Reach",
+  "Retorno Total Entregue": "Total Delivered Return",
+  "Total de Ações Realizadas": "Total Completed Actions",
+  "Histórico de Entregas & Contrapartidas":
+    "Deliverables & Activations History",
+  "Lista de ações executadas que comprovam o retorno entregue a cada empresa parceira":
+    "List of executed actions proving the return delivered to each partner company",
+  "Entregas comprovadas de visibilidade para marcas":
+    "Verified brand visibility deliverables",
+  "Patrocinadores com ao menos uma entrega registrada":
+    "Sponsors with at least one recorded deliverable",
+  "Valoração acumulada de mídia e ativações":
+    "Accumulated media and activations valuation",
+  "Visualizações em redes sociais, eventos e estande":
+    "Views across social media, events, and pit display",
+
+  // Dashboard de Riscos & Oportunidades
+  "Plano Cartesiano (Chance × Consequência)":
+    "Cartesian Matrix (Probability × Consequence)",
+  "Registros de Riscos & Oportunidades": "Risk & Opportunity Records",
+  "Nenhum risco ou oportunidade para plotar no plano cartesiano.":
+    "No risks or opportunities to plot on the Cartesian matrix.",
+  Crítico: "Critical",
+  Alto: "High",
+  Médio: "Medium",
+  Baixo: "Low",
+  "Novo Risco": "New Risk",
+  "Cadastrar Primeiro Risco": "Register First Risk",
+  "Chance de Acontecer": "Probability of Occurring",
+  "Consequência se Acontecer": "Consequence if It Occurs",
+  Classificação: "Classification",
+  "Estratégia Proativa": "Proactive Strategy",
+  "Evidências (Descrição)": "Evidence (Description)",
+  "Link da Evidência (Opcional)": "Evidence Link (Optional)",
+  "Link da Evidência": "Evidence Link",
+  "Evidência Atualizada": "Updated Evidence",
+  "Nova Consequência": "New Consequence",
+  "Parecer da Revisão": "Review Assessment",
+  "Nenhuma revisão registrada até o momento.": "No reviews recorded yet.",
+  Responsável: "Owner",
+  "Risco ou Oportunidade": "Risk or Opportunity",
+  "Setor Responsável": "Responsible Sector",
+  "Ver evidência": "View evidence",
+  "Contexto adicional exibido na tabela": "Additional context displayed in table",
+
+  // Comunicação, Stakeholders, Escritório, Tarefas, WBS e Permissões
+  "Média ponderada da equipe": "Team weighted average",
+  "Matriz de Poder vs. Interesse (Mendelow)":
+    "Power vs. Interest Matrix (Mendelow)",
+  "Matriz de Avaliação do Engajamento (Gap Analysis)":
+    "Engagement Assessment Matrix (Gap Analysis)",
+  "Direciona a prioridade e o tom de voz estratégico de cada relacionamento da equipe STEM.":
+    "Guides priority and strategic tone of voice for every STEM team relationship.",
+  "Evolução planejada do nível de engajamento atual (C) até o nível desejado (D) para cada parte interessada.":
+    "Planned progression from current engagement level (C) to desired level (D) for each stakeholder.",
+  "Nenhum stakeholder cadastrado para análise de gap.":
+    "No stakeholders registered for gap analysis.",
+  "Nenhum stakeholder mapeado neste quadrante.":
+    "No stakeholders mapped in this quadrant.",
+  "Diretório de Stakeholders & Estratégias":
+    "Stakeholders Directory & Strategies",
+  "Gestão de relacionamento com patrocinadores, direção escolar, pais e mentores.":
+    "Relationship management with sponsors, school leadership, parents, and mentors.",
+  "Histórico de Disparos & Ciclos de Feedback":
+    "Dispatch History & Feedback Cycles",
+  "Trilha auditável de comunicações com evidências de melhoria contínua aplicada.":
+    "Auditable communication trail with applied continuous improvement evidence.",
+  "Mapa Global de Parceiros & Hierarquia":
+    "Global Partner Map & Hierarchy",
+  "Cadastrar Stakeholder": "Register Stakeholder",
+  "Nenhum stakeholder cadastrado no mapa":
+    "No stakeholders registered on the map",
+  "Configurar Comunicação": "Configure Communication",
+  "Pré-visualização da Mensagem": "Message Preview",
+  "Pronto para Envio": "Ready to Send",
+  "Abrir no WhatsApp": "Open in WhatsApp",
+  "Registrar Retorno / Feedback": "Log Feedback / Response",
+  "Criar Régua de Comunicação Contínua": "Create Continuous Communication Cadence",
+  "Registrar Comunicação no Histórico": "Log Communication in History",
+  "Registrar Ciclo de Feedback & Melhoria": "Log Feedback & Improvement Cycle",
+  "Cargo / Função": "Role / Position",
+  "Frequência Preferencial": "Preferred Frequency",
+  Organização: "Organization",
+  "Nível de Engajamento": "Engagement Level",
+  Destinatário: "Recipient",
+  "Envio automático": "Automatic dispatch",
+  Relatório: "Report",
+  "Centralizar visualização": "Center view",
+  "Opções do Canvas": "Canvas Options",
+  Disponíveis: "Available",
+  VOCÊ: "YOU",
+  Você: "You",
+  "Nenhum integrante ativo na equipe": "No active team members",
+  "Nenhuma tarefa sob sua responsabilidade no momento.":
+    "No tasks currently assigned to you.",
+  "Nenhuma presença registrada para os filtros selecionados.":
+    "No attendance recorded for the selected filters.",
+  "Total atribuído": "Total assigned",
+  "Atividades críticas": "Critical activities",
+  "Desvio atual": "Current variance",
+  "Progresso geral": "Overall progress",
+  "Data de entrega": "Due date",
+  "Data início": "Start date",
+  "Linha de base": "Baseline",
+  "Atividade crítica": "Critical activity",
+  "Mais provável (M)": "Most likely (M)",
+  "Atividade com folga": "Activity with slack",
+  "Caminho crítico (folga 0)": "Critical path (zero slack)",
+  "Adicionar dependência": "Add dependency",
+  "Tarefa predecessora": "Predecessor task",
+  "Adicionar critério": "Add criterion",
+  "Nome do marco": "Milestone name",
+  "Observações (opcional)": "Notes (optional)",
+  "Selecionar até esta data": "Select up to this date",
+  "Nenhuma tarefa disponível para vincular.": "No tasks available to link.",
+  "Nenhuma tarefa vinculada a este marco.": "No tasks linked to this milestone.",
+  "Próximos 15 dias": "Next 15 days",
+  "Decomposição Hierárquica do Escopo Total":
+    "Hierarchical Decomposition of Total Scope",
+  "Nenhum entregável cadastrado na WBS": "No deliverables registered in WBS",
+  "Código EAP *": "WBS Code *",
+  "Esforço Estimado (Horas)": "Estimated Effort (Hours)",
+  "Nome do Entregável *": "Deliverable Name *",
+  "Responsável Técnico Único": "Single Technical Owner",
+  "Setor / Disciplina *": "Sector / Discipline *",
+  "Status de Entrega": "Delivery Status",
+  "Vincular sob (Entregável Pai)": "Link under (Parent Deliverable)",
+  "Modo Avaliação de Project Management (Juízes STEM)":
+    "Project Management Evaluation Mode (STEM Judges)",
+  "Nível 1": "Level 1",
+  "Nível 2": "Level 2",
+  "EVENTO DE SEGURANÇA": "SECURITY EVENT",
+  "Trilha de Auditoria Anti-Invasão (AuthAuditLog)":
+    "Anti-Intrusion Audit Trail (AuthAuditLog)",
+  "Filtrar Por": "Filter By",
+  "Acelere a alta performance da sua equipe STEM!":
+    "Accelerate your STEM team's high performance!",
+  "Escuderia Gênesis • F1 in Schools STEM Racing":
+    "Genesis Racing Team • F1 in Schools STEM Racing",
+  "Acesso & Autorização de E-mails": "Email Access & Authorization",
+  "Como será adquirido?": "How will it be acquired?",
+  "+ Gerenciar Empresas no ROI": "+ Manage Companies in ROI",
+  "+ Gerenciar no ROI": "+ Manage in ROI",
+  "Sem vínculo direto (Lançamento avulso)": "No direct link (Standalone entry)",
+  "Nenhum vínculo direto": "No direct link",
+  "Conta Ativa para Login": "Active Account for Login",
 };
 
 const ENTITY_PLURAL_TO_EN: Readonly<Record<string, string>> = {
@@ -904,12 +1129,51 @@ const EDIT_OR_DELETE_TARGETS_TO_EN: Readonly<Record<string, string>> = {
   ação: "action",
 };
 
+const MONTH_ABBR_PT_TO_EN: Readonly<Record<string, string>> = {
+  jan: "Jan",
+  fev: "Feb",
+  mar: "Mar",
+  abr: "Apr",
+  mai: "May",
+  jun: "Jun",
+  jul: "Jul",
+  ago: "Aug",
+  set: "Sep",
+  out: "Oct",
+  nov: "Nov",
+  dez: "Dec",
+};
+
 interface TranslationPattern {
   regex: RegExp;
   replace: (match: RegExpExecArray) => string;
 }
 
 const PT_TO_EN_PATTERNS: readonly TranslationPattern[] = [
+  {
+    regex: /^(Jan|Fev|Mar|Abr|Mai|Jun|Jul|Ago|Set|Out|Nov|Dez)\/(\d{4})$/i,
+    replace: (m) => {
+      const enMonth = MONTH_ABBR_PT_TO_EN[m[1].toLowerCase()] ?? m[1];
+      return `${enMonth}/${m[2]}`;
+    },
+  },
+  {
+    regex: /^(\d+)\s+treinos?\s+no\s+período$/i,
+    replace: (m) => `${m[1]} ${m[1] === "1" ? "training" : "trainings"} in period`,
+  },
+  {
+    regex: /^(\d+)\s+integrante\(s\)\s+com\s+100%$/i,
+    replace: (m) => `${m[1]} member(s) with 100%`,
+  },
+  {
+    regex: /^(\d+)\s+integrante\(s\)\s+com\s+falta$/i,
+    replace: (m) => `${m[1]} member(s) with absences`,
+  },
+  {
+    regex: /^(\d{2}\/\d{2}\/\d{4})\s*·\s*(\d+)\s+faltas?$/i,
+    replace: (m) =>
+      `${m[1]} · ${m[2]} ${m[2] === "1" ? "absence" : "absences"}`,
+  },
   {
     regex: /^Mostrando\s+(\d+)-(\d+)\s+de\s+(\d+)\s+([A-Za-zÀ-ÿ_-]+)$/i,
     replace: (m) => {
