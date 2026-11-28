@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { F1TrackIllustration } from "@/components/auth/f1-track-illustration";
 import { PlatformBrand } from "@/components/layout/platform-brand";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 
 export function LoginForm() {
   const router = useRouter();
@@ -90,7 +91,9 @@ export function LoginForm() {
 
         {/* Coluna da Direita (Formulário de Acesso Limpo) */}
         <div className="flex flex-col justify-between p-6 sm:p-8 lg:p-12 md:col-span-7 bg-card">
-          <div className="hidden md:block h-6" />
+          <div className="flex justify-end">
+            <LanguageSwitcher size="sm" showCode="always" />
+          </div>
 
           {/* Bloco Central do Formulário */}
           <div className="my-auto mx-auto w-full max-w-[390px] space-y-6 py-4">

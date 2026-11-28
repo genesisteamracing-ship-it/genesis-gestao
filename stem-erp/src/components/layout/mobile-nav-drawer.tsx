@@ -23,6 +23,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { logoutAction } from "@/actions/auth-actions";
 import type { AuthenticatedUserDTO } from "@/types/auth";
 import { Button } from "@/components/ui/button";
@@ -423,8 +424,13 @@ export function MobileNavDrawer({ currentUser }: MobileNavDrawerProps) {
           )}
         </div>
 
-        {/* Rodapé do Drawer: Tema & Perfil */}
+        {/* Rodapé do Drawer: Idioma, Tema & Perfil */}
         <div className="p-4 border-t border-border bg-muted/30 space-y-3">
+          <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+            <span>Idioma</span>
+            <LanguageSwitcher size="sm" showCode="always" />
+          </div>
+
           <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
             <span>Tema da Interface</span>
             <Button

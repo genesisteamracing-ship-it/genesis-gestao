@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { useAppHeader } from "@/components/layout/use-app-header";
 import { MobileNavDrawer } from "@/components/layout/mobile-nav-drawer";
 import { PlatformBrand } from "@/components/layout/platform-brand";
@@ -132,8 +133,9 @@ export function AppHeader({
           </div>
         </div>
 
-        {/* Theme Toggle + Perfil com Dropdown */}
+        {/* Language Switcher + Theme Toggle + Perfil com Dropdown */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <LanguageSwitcher size="sm" showCode="sm" />
           <ThemeToggle />
 
           <DropdownMenu>
